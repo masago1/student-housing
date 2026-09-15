@@ -90,14 +90,14 @@ export default async function ListingsPage({ params }) {
     );
   }
 
-  // Luăm toate chiriile asociate universității
+  // Luăm DOAR chiriile ACTIVE asociate universității
   const { data: listingLinks, error: listingsError } =
     await supabase
       .from("listing_universities")
       .select(`
         distance_meters,
         walking_minutes,
-        listings (
+        listings!inner (
           id,
           title,
           description,
@@ -110,10 +110,12 @@ export default async function ListingsPage({ params }) {
           surface_m2,
           furnished,
           available_from,
-          image_url
+          image_url,
+          active
         )
       `)
       .eq("university_id", university.id)
+      .eq("listings.active", true)
       .order("walking_minutes", { ascending: true });
 
   const listings = (listingLinks || [])
@@ -134,6 +136,7 @@ export default async function ListingsPage({ params }) {
       }}
     >
       {/* HEADER */}
+
       <header
         style={{
           height: "72px",
@@ -172,6 +175,7 @@ export default async function ListingsPage({ params }) {
       </header>
 
       {/* CONTENT */}
+
       <section
         style={{
           maxWidth: "1180px",
@@ -204,7 +208,8 @@ export default async function ListingsPage({ params }) {
               fontWeight: "800",
             }}
           >
-            Chirii aproape de {university.short_name || university.name}
+            Chirii aproape de{" "}
+            {university.short_name || university.name}
           </h1>
 
           <p
@@ -282,6 +287,7 @@ export default async function ListingsPage({ params }) {
         )}
 
         {/* LISTINGS */}
+
         {!listingsError && listings.length > 0 && (
           <div
             style={{
@@ -304,12 +310,14 @@ export default async function ListingsPage({ params }) {
                   textDecoration: "none",
                   color: "#111827",
                   cursor: "pointer",
-                  boxShadow: "0 4px 15px rgba(0,0,0,0.03)",
+                  boxShadow:
+                    "0 4px 15px rgba(0,0,0,0.03)",
                   transition:
                     "transform 150ms ease, box-shadow 150ms ease",
                 }}
               >
                 {/* IMAGINE */}
+
                 <div
                   style={{
                     height: "210px",
@@ -346,6 +354,7 @@ export default async function ListingsPage({ params }) {
                 </div>
 
                 {/* INFORMAȚII */}
+
                 <div
                   style={{
                     padding: "20px",
@@ -406,20 +415,27 @@ export default async function ListingsPage({ params }) {
                     {listing.rooms && (
                       <span>
                         {listing.rooms}{" "}
-                        {listing.rooms === 1 ? "cameră" : "camere"}
+                        {listing.rooms === 1
+                          ? "cameră"
+                          : "camere"}
                       </span>
                     )}
 
                     {listing.surface_m2 && (
-                      <span>{listing.surface_m2} m²</span>
+                      <span>
+                        {listing.surface_m2} m²
+                      </span>
                     )}
 
                     {listing.distance_meters && (
-                      <span>{listing.distance_meters} m</span>
+                      <span>
+                        {listing.distance_meters} m
+                      </span>
                     )}
                   </div>
 
                   {/* PREȚ */}
+
                   <div
                     style={{
                       marginTop: "20px",
@@ -429,7 +445,10 @@ export default async function ListingsPage({ params }) {
                       fontWeight: "800",
                     }}
                   >
-                    {Number(listing.price_monthly).toLocaleString("ro-RO")} €
+                    {Number(
+                      listing.price_monthly
+                    ).toLocaleString("ro-RO")}{" "}
+                    €
 
                     <span
                       style={{
