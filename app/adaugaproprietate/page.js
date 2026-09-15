@@ -389,10 +389,7 @@ export default function AdaugaProprietatePage() {
         "Proprietatea și fotografiile au fost publicate cu succes."
       );
 
-      /*
-        După publicare îl trimitem automat
-        în dashboard.
-      */
+      // DUPĂ PUBLICARE MERGEM ÎN DASHBOARD
 
       setTimeout(() => {
         router.push("/dashboard");
@@ -542,6 +539,40 @@ export default function AdaugaProprietatePage() {
           padding: "60px 30px 100px",
         }}
       >
+        {/* ÎNAPOI LA DASHBOARD */}
+
+        <button
+          type="button"
+          onClick={() => {
+            router.push("/dashboard");
+          }}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "8px",
+            border: "none",
+            background: "transparent",
+            padding: 0,
+            marginBottom: "28px",
+            color: "#4b5563",
+            fontFamily: "inherit",
+            fontSize: "14px",
+            fontWeight: "700",
+            cursor: "pointer",
+          }}
+        >
+          <span
+            style={{
+              fontSize: "20px",
+              lineHeight: 1,
+            }}
+          >
+            ←
+          </span>
+
+          Înapoi la dashboard
+        </button>
+
         <div style={{ marginBottom: "35px" }}>
           <div
             style={{
