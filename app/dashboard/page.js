@@ -79,6 +79,8 @@ export default function DashboardPage() {
   };
 
   const toggleListing = async (listing) => {
+    setError("");
+
     const newStatus = !listing.active;
 
     const { error } = await supabase
@@ -90,6 +92,7 @@ export default function DashboardPage() {
       .eq("user_id", user.id);
 
     if (error) {
+      console.error(error);
       setError("Statusul anunțului nu a putut fi modificat.");
       return;
     }
@@ -356,7 +359,7 @@ export default function DashboardPage() {
                 </p>
               </div>
 
-              {/* CARDURI */}
+              {/* CARDURI STATISTICI */}
 
               <div
                 style={{
@@ -383,7 +386,7 @@ export default function DashboardPage() {
                 />
               </div>
 
-              {/* ANUNTURI RECENTE */}
+              {/* ANUNȚURI RECENTE */}
 
               <div
                 style={{
@@ -432,7 +435,7 @@ export default function DashboardPage() {
             </>
           )}
 
-          {/* ANUNTURILE TALE */}
+          {/* ANUNȚURILE TALE */}
 
           {activeSection === "listings" && (
             <>
@@ -842,11 +845,9 @@ function ListingsList({
             >
               <button
                 type="button"
-                onClick={() => {
-                  /*
-                    Legăm pagina anunțului în pasul următor.
-                  */
-                }}
+                onClick={() =>
+                  router.push(`/proprietate/${listing.id}`)
+                }
                 style={actionButton}
               >
                 Vezi
@@ -854,11 +855,11 @@ function ListingsList({
 
               <button
                 type="button"
-                onClick={() => {
-                  /*
-                    Pagina de editare urmează.
-                  */
-                }}
+                onClick={() =>
+                  router.push(
+                    `/editeaza-proprietate/${listing.id}`
+                  )
+                }
                 style={actionButton}
               >
                 Editează
