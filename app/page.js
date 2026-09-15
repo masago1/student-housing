@@ -1,5 +1,6 @@
 import { supabase } from "./lib/supabase";
 import SearchBox from "./components/SearchBox";
+import AccountButton from "./components/AccountButton";
 
 export const dynamic = "force-dynamic";
 
@@ -53,19 +54,7 @@ export default async function Home() {
             fontWeight: "700",
           }}
         >
-          <a
-            href="/login"
-            style={{
-              color: "#111827",
-              textDecoration: "none",
-              padding: "11px 16px",
-              borderRadius: "10px",
-              border: "1px solid #e5e7eb",
-              background: "#ffffff",
-            }}
-          >
-            Intră în cont
-          </a>
+          <AccountButton />
 
           <a
             href="/adaugaproprietate"
