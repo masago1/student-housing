@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
@@ -13,8 +13,56 @@ export default function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
+  /*
+    VERIFICĂM DACĂ UTILIZATORUL ESTE DEJA LOGAT
+
+    Supabase păstrează sesiunea în browser.
+    Dacă există deja o sesiune activă, utilizatorul
+    nu mai vede pagina de login și este trimis
+    direct în dashboard.
+  */
+
+  useEffect(() => {
+    let mounted = true;
+
+    const checkSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!mounted) {
+        return;
+      }
+
+      if (session?.user) {
+        router.replace("/dashboard");
+        return;
+      }
+
+      setCheckingSession(false);
+    };
+
+    checkSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session?.user) {
+          router.replace("/dashboard");
+        }
+      }
+    );
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [router]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -63,7 +111,7 @@ export default function LoginPage() {
         */
 
         if (data.session) {
-          router.push("/dashboard");
+          router.replace("/dashboard");
           router.refresh();
           return;
         }
@@ -91,11 +139,12 @@ export default function LoginPage() {
         }
 
         /*
-          Orice utilizator autentificat ajunge
-          direct în dashboard.
+          Sesiunea este salvată de Supabase.
+          Utilizatorul va rămâne autentificat
+          inclusiv după închiderea browserului.
         */
 
-        router.push("/dashboard");
+        router.replace("/dashboard");
         router.refresh();
       }
     } catch {
@@ -114,6 +163,31 @@ export default function LoginPage() {
     setPassword("");
     setConfirmPassword("");
   };
+
+  /*
+    Cât timp verificăm dacă există deja o sesiune,
+    nu afișăm formularul de login pentru o fracțiune
+    de secundă.
+  */
+
+  if (checkingSession) {
+    return (
+      <main
+        style={{
+          minHeight: "100vh",
+          background: "#f7f8fa",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#6b7280",
+          fontSize: "15px",
+          fontWeight: "600",
+        }}
+      >
+        Se verifică autentificarea...
+      </main>
+    );
+  }
 
   return (
     <main
@@ -209,8 +283,8 @@ export default function LoginPage() {
             }}
           >
             {mode === "login"
-              ? "Autentifică-te pentru a-ți administra proprietățile și anunțurile."
-              : "Creează-ți contul pentru a putea publica și administra proprietăți."}
+              ? "Autentifică-te pentru a-ți administra anunțurile și mesajele."
+              : "Creează-ți contul pentru a putea publica și administra anunțuri."}
           </p>
 
           {/* TABS */}
