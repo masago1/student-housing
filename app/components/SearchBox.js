@@ -1,71 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "../lib/supabase";
 
-export default function SearchBox() {
+export default function SearchBox({ universities = [] }) {
   const router = useRouter();
-
-  const [universities, setUniversities] = useState([]);
-  const [loadingUniversities, setLoadingUniversities] =
-    useState(true);
 
   const [cityQuery, setCityQuery] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
-  const [showCitySuggestions, setShowCitySuggestions] =
-    useState(false);
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
 
   const [universityQuery, setUniversityQuery] = useState("");
-  const [selectedUniversity, setSelectedUniversity] =
-    useState(null);
-  const [
-    showUniversitySuggestions,
-    setShowUniversitySuggestions,
-  ] = useState(false);
-
-  /*
-    ÎNCĂRCĂM TOATE UNIVERSITĂȚILE DIN SUPABASE
-
-    Din acest moment, orice universitate nouă introdusă
-    în tabela "universities" va apărea automat aici.
-  */
-
-  useEffect(() => {
-    const loadUniversities = async () => {
-      setLoadingUniversities(true);
-
-      const { data, error } = await supabase
-        .from("universities")
-        .select("id, name, short_name, city")
-        .order("city", { ascending: true })
-        .order("name", { ascending: true });
-
-      if (error) {
-        console.error(
-          "Eroare la încărcarea universităților:",
-          error
-        );
-
-        setUniversities([]);
-        setLoadingUniversities(false);
-        return;
-      }
-
-      setUniversities(data || []);
-      setLoadingUniversities(false);
-    };
-
-    loadUniversities();
-  }, []);
-
-  /*
-    NORMALIZARE TEXT
-
-    Permite căutări precum:
-    Timisoara -> Timișoara
-    Iasi -> Iași
-  */
+  const [selectedUniversity, setSelectedUniversity] = useState(null);
+  const [showUniversitySuggestions, setShowUniversitySuggestions] =
+    useState(false);
 
   const normalizeText = (text = "") =>
     text
@@ -73,10 +21,6 @@ export default function SearchBox() {
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase()
       .trim();
-
-  /*
-    CREARE SLUG PENTRU URL
-  */
 
   const slugify = (text = "") =>
     text
@@ -87,10 +31,9 @@ export default function SearchBox() {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
 
-  /*
-    GENERĂM AUTOMAT ORAȘELE DIN UNIVERSITĂȚILE
-    EXISTENTE ÎN SUPABASE
-  */
+  /* =========================
+     ORAȘE
+  ========================= */
 
   const cities = useMemo(() => {
     return [
@@ -102,27 +45,21 @@ export default function SearchBox() {
     ].sort((a, b) => a.localeCompare(b, "ro"));
   }, [universities]);
 
-  /*
-    FILTRARE ORAȘE
-  */
-
   const filteredCities = useMemo(() => {
     const query = normalizeText(cityQuery);
 
-    if (!query) {
-      return cities.slice(0, 8);
+    if (!query || selectedCity === cityQuery) {
+      return cities;
     }
 
-    return cities
-      .filter((city) =>
-        normalizeText(city).includes(query)
-      )
-      .slice(0, 8);
-  }, [cityQuery, cities]);
+    return cities.filter((city) =>
+      normalizeText(city).includes(query)
+    );
+  }, [cityQuery, selectedCity, cities]);
 
-  /*
-    UNIVERSITĂȚILE DIN ORAȘUL SELECTAT
-  */
+  /* =========================
+     UNIVERSITĂȚI
+  ========================= */
 
   const universitiesForCity = useMemo(() => {
     if (!selectedCity) {
@@ -130,14 +67,9 @@ export default function SearchBox() {
     }
 
     return universities.filter(
-      (university) =>
-        university.city === selectedCity
+      (university) => university.city === selectedCity
     );
   }, [universities, selectedCity]);
-
-  /*
-    FILTRARE UNIVERSITĂȚI
-  */
 
   const filteredUniversities = useMemo(() => {
     const query = normalizeText(universityQuery);
@@ -146,30 +78,27 @@ export default function SearchBox() {
       return [];
     }
 
-    if (!query) {
-      return universitiesForCity.slice(0, 8);
+    if (!query || selectedUniversity) {
+      return universitiesForCity;
     }
 
-    return universitiesForCity
-      .filter((university) => {
-        const fullText = normalizeText(
-          `${university.short_name || ""} ${
-            university.name || ""
-          }`
-        );
+    return universitiesForCity.filter((university) => {
+      const searchableText = normalizeText(
+        `${university.short_name || ""} ${university.name || ""}`
+      );
 
-        return fullText.includes(query);
-      })
-      .slice(0, 8);
+      return searchableText.includes(query);
+    });
   }, [
     universityQuery,
     selectedCity,
+    selectedUniversity,
     universitiesForCity,
   ]);
 
-  /*
-    SELECTARE ORAȘ
-  */
+  /* =========================
+     SELECTARE ORAȘ
+  ========================= */
 
   const chooseCity = (city) => {
     setSelectedCity(city);
@@ -182,9 +111,9 @@ export default function SearchBox() {
     setShowUniversitySuggestions(false);
   };
 
-  /*
-    SELECTARE UNIVERSITATE
-  */
+  /* =========================
+     SELECTARE UNIVERSITATE
+  ========================= */
 
   const chooseUniversity = (university) => {
     setSelectedUniversity(university);
@@ -198,9 +127,9 @@ export default function SearchBox() {
     setShowUniversitySuggestions(false);
   };
 
-  /*
-    CĂUTARE
-  */
+  /* =========================
+     CĂUTARE
+  ========================= */
 
   const handleSearch = () => {
     if (!selectedCity || !selectedUniversity) {
@@ -210,13 +139,10 @@ export default function SearchBox() {
     const citySlug = slugify(selectedCity);
 
     const universitySlug = slugify(
-      selectedUniversity.short_name ||
-        selectedUniversity.name
+      selectedUniversity.short_name || selectedUniversity.name
     );
 
-    router.push(
-      `/chirii/${citySlug}/${universitySlug}`
-    );
+    router.push(`/chirii/${citySlug}/${universitySlug}`);
   };
 
   return (
@@ -235,27 +161,33 @@ export default function SearchBox() {
         textAlign: "left",
       }}
     >
-      {/* ORAȘ */}
+      {/* =========================
+          ORAȘ
+      ========================= */}
 
-      <div style={{ position: "relative" }}>
+      <div
+        style={{
+          position: "relative",
+          minWidth: 0,
+        }}
+      >
         <input
           type="text"
           value={cityQuery}
-          placeholder={
-            loadingUniversities
-              ? "Se încarcă orașele..."
-              : "Alege orașul"
-          }
-          disabled={loadingUniversities}
+          placeholder="Alege orașul"
           autoComplete="off"
           onFocus={() => {
-            if (!loadingUniversities) {
-              setShowCitySuggestions(true);
-            }
+            setShowCitySuggestions(true);
+            setShowUniversitySuggestions(false);
+          }}
+          onClick={() => {
+            setShowCitySuggestions(true);
+            setShowUniversitySuggestions(false);
           }}
           onChange={(event) => {
-            setCityQuery(event.target.value);
+            const value = event.target.value;
 
+            setCityQuery(value);
             setSelectedCity("");
             setSelectedUniversity(null);
             setUniversityQuery("");
@@ -274,31 +206,44 @@ export default function SearchBox() {
             fontWeight: "500",
             color: "#111827",
             outline: "none",
-            background: loadingUniversities
-              ? "#f9fafb"
-              : "#ffffff",
-            cursor: loadingUniversities
-              ? "wait"
-              : "text",
-            opacity: loadingUniversities ? 0.7 : 1,
+            background: "#ffffff",
           }}
         />
 
-        {showCitySuggestions &&
-          !loadingUniversities && (
+        {/* DROPDOWN ORAȘE */}
+
+        {showCitySuggestions && (
+          <div
+            style={{
+              position: "absolute",
+              top: "calc(100% + 8px)",
+              left: 0,
+              right: 0,
+              background: "#ffffff",
+              border: "1px solid #e5e7eb",
+              borderRadius: "12px",
+              boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
+              zIndex: 9999,
+              overflow: "hidden",
+            }}
+          >
             <div
               style={{
-                position: "absolute",
-                top: "calc(100% + 8px)",
-                left: 0,
-                right: 0,
-                background: "#ffffff",
-                border: "1px solid #e5e7eb",
-                borderRadius: "12px",
-                boxShadow:
-                  "0 12px 30px rgba(0,0,0,0.12)",
-                overflow: "hidden",
-                zIndex: 50,
+                height: "280px",
+                maxHeight: "280px",
+                overflowY: "auto",
+                overflowX: "hidden",
+                overscrollBehavior: "contain",
+                WebkitOverflowScrolling: "touch",
+                scrollbarGutter: "stable",
+              }}
+              onWheel={(event) => {
+                event.stopPropagation();
+
+                const container = event.currentTarget;
+
+                container.scrollTop =
+                  container.scrollTop + event.deltaY;
               }}
             >
               {filteredCities.length > 0 ? (
@@ -306,23 +251,36 @@ export default function SearchBox() {
                   <button
                     key={city}
                     type="button"
-                    onMouseDown={(event) =>
-                      event.preventDefault()
-                    }
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                    }}
                     onClick={() => chooseCity(city)}
                     style={{
                       width: "100%",
+                      minHeight: "46px",
+                      display: "block",
                       border: "none",
-                      background: "#ffffff",
-                      padding: "14px 16px",
+                      borderBottom: "1px solid #f3f4f6",
+                      background:
+                        selectedCity === city
+                          ? "#eff6ff"
+                          : "#ffffff",
+                      padding: "13px 16px",
                       textAlign: "left",
                       fontFamily: "inherit",
                       fontSize: "14px",
-                      fontWeight: "600",
+                      fontWeight:
+                        selectedCity === city ? "800" : "600",
                       color: "#111827",
                       cursor: "pointer",
-                      borderBottom:
-                        "1px solid #f3f4f6",
+                      boxSizing: "border-box",
+                    }}
+                    onMouseEnter={(event) => {
+                      event.currentTarget.style.background = "#f3f4f6";
+                    }}
+                    onMouseLeave={(event) => {
+                      event.currentTarget.style.background =
+                        selectedCity === city ? "#eff6ff" : "#ffffff";
                     }}
                   >
                     {city}
@@ -331,7 +289,7 @@ export default function SearchBox() {
               ) : (
                 <div
                   style={{
-                    padding: "14px 16px",
+                    padding: "16px",
                     color: "#6b7280",
                     fontSize: "14px",
                   }}
@@ -340,12 +298,20 @@ export default function SearchBox() {
                 </div>
               )}
             </div>
-          )}
+          </div>
+        )}
       </div>
 
-      {/* UNIVERSITATE */}
+      {/* =========================
+          UNIVERSITATE
+      ========================= */}
 
-      <div style={{ position: "relative" }}>
+      <div
+        style={{
+          position: "relative",
+          minWidth: 0,
+        }}
+      >
         <input
           type="text"
           value={universityQuery}
@@ -359,12 +325,21 @@ export default function SearchBox() {
           onFocus={() => {
             if (selectedCity) {
               setShowUniversitySuggestions(true);
+              setShowCitySuggestions(false);
+            }
+          }}
+          onClick={() => {
+            if (selectedCity) {
+              setShowUniversitySuggestions(true);
+              setShowCitySuggestions(false);
             }
           }}
           onChange={(event) => {
             setUniversityQuery(event.target.value);
             setSelectedUniversity(null);
+
             setShowUniversitySuggestions(true);
+            setShowCitySuggestions(false);
           }}
           style={{
             width: "100%",
@@ -377,87 +352,109 @@ export default function SearchBox() {
             fontWeight: "500",
             color: "#111827",
             outline: "none",
-            background: selectedCity
-              ? "#ffffff"
-              : "#f9fafb",
-            cursor: selectedCity
-              ? "text"
-              : "not-allowed",
+            background: selectedCity ? "#ffffff" : "#f9fafb",
+            cursor: selectedCity ? "text" : "not-allowed",
             opacity: selectedCity ? 1 : 0.65,
           }}
         />
 
-        {showUniversitySuggestions &&
-          selectedCity && (
+        {/* DROPDOWN UNIVERSITĂȚI */}
+
+        {showUniversitySuggestions && selectedCity && (
+          <div
+            style={{
+              position: "absolute",
+              top: "calc(100% + 8px)",
+              left: 0,
+              right: 0,
+              background: "#ffffff",
+              border: "1px solid #e5e7eb",
+              borderRadius: "12px",
+              boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
+              zIndex: 9999,
+              overflow: "hidden",
+            }}
+          >
             <div
               style={{
-                position: "absolute",
-                top: "calc(100% + 8px)",
-                left: 0,
-                right: 0,
-                background: "#ffffff",
-                border: "1px solid #e5e7eb",
-                borderRadius: "12px",
-                boxShadow:
-                  "0 12px 30px rgba(0,0,0,0.12)",
-                overflow: "hidden",
-                zIndex: 50,
+                maxHeight: "280px",
+                overflowY: "auto",
+                overflowX: "hidden",
+                overscrollBehavior: "contain",
+                WebkitOverflowScrolling: "touch",
+                scrollbarGutter: "stable",
+              }}
+              onWheel={(event) => {
+                event.stopPropagation();
+
+                const container = event.currentTarget;
+
+                container.scrollTop =
+                  container.scrollTop + event.deltaY;
               }}
             >
               {filteredUniversities.length > 0 ? (
-                filteredUniversities.map(
-                  (university) => (
-                    <button
-                      key={university.id}
-                      type="button"
-                      onMouseDown={(event) =>
-                        event.preventDefault()
-                      }
-                      onClick={() =>
-                        chooseUniversity(university)
-                      }
+                filteredUniversities.map((university) => (
+                  <button
+                    key={university.id}
+                    type="button"
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                    }}
+                    onClick={() => chooseUniversity(university)}
+                    style={{
+                      width: "100%",
+                      display: "block",
+                      border: "none",
+                      borderBottom: "1px solid #f3f4f6",
+                      background:
+                        selectedUniversity?.id === university.id
+                          ? "#eff6ff"
+                          : "#ffffff",
+                      padding: "13px 16px",
+                      textAlign: "left",
+                      fontFamily: "inherit",
+                      cursor: "pointer",
+                      boxSizing: "border-box",
+                    }}
+                    onMouseEnter={(event) => {
+                      event.currentTarget.style.background = "#f3f4f6";
+                    }}
+                    onMouseLeave={(event) => {
+                      event.currentTarget.style.background =
+                        selectedUniversity?.id === university.id
+                          ? "#eff6ff"
+                          : "#ffffff";
+                    }}
+                  >
+                    <div
                       style={{
-                        width: "100%",
-                        border: "none",
-                        background: "#ffffff",
-                        padding: "14px 16px",
-                        textAlign: "left",
-                        fontFamily: "inherit",
-                        cursor: "pointer",
-                        borderBottom:
-                          "1px solid #f3f4f6",
+                        fontSize: "14px",
+                        fontWeight: "700",
+                        color: "#111827",
                       }}
                     >
+                      {university.short_name || university.name}
+                    </div>
+
+                    {university.short_name && (
                       <div
                         style={{
-                          fontSize: "14px",
-                          fontWeight: "700",
-                          color: "#111827",
+                          fontSize: "12px",
+                          color: "#6b7280",
+                          marginTop: "4px",
+                          lineHeight: "1.4",
                         }}
                       >
-                        {university.short_name ||
-                          university.name}
+                        {university.name}
                       </div>
-
-                      {university.short_name && (
-                        <div
-                          style={{
-                            fontSize: "12px",
-                            color: "#6b7280",
-                            marginTop: "4px",
-                            lineHeight: "1.4",
-                          }}
-                        >
-                          {university.name}
-                        </div>
-                      )}
-                    </button>
-                  )
-                )
+                    )}
+                  </button>
+                ))
               ) : (
                 <div
                   style={{
-                    padding: "14px 16px",
+                    padding: "16px",
                     color: "#6b7280",
                     fontSize: "14px",
                   }}
@@ -466,21 +463,23 @@ export default function SearchBox() {
                 </div>
               )}
             </div>
-          )}
+          </div>
+        )}
       </div>
 
-      {/* BUTON */}
+      {/* =========================
+          BUTON CĂUTARE
+      ========================= */}
 
       <button
         type="button"
         onClick={handleSearch}
-        disabled={
-          !selectedCity || !selectedUniversity
-        }
+        disabled={!selectedCity || !selectedUniversity}
         style={{
           border: "none",
           borderRadius: "12px",
           padding: "0 27px",
+          minHeight: "54px",
           background:
             selectedCity && selectedUniversity
               ? "#2563eb"
