@@ -56,7 +56,7 @@ export default function LoginPage() {
         }
 
         if (data.session) {
-          router.push("/adauga-proprietate");
+          router.push("/adaugaproprietate");
           router.refresh();
           return;
         }
@@ -72,13 +72,11 @@ export default function LoginPage() {
           });
 
         if (signInError) {
-          setError(
-            "Email sau parolă incorectă."
-          );
+          setError("Email sau parolă incorectă.");
           return;
         }
 
-        router.push("/adauga-proprietate");
+        router.push("/adaugaproprietate");
         router.refresh();
       }
     } catch {
@@ -107,6 +105,7 @@ export default function LoginPage() {
       }}
     >
       {/* HEADER */}
+
       <header
         style={{
           height: "72px",
@@ -145,6 +144,7 @@ export default function LoginPage() {
       </header>
 
       {/* LOGIN AREA */}
+
       <section
         style={{
           minHeight: "calc(100vh - 73px)",
@@ -194,7 +194,8 @@ export default function LoginPage() {
               : "Creează-ți contul pentru a putea publica și administra proprietăți."}
           </p>
 
-          {/* LOGIN / REGISTER TABS */}
+          {/* TABS */}
+
           <div
             style={{
               display: "grid",
@@ -264,6 +265,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit}>
             {/* EMAIL */}
+
             <label
               style={{
                 display: "block",
@@ -297,6 +299,7 @@ export default function LoginPage() {
             />
 
             {/* PASSWORD */}
+
             <label
               style={{
                 display: "block",
@@ -337,6 +340,7 @@ export default function LoginPage() {
             />
 
             {/* CONFIRM PASSWORD */}
+
             {mode === "register" && (
               <>
                 <label
@@ -376,6 +380,7 @@ export default function LoginPage() {
             )}
 
             {/* ERROR */}
+
             {error && (
               <div
                 style={{
@@ -394,6 +399,7 @@ export default function LoginPage() {
             )}
 
             {/* SUCCESS */}
+
             {message && (
               <div
                 style={{
@@ -412,6 +418,7 @@ export default function LoginPage() {
             )}
 
             {/* SUBMIT */}
+
             <button
               type="submit"
               disabled={loading}
