@@ -19,7 +19,6 @@ export default async function Home() {
         margin: 0,
         minHeight: "100vh",
         background: "#f7f8fa",
-        fontFamily: "Inter, Arial, Helvetica, sans-serif",
         color: "#111827",
       }}
     >
