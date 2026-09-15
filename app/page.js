@@ -68,7 +68,7 @@ export default async function Home() {
           </a>
 
           <a
-            href="/adauga-proprietate"
+            href="/adaugaproprietate"
             style={{
               background: "#111827",
               color: "#ffffff",
@@ -169,9 +169,7 @@ export default async function Home() {
           }}
         >
           <span>Aproape de universitate</span>
-
           <span>Chirii într-un singur loc</span>
-
           <span>Direct de la proprietari</span>
         </div>
       </section>
