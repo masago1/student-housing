@@ -1,19 +1,71 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "../lib/supabase";
 
-export default function SearchBox({ universities = [] }) {
+export default function SearchBox() {
   const router = useRouter();
+
+  const [universities, setUniversities] = useState([]);
+  const [loadingUniversities, setLoadingUniversities] =
+    useState(true);
 
   const [cityQuery, setCityQuery] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
-  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+  const [showCitySuggestions, setShowCitySuggestions] =
+    useState(false);
 
   const [universityQuery, setUniversityQuery] = useState("");
-  const [selectedUniversity, setSelectedUniversity] = useState(null);
-  const [showUniversitySuggestions, setShowUniversitySuggestions] =
-    useState(false);
+  const [selectedUniversity, setSelectedUniversity] =
+    useState(null);
+  const [
+    showUniversitySuggestions,
+    setShowUniversitySuggestions,
+  ] = useState(false);
+
+  /*
+    ÎNCĂRCĂM TOATE UNIVERSITĂȚILE DIN SUPABASE
+
+    Din acest moment, orice universitate nouă introdusă
+    în tabela "universities" va apărea automat aici.
+  */
+
+  useEffect(() => {
+    const loadUniversities = async () => {
+      setLoadingUniversities(true);
+
+      const { data, error } = await supabase
+        .from("universities")
+        .select("id, name, short_name, city")
+        .order("city", { ascending: true })
+        .order("name", { ascending: true });
+
+      if (error) {
+        console.error(
+          "Eroare la încărcarea universităților:",
+          error
+        );
+
+        setUniversities([]);
+        setLoadingUniversities(false);
+        return;
+      }
+
+      setUniversities(data || []);
+      setLoadingUniversities(false);
+    };
+
+    loadUniversities();
+  }, []);
+
+  /*
+    NORMALIZARE TEXT
+
+    Permite căutări precum:
+    Timisoara -> Timișoara
+    Iasi -> Iași
+  */
 
   const normalizeText = (text = "") =>
     text
@@ -21,6 +73,10 @@ export default function SearchBox({ universities = [] }) {
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase()
       .trim();
+
+  /*
+    CREARE SLUG PENTRU URL
+  */
 
   const slugify = (text = "") =>
     text
@@ -30,6 +86,11 @@ export default function SearchBox({ universities = [] }) {
       .trim()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
+
+  /*
+    GENERĂM AUTOMAT ORAȘELE DIN UNIVERSITĂȚILE
+    EXISTENTE ÎN SUPABASE
+  */
 
   const cities = useMemo(() => {
     return [
@@ -41,6 +102,10 @@ export default function SearchBox({ universities = [] }) {
     ].sort((a, b) => a.localeCompare(b, "ro"));
   }, [universities]);
 
+  /*
+    FILTRARE ORAȘE
+  */
+
   const filteredCities = useMemo(() => {
     const query = normalizeText(cityQuery);
 
@@ -49,9 +114,15 @@ export default function SearchBox({ universities = [] }) {
     }
 
     return cities
-      .filter((city) => normalizeText(city).includes(query))
+      .filter((city) =>
+        normalizeText(city).includes(query)
+      )
       .slice(0, 8);
   }, [cityQuery, cities]);
+
+  /*
+    UNIVERSITĂȚILE DIN ORAȘUL SELECTAT
+  */
 
   const universitiesForCity = useMemo(() => {
     if (!selectedCity) {
@@ -59,9 +130,14 @@ export default function SearchBox({ universities = [] }) {
     }
 
     return universities.filter(
-      (university) => university.city === selectedCity
+      (university) =>
+        university.city === selectedCity
     );
   }, [universities, selectedCity]);
+
+  /*
+    FILTRARE UNIVERSITĂȚI
+  */
 
   const filteredUniversities = useMemo(() => {
     const query = normalizeText(universityQuery);
@@ -77,7 +153,9 @@ export default function SearchBox({ universities = [] }) {
     return universitiesForCity
       .filter((university) => {
         const fullText = normalizeText(
-          `${university.short_name || ""} ${university.name || ""}`
+          `${university.short_name || ""} ${
+            university.name || ""
+          }`
         );
 
         return fullText.includes(query);
@@ -88,6 +166,10 @@ export default function SearchBox({ universities = [] }) {
     selectedCity,
     universitiesForCity,
   ]);
+
+  /*
+    SELECTARE ORAȘ
+  */
 
   const chooseCity = (city) => {
     setSelectedCity(city);
@@ -100,6 +182,10 @@ export default function SearchBox({ universities = [] }) {
     setShowUniversitySuggestions(false);
   };
 
+  /*
+    SELECTARE UNIVERSITATE
+  */
+
   const chooseUniversity = (university) => {
     setSelectedUniversity(university);
 
@@ -111,6 +197,10 @@ export default function SearchBox({ universities = [] }) {
 
     setShowUniversitySuggestions(false);
   };
+
+  /*
+    CĂUTARE
+  */
 
   const handleSearch = () => {
     if (!selectedCity || !selectedUniversity) {
@@ -146,18 +236,30 @@ export default function SearchBox({ universities = [] }) {
       }}
     >
       {/* ORAȘ */}
+
       <div style={{ position: "relative" }}>
         <input
           type="text"
           value={cityQuery}
-          placeholder="Alege orașul"
+          placeholder={
+            loadingUniversities
+              ? "Se încarcă orașele..."
+              : "Alege orașul"
+          }
+          disabled={loadingUniversities}
           autoComplete="off"
-          onFocus={() => setShowCitySuggestions(true)}
+          onFocus={() => {
+            if (!loadingUniversities) {
+              setShowCitySuggestions(true);
+            }
+          }}
           onChange={(event) => {
             setCityQuery(event.target.value);
+
             setSelectedCity("");
             setSelectedUniversity(null);
             setUniversityQuery("");
+
             setShowCitySuggestions(true);
             setShowUniversitySuggestions(false);
           }}
@@ -172,68 +274,77 @@ export default function SearchBox({ universities = [] }) {
             fontWeight: "500",
             color: "#111827",
             outline: "none",
-            background: "#ffffff",
+            background: loadingUniversities
+              ? "#f9fafb"
+              : "#ffffff",
+            cursor: loadingUniversities
+              ? "wait"
+              : "text",
+            opacity: loadingUniversities ? 0.7 : 1,
           }}
         />
 
-        {showCitySuggestions && (
-          <div
-            style={{
-              position: "absolute",
-              top: "calc(100% + 8px)",
-              left: 0,
-              right: 0,
-              background: "#ffffff",
-              border: "1px solid #e5e7eb",
-              borderRadius: "12px",
-              boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
-              overflow: "hidden",
-              zIndex: 50,
-            }}
-          >
-            {filteredCities.length > 0 ? (
-              filteredCities.map((city) => (
-                <button
-                  key={city}
-                  type="button"
-                  onMouseDown={(event) =>
-                    event.preventDefault()
-                  }
-                  onClick={() => chooseCity(city)}
+        {showCitySuggestions &&
+          !loadingUniversities && (
+            <div
+              style={{
+                position: "absolute",
+                top: "calc(100% + 8px)",
+                left: 0,
+                right: 0,
+                background: "#ffffff",
+                border: "1px solid #e5e7eb",
+                borderRadius: "12px",
+                boxShadow:
+                  "0 12px 30px rgba(0,0,0,0.12)",
+                overflow: "hidden",
+                zIndex: 50,
+              }}
+            >
+              {filteredCities.length > 0 ? (
+                filteredCities.map((city) => (
+                  <button
+                    key={city}
+                    type="button"
+                    onMouseDown={(event) =>
+                      event.preventDefault()
+                    }
+                    onClick={() => chooseCity(city)}
+                    style={{
+                      width: "100%",
+                      border: "none",
+                      background: "#ffffff",
+                      padding: "14px 16px",
+                      textAlign: "left",
+                      fontFamily: "inherit",
+                      fontSize: "14px",
+                      fontWeight: "600",
+                      color: "#111827",
+                      cursor: "pointer",
+                      borderBottom:
+                        "1px solid #f3f4f6",
+                    }}
+                  >
+                    {city}
+                  </button>
+                ))
+              ) : (
+                <div
                   style={{
-                    width: "100%",
-                    border: "none",
-                    background: "#ffffff",
                     padding: "14px 16px",
-                    textAlign: "left",
-                    fontFamily: "inherit",
+                    color: "#6b7280",
                     fontSize: "14px",
-                    fontWeight: "600",
-                    color: "#111827",
-                    cursor: "pointer",
-                    borderBottom:
-                      "1px solid #f3f4f6",
                   }}
                 >
-                  {city}
-                </button>
-              ))
-            ) : (
-              <div
-                style={{
-                  padding: "14px 16px",
-                  color: "#6b7280",
-                  fontSize: "14px",
-                }}
-              >
-                Niciun oraș găsit
-              </div>
-            )}
-          </div>
-        )}
+                  Niciun oraș găsit
+                </div>
+              )}
+            </div>
+          )}
       </div>
 
       {/* UNIVERSITATE */}
+
       <div style={{ position: "relative" }}>
         <input
           type="text"
@@ -359,6 +470,7 @@ export default function SearchBox({ universities = [] }) {
       </div>
 
       {/* BUTON */}
+
       <button
         type="button"
         onClick={handleSearch}
