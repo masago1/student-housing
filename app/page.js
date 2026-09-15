@@ -81,7 +81,7 @@ export default async function Home() {
         style={{
           maxWidth: "1180px",
           margin: "0 auto",
-          padding: "90px 30px 75px",
+          padding: "105px 30px 100px",
           textAlign: "center",
         }}
       >
@@ -152,7 +152,7 @@ export default async function Home() {
             justifyContent: "center",
             gap: "35px",
             flexWrap: "wrap",
-            marginTop: "30px",
+            marginTop: "32px",
             color: "#6b7280",
             fontSize: "14px",
             fontWeight: "500",
@@ -161,116 +161,6 @@ export default async function Home() {
           <span>Aproape de universitate</span>
           <span>Chirii într-un singur loc</span>
           <span>Direct de la proprietari</span>
-        </div>
-      </section>
-
-      {/* UNIVERSITIES */}
-      <section
-        style={{
-          background: "#ffffff",
-          padding: "70px 7%",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: "1180px",
-            margin: "0 auto",
-          }}
-        >
-          <div style={{ marginBottom: "35px" }}>
-            <h2
-              style={{
-                margin: 0,
-                fontSize: "32px",
-                fontWeight: "800",
-                letterSpacing: "-1px",
-              }}
-            >
-              Începe cu universitatea ta
-            </h2>
-
-            <p
-              style={{
-                color: "#6b7280",
-                marginTop: "10px",
-                fontSize: "16px",
-              }}
-            >
-              Descoperă locuințe aflate la câteva minute de cursuri.
-            </p>
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit, minmax(280px, 1fr))",
-              gap: "18px",
-            }}
-          >
-            {(universities || []).map((university) => (
-              <div
-                key={university.id}
-                style={{
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "16px",
-                  padding: "22px",
-                  background: "#ffffff",
-                  transition: "all 0.2s ease",
-                }}
-              >
-                <div
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    minWidth: "46px",
-                    height: "46px",
-                    padding: "0 12px",
-                    background: "#eff6ff",
-                    color: "#2563eb",
-                    borderRadius: "12px",
-                    fontSize: "13px",
-                    fontWeight: "800",
-                    marginBottom: "18px",
-                  }}
-                >
-                  {university.short_name || "UNI"}
-                </div>
-
-                <div
-                  style={{
-                    fontSize: "20px",
-                    fontWeight: "800",
-                    marginBottom: "7px",
-                  }}
-                >
-                  {university.short_name || university.name}
-                </div>
-
-                <div
-                  style={{
-                    color: "#6b7280",
-                    lineHeight: "1.5",
-                    minHeight: "48px",
-                  }}
-                >
-                  {university.name}
-                </div>
-
-                <div
-                  style={{
-                    marginTop: "17px",
-                    color: "#2563eb",
-                    fontWeight: "700",
-                    fontSize: "14px",
-                  }}
-                >
-                  {university.city}
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
     </main>
