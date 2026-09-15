@@ -38,7 +38,7 @@ export default async function Home() {
             letterSpacing: "-1px",
           }}
         >
-          🏠 StudentHousing
+          StudentHousing
         </div>
 
         <div
@@ -50,7 +50,13 @@ export default async function Home() {
             fontWeight: "600",
           }}
         >
-          <span>Caută chirii</span>
+          <span
+            style={{
+              cursor: "pointer",
+            }}
+          >
+            Caută chirii
+          </span>
 
           <button
             style={{
@@ -91,7 +97,7 @@ export default async function Home() {
             marginBottom: "22px",
           }}
         >
-          🎓 Locuințe pentru viața de student
+          Locuințe pentru viața de student
         </div>
 
         <h1
@@ -125,7 +131,7 @@ export default async function Home() {
           într-un singur loc.
         </p>
 
-        {/* SEARCH CU AUTOCOMPLETE */}
+        {/* SEARCH */}
         <SearchBox universities={universities || []} />
 
         {error && (
@@ -149,11 +155,12 @@ export default async function Home() {
             marginTop: "30px",
             color: "#6b7280",
             fontSize: "14px",
+            fontWeight: "500",
           }}
         >
-          <span>✓ Aproape de universitate</span>
-          <span>✓ Chirii într-un singur loc</span>
-          <span>✓ Direct de la proprietari</span>
+          <span>Aproape de universitate</span>
+          <span>Chirii într-un singur loc</span>
+          <span>Direct de la proprietari</span>
         </div>
       </section>
 
@@ -209,22 +216,26 @@ export default async function Home() {
                   borderRadius: "16px",
                   padding: "22px",
                   background: "#ffffff",
+                  transition: "all 0.2s ease",
                 }}
               >
                 <div
                   style={{
-                    width: "46px",
-                    height: "46px",
-                    background: "#eff6ff",
-                    borderRadius: "12px",
-                    display: "flex",
+                    display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: "22px",
+                    minWidth: "46px",
+                    height: "46px",
+                    padding: "0 12px",
+                    background: "#eff6ff",
+                    color: "#2563eb",
+                    borderRadius: "12px",
+                    fontSize: "13px",
+                    fontWeight: "800",
                     marginBottom: "18px",
                   }}
                 >
-                  🎓
+                  {university.short_name || "UNI"}
                 </div>
 
                 <div
@@ -255,7 +266,7 @@ export default async function Home() {
                     fontSize: "14px",
                   }}
                 >
-                  📍 {university.city}
+                  {university.city}
                 </div>
               </div>
             ))}
