@@ -152,7 +152,9 @@ export default function AdaugaProprietatePage() {
         URL.revokeObjectURL(imageToRemove.preview);
       }
 
-      return current.filter((_, imageIndex) => imageIndex !== index);
+      return current.filter(
+        (_, imageIndex) => imageIndex !== index
+      );
     });
   };
 
@@ -196,7 +198,10 @@ export default function AdaugaProprietatePage() {
       return;
     }
 
-    if (!form.price_monthly || Number(form.price_monthly) <= 0) {
+    if (
+      !form.price_monthly ||
+      Number(form.price_monthly) <= 0
+    ) {
       setError("Introdu un preț lunar valid.");
       return;
     }
@@ -227,9 +232,7 @@ export default function AdaugaProprietatePage() {
     const uploadedPaths = [];
 
     try {
-      /*
-        1. CREĂM ANUNȚUL
-      */
+      // CREĂM ANUNȚUL
 
       const listingData = {
         user_id: user.id,
@@ -239,7 +242,9 @@ export default function AdaugaProprietatePage() {
         address: form.address.trim(),
         price_monthly: Number(form.price_monthly),
 
-        rooms: form.rooms ? Number(form.rooms) : null,
+        rooms: form.rooms
+          ? Number(form.rooms)
+          : null,
 
         bedrooms: form.bedrooms
           ? Number(form.bedrooms)
@@ -256,7 +261,6 @@ export default function AdaugaProprietatePage() {
         property_type: form.property_type,
         listing_type: "rent",
         furnished: form.furnished === "true",
-
         available_from: form.available_from || null,
 
         owner_name: form.owner_name.trim(),
@@ -287,25 +291,31 @@ export default function AdaugaProprietatePage() {
 
       listingId = createdListing.id;
 
-      /*
-        2. ÎNCĂRCĂM CELE MAXIMUM 10 POZE
-      */
+      // ÎNCĂRCĂM POZELE
 
       const uploadedImages = [];
 
-      for (let index = 0; index < images.length; index++) {
+      for (
+        let index = 0;
+        index < images.length;
+        index++
+      ) {
         const image = images[index];
         const file = image.file;
 
         const extension =
-          file.name.split(".").pop()?.toLowerCase() || "jpg";
+          file.name
+            .split(".")
+            .pop()
+            ?.toLowerCase() || "jpg";
 
         const safeExtension = extension.replace(
           /[^a-z0-9]/g,
           ""
         );
 
-        const fileName = `${Date.now()}-${index}-${crypto.randomUUID()}.${safeExtension}`;
+        const fileName =
+          `${Date.now()}-${index}-${crypto.randomUUID()}.${safeExtension}`;
 
         const storagePath =
           `${user.id}/${listingId}/${fileName}`;
@@ -332,19 +342,15 @@ export default function AdaugaProprietatePage() {
             .from("listing-images")
             .getPublicUrl(storagePath);
 
-        const publicUrl = publicUrlData.publicUrl;
-
         uploadedImages.push({
           listing_id: listingId,
-          image_url: publicUrl,
+          image_url: publicUrlData.publicUrl,
           storage_path: storagePath,
           position: index,
         });
       }
 
-      /*
-        3. SALVĂM POZELE ÎN listing_images
-      */
+      // SALVĂM POZELE ÎN listing_images
 
       const { error: imagesDatabaseError } =
         await supabase
@@ -357,9 +363,7 @@ export default function AdaugaProprietatePage() {
         );
       }
 
-      /*
-        4. PRIMA POZĂ DEVINE COPERTA
-      */
+      // PRIMA POZĂ DEVINE COPERTA
 
       const coverImageUrl =
         uploadedImages[0]?.image_url || null;
@@ -379,45 +383,23 @@ export default function AdaugaProprietatePage() {
         );
       }
 
-      /*
-        5. SUCCES
-      */
-
-      images.forEach((image) => {
-        URL.revokeObjectURL(image.preview);
-      });
-
-      setImages([]);
-
-      setForm({
-        title: "",
-        property_type: "apartment",
-        city: "",
-        address: "",
-        price_monthly: "",
-        rooms: "",
-        bedrooms: "",
-        bathrooms: "",
-        surface_m2: "",
-        furnished: "true",
-        available_from: "",
-        description: "",
-        owner_name: "",
-        owner_phone: "",
-        owner_email: user.email || "",
-      });
+      // SUCCES
 
       setSuccess(
         "Proprietatea și fotografiile au fost publicate cu succes."
       );
-    } catch (submitError) {
-      console.error(submitError);
 
       /*
-        Dacă upload-ul eșuează la jumătate,
-        curățăm fișierele deja încărcate și
-        ștergem anunțul incomplet.
+        După publicare îl trimitem automat
+        în dashboard.
       */
+
+      setTimeout(() => {
+        router.push("/dashboard");
+        router.refresh();
+      }, 1000);
+    } catch (submitError) {
+      console.error(submitError);
 
       await cleanupUploadedFiles(uploadedPaths);
 
@@ -433,7 +415,7 @@ export default function AdaugaProprietatePage() {
         submitError.message ||
           "A apărut o eroare la publicarea anunțului."
       );
-    } finally {
+
       setPublishing(false);
     }
   };
@@ -553,8 +535,6 @@ export default function AdaugaProprietatePage() {
         </div>
       </header>
 
-      {/* CONTENT */}
-
       <section
         style={{
           maxWidth: "900px",
@@ -562,11 +542,7 @@ export default function AdaugaProprietatePage() {
           padding: "60px 30px 100px",
         }}
       >
-        <div
-          style={{
-            marginBottom: "35px",
-          }}
-        >
+        <div style={{ marginBottom: "35px" }}>
           <div
             style={{
               display: "inline-block",
@@ -771,7 +747,7 @@ export default function AdaugaProprietatePage() {
             )}
           </div>
 
-          {/* DETALII PROPRIETATE */}
+          {/* DETALII */}
 
           <div
             style={{
