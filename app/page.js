@@ -19,8 +19,7 @@ export default async function Home() {
         margin: 0,
         minHeight: "100vh",
         background: "#f7f8fa",
-        fontFamily:
-          "Inter, Arial, Helvetica, sans-serif",
+        fontFamily: "Inter, Arial, Helvetica, sans-serif",
         color: "#111827",
       }}
     >
@@ -56,7 +55,6 @@ export default async function Home() {
           }}
         >
           <span>Caută chirii</span>
-          <span>Pentru proprietari</span>
 
           <button
             style={{
@@ -109,6 +107,7 @@ export default async function Home() {
         >
           Chiria ta.
           <br />
+
           <span style={{ color: "#2563eb" }}>
             Aproape de facultate.
           </span>
@@ -124,10 +123,10 @@ export default async function Home() {
           }}
         >
           Găsește apartamente și camere aproape de universitatea ta,
-          fără să mai cauți prin zeci de grupuri și anunțuri.
+          într-un singur loc.
         </p>
 
-        {/* SEARCH BOX */}
+        {/* SEARCH */}
         <div
           style={{
             maxWidth: "900px",
@@ -177,7 +176,10 @@ export default async function Home() {
             </option>
 
             {(universities || []).map((university) => (
-              <option key={university.id} value={university.id}>
+              <option
+                key={university.id}
+                value={university.id}
+              >
                 {university.short_name
                   ? `${university.short_name} — ${university.name}`
                   : university.name}
@@ -230,7 +232,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* UNIVERSITY SECTION */}
+      {/* UNIVERSITIES */}
       <section
         style={{
           background: "white",
@@ -333,51 +335,6 @@ export default async function Home() {
             ))}
           </div>
         </div>
-      </section>
-
-      {/* OWNER CTA */}
-      <section
-        style={{
-          padding: "80px 30px",
-          background: "#111827",
-          color: "white",
-          textAlign: "center",
-        }}
-      >
-        <h2
-          style={{
-            fontSize: "36px",
-            margin: "0 0 15px",
-          }}
-        >
-          Ai o proprietate de închiriat?
-        </h2>
-
-        <p
-          style={{
-            color: "#cbd5e1",
-            fontSize: "17px",
-            marginBottom: "28px",
-          }}
-        >
-          Publică anunțul și ajungi direct la studenții care caută
-          o locuință în apropierea universității.
-        </p>
-
-        <button
-          style={{
-            background: "white",
-            color: "#111827",
-            border: "none",
-            borderRadius: "11px",
-            padding: "14px 24px",
-            fontSize: "15px",
-            fontWeight: "800",
-            cursor: "pointer",
-          }}
-        >
-          + Adaugă proprietatea
-        </button>
       </section>
     </main>
   );
