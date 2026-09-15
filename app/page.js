@@ -62,6 +62,8 @@ export default async function Home() {
               border: "none",
               borderRadius: "10px",
               padding: "11px 18px",
+              fontFamily: "inherit",
+              fontSize: "14px",
               fontWeight: "700",
               cursor: "pointer",
             }}
@@ -102,6 +104,7 @@ export default async function Home() {
             letterSpacing: "-2.5px",
             maxWidth: "850px",
             margin: "0 auto",
+            fontWeight: "800",
           }}
         >
           Chiria ta.
@@ -125,7 +128,7 @@ export default async function Home() {
           într-un singur loc.
         </p>
 
-        {/* SEARCH */}
+        {/* SEARCH BOX */}
         <div
           style={{
             maxWidth: "900px",
@@ -139,6 +142,7 @@ export default async function Home() {
             gap: "10px",
           }}
         >
+          {/* CITY */}
           <select
             defaultValue=""
             style={{
@@ -146,7 +150,12 @@ export default async function Home() {
               borderRadius: "12px",
               padding: "17px",
               fontSize: "15px",
-              background: "white",
+              fontFamily: "inherit",
+              fontWeight: "500",
+              color: "#111827",
+              outline: "none",
+              background: "#ffffff",
+              cursor: "pointer",
             }}
           >
             <option value="" disabled>
@@ -160,6 +169,7 @@ export default async function Home() {
             ))}
           </select>
 
+          {/* UNIVERSITY */}
           <select
             defaultValue=""
             style={{
@@ -167,7 +177,12 @@ export default async function Home() {
               borderRadius: "12px",
               padding: "17px",
               fontSize: "15px",
-              background: "white",
+              fontFamily: "inherit",
+              fontWeight: "500",
+              color: "#111827",
+              outline: "none",
+              background: "#ffffff",
+              cursor: "pointer",
             }}
           >
             <option value="" disabled>
@@ -186,6 +201,7 @@ export default async function Home() {
             ))}
           </select>
 
+          {/* SEARCH BUTTON */}
           <button
             style={{
               border: "none",
@@ -194,6 +210,7 @@ export default async function Home() {
               background: "#2563eb",
               color: "white",
               fontSize: "16px",
+              fontFamily: "inherit",
               fontWeight: "700",
               cursor: "pointer",
             }}
@@ -249,6 +266,7 @@ export default async function Home() {
               style={{
                 margin: 0,
                 fontSize: "32px",
+                fontWeight: "800",
                 letterSpacing: "-1px",
               }}
             >
