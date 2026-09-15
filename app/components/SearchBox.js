@@ -71,11 +71,7 @@ export default function SearchBox({ universities = [] }) {
         return fullText.includes(query);
       })
       .slice(0, 8);
-  }, [
-    universityQuery,
-    selectedCity,
-    universitiesForCity,
-  ]);
+  }, [universityQuery, selectedCity, universitiesForCity]);
 
   const chooseCity = (city) => {
     setSelectedCity(city);
@@ -181,7 +177,7 @@ export default function SearchBox({ universities = [] }) {
                     borderBottom: "1px solid #f3f4f6",
                   }}
                 >
-                  📍 {city}
+                  {city}
                 </button>
               ))
             ) : (
@@ -278,7 +274,7 @@ export default function SearchBox({ universities = [] }) {
                       color: "#111827",
                     }}
                   >
-                    🎓 {university.short_name || university.name}
+                    {university.short_name || university.name}
                   </div>
 
                   {university.short_name && (
@@ -333,7 +329,7 @@ export default function SearchBox({ universities = [] }) {
           whiteSpace: "nowrap",
         }}
       >
-        Vezi chirii →
+        Vezi chirii
       </button>
     </div>
   );
