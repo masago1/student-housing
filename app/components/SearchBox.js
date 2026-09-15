@@ -1,8 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function SearchBox({ universities = [] }) {
+  const router = useRouter();
+
   const [cityQuery, setCityQuery] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
   const [showCitySuggestions, setShowCitySuggestions] = useState(false);
@@ -18,6 +21,15 @@ export default function SearchBox({ universities = [] }) {
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase()
       .trim();
+
+  const slugify = (text = "") =>
+    text
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
 
   const cities = useMemo(() => {
     return [
@@ -71,7 +83,11 @@ export default function SearchBox({ universities = [] }) {
         return fullText.includes(query);
       })
       .slice(0, 8);
-  }, [universityQuery, selectedCity, universitiesForCity]);
+  }, [
+    universityQuery,
+    selectedCity,
+    universitiesForCity,
+  ]);
 
   const chooseCity = (city) => {
     setSelectedCity(city);
@@ -81,6 +97,7 @@ export default function SearchBox({ universities = [] }) {
     setUniversityQuery("");
 
     setShowCitySuggestions(false);
+    setShowUniversitySuggestions(false);
   };
 
   const chooseUniversity = (university) => {
@@ -93,6 +110,23 @@ export default function SearchBox({ universities = [] }) {
     );
 
     setShowUniversitySuggestions(false);
+  };
+
+  const handleSearch = () => {
+    if (!selectedCity || !selectedUniversity) {
+      return;
+    }
+
+    const citySlug = slugify(selectedCity);
+
+    const universitySlug = slugify(
+      selectedUniversity.short_name ||
+        selectedUniversity.name
+    );
+
+    router.push(
+      `/chirii/${citySlug}/${universitySlug}`
+    );
   };
 
   return (
@@ -125,6 +159,7 @@ export default function SearchBox({ universities = [] }) {
             setSelectedUniversity(null);
             setUniversityQuery("");
             setShowCitySuggestions(true);
+            setShowUniversitySuggestions(false);
           }}
           style={{
             width: "100%",
@@ -161,7 +196,9 @@ export default function SearchBox({ universities = [] }) {
                 <button
                   key={city}
                   type="button"
-                  onMouseDown={(event) => event.preventDefault()}
+                  onMouseDown={(event) =>
+                    event.preventDefault()
+                  }
                   onClick={() => chooseCity(city)}
                   style={{
                     width: "100%",
@@ -174,7 +211,8 @@ export default function SearchBox({ universities = [] }) {
                     fontWeight: "600",
                     color: "#111827",
                     cursor: "pointer",
-                    borderBottom: "1px solid #f3f4f6",
+                    borderBottom:
+                      "1px solid #f3f4f6",
                   }}
                 >
                   {city}
@@ -228,88 +266,105 @@ export default function SearchBox({ universities = [] }) {
             fontWeight: "500",
             color: "#111827",
             outline: "none",
-            background: selectedCity ? "#ffffff" : "#f9fafb",
-            cursor: selectedCity ? "text" : "not-allowed",
+            background: selectedCity
+              ? "#ffffff"
+              : "#f9fafb",
+            cursor: selectedCity
+              ? "text"
+              : "not-allowed",
             opacity: selectedCity ? 1 : 0.65,
           }}
         />
 
-        {showUniversitySuggestions && selectedCity && (
-          <div
-            style={{
-              position: "absolute",
-              top: "calc(100% + 8px)",
-              left: 0,
-              right: 0,
-              background: "#ffffff",
-              border: "1px solid #e5e7eb",
-              borderRadius: "12px",
-              boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
-              overflow: "hidden",
-              zIndex: 50,
-            }}
-          >
-            {filteredUniversities.length > 0 ? (
-              filteredUniversities.map((university) => (
-                <button
-                  key={university.id}
-                  type="button"
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => chooseUniversity(university)}
-                  style={{
-                    width: "100%",
-                    border: "none",
-                    background: "#ffffff",
-                    padding: "14px 16px",
-                    textAlign: "left",
-                    fontFamily: "inherit",
-                    cursor: "pointer",
-                    borderBottom: "1px solid #f3f4f6",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: "14px",
-                      fontWeight: "700",
-                      color: "#111827",
-                    }}
-                  >
-                    {university.short_name || university.name}
-                  </div>
-
-                  {university.short_name && (
-                    <div
+        {showUniversitySuggestions &&
+          selectedCity && (
+            <div
+              style={{
+                position: "absolute",
+                top: "calc(100% + 8px)",
+                left: 0,
+                right: 0,
+                background: "#ffffff",
+                border: "1px solid #e5e7eb",
+                borderRadius: "12px",
+                boxShadow:
+                  "0 12px 30px rgba(0,0,0,0.12)",
+                overflow: "hidden",
+                zIndex: 50,
+              }}
+            >
+              {filteredUniversities.length > 0 ? (
+                filteredUniversities.map(
+                  (university) => (
+                    <button
+                      key={university.id}
+                      type="button"
+                      onMouseDown={(event) =>
+                        event.preventDefault()
+                      }
+                      onClick={() =>
+                        chooseUniversity(university)
+                      }
                       style={{
-                        fontSize: "12px",
-                        color: "#6b7280",
-                        marginTop: "4px",
-                        lineHeight: "1.4",
+                        width: "100%",
+                        border: "none",
+                        background: "#ffffff",
+                        padding: "14px 16px",
+                        textAlign: "left",
+                        fontFamily: "inherit",
+                        cursor: "pointer",
+                        borderBottom:
+                          "1px solid #f3f4f6",
                       }}
                     >
-                      {university.name}
-                    </div>
-                  )}
-                </button>
-              ))
-            ) : (
-              <div
-                style={{
-                  padding: "14px 16px",
-                  color: "#6b7280",
-                  fontSize: "14px",
-                }}
-              >
-                Nicio universitate găsită
-              </div>
-            )}
-          </div>
-        )}
+                      <div
+                        style={{
+                          fontSize: "14px",
+                          fontWeight: "700",
+                          color: "#111827",
+                        }}
+                      >
+                        {university.short_name ||
+                          university.name}
+                      </div>
+
+                      {university.short_name && (
+                        <div
+                          style={{
+                            fontSize: "12px",
+                            color: "#6b7280",
+                            marginTop: "4px",
+                            lineHeight: "1.4",
+                          }}
+                        >
+                          {university.name}
+                        </div>
+                      )}
+                    </button>
+                  )
+                )
+              ) : (
+                <div
+                  style={{
+                    padding: "14px 16px",
+                    color: "#6b7280",
+                    fontSize: "14px",
+                  }}
+                >
+                  Nicio universitate găsită
+                </div>
+              )}
+            </div>
+          )}
       </div>
 
       {/* BUTON */}
       <button
         type="button"
-        disabled={!selectedCity || !selectedUniversity}
+        onClick={handleSearch}
+        disabled={
+          !selectedCity || !selectedUniversity
+        }
         style={{
           border: "none",
           borderRadius: "12px",
