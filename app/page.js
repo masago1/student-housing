@@ -1,4 +1,5 @@
 import { supabase } from "./lib/supabase";
+import SearchBox from "./components/SearchBox";
 
 export const dynamic = "force-dynamic";
 
@@ -8,10 +9,6 @@ export default async function Home() {
     .select("*")
     .order("city")
     .order("name");
-
-  const cities = [
-    ...new Set((universities || []).map((university) => university.city)),
-  ];
 
   return (
     <main
@@ -58,7 +55,7 @@ export default async function Home() {
           <button
             style={{
               background: "#111827",
-              color: "white",
+              color: "#ffffff",
               border: "none",
               borderRadius: "10px",
               padding: "11px 18px",
@@ -128,96 +125,8 @@ export default async function Home() {
           într-un singur loc.
         </p>
 
-        {/* SEARCH BOX */}
-        <div
-          style={{
-            maxWidth: "900px",
-            margin: "0 auto",
-            background: "white",
-            borderRadius: "18px",
-            padding: "12px",
-            boxShadow: "0 15px 45px rgba(0,0,0,0.10)",
-            display: "grid",
-            gridTemplateColumns: "1fr 1.6fr auto",
-            gap: "10px",
-          }}
-        >
-          {/* CITY */}
-          <select
-            defaultValue=""
-            style={{
-              border: "1px solid #e5e7eb",
-              borderRadius: "12px",
-              padding: "17px",
-              fontSize: "15px",
-              fontFamily: "inherit",
-              fontWeight: "500",
-              color: "#111827",
-              outline: "none",
-              background: "#ffffff",
-              cursor: "pointer",
-            }}
-          >
-            <option value="" disabled>
-              Alege orașul
-            </option>
-
-            {cities.map((city) => (
-              <option key={city} value={city}>
-                📍 {city}
-              </option>
-            ))}
-          </select>
-
-          {/* UNIVERSITY */}
-          <select
-            defaultValue=""
-            style={{
-              border: "1px solid #e5e7eb",
-              borderRadius: "12px",
-              padding: "17px",
-              fontSize: "15px",
-              fontFamily: "inherit",
-              fontWeight: "500",
-              color: "#111827",
-              outline: "none",
-              background: "#ffffff",
-              cursor: "pointer",
-            }}
-          >
-            <option value="" disabled>
-              Alege universitatea
-            </option>
-
-            {(universities || []).map((university) => (
-              <option
-                key={university.id}
-                value={university.id}
-              >
-                {university.short_name
-                  ? `${university.short_name} — ${university.name}`
-                  : university.name}
-              </option>
-            ))}
-          </select>
-
-          {/* SEARCH BUTTON */}
-          <button
-            style={{
-              border: "none",
-              borderRadius: "12px",
-              padding: "0 27px",
-              background: "#2563eb",
-              color: "white",
-              fontSize: "16px",
-              fontFamily: "inherit",
-              fontWeight: "700",
-              cursor: "pointer",
-            }}
-          >
-            Vezi chirii →
-          </button>
-        </div>
+        {/* SEARCH CU AUTOCOMPLETE */}
+        <SearchBox universities={universities || []} />
 
         {error && (
           <p
@@ -251,7 +160,7 @@ export default async function Home() {
       {/* UNIVERSITIES */}
       <section
         style={{
-          background: "white",
+          background: "#ffffff",
           padding: "70px 7%",
         }}
       >
