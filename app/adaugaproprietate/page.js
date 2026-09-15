@@ -14,6 +14,8 @@ export default function AdaugaProprietatePage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const [images, setImages] = useState([]);
+
   const [form, setForm] = useState({
     title: "",
     property_type: "apartment",
@@ -72,6 +74,14 @@ export default function AdaugaProprietatePage() {
     };
   }, [router]);
 
+  useEffect(() => {
+    return () => {
+      images.forEach((image) => {
+        URL.revokeObjectURL(image.preview);
+      });
+    };
+  }, [images]);
+
   const updateField = (event) => {
     const { name, value } = event.target;
 
@@ -81,10 +91,83 @@ export default function AdaugaProprietatePage() {
     }));
   };
 
+  const handleImages = (event) => {
+    setError("");
+
+    const selectedFiles = Array.from(event.target.files || []);
+
+    if (selectedFiles.length === 0) {
+      return;
+    }
+
+    const remainingSlots = 10 - images.length;
+
+    if (remainingSlots <= 0) {
+      setError("Poți adăuga maximum 10 fotografii.");
+      event.target.value = "";
+      return;
+    }
+
+    if (selectedFiles.length > remainingSlots) {
+      setError(
+        `Poți adăuga maximum 10 fotografii. Mai poți selecta ${remainingSlots}.`
+      );
+      event.target.value = "";
+      return;
+    }
+
+    const validFiles = [];
+
+    for (const file of selectedFiles) {
+      if (!file.type.startsWith("image/")) {
+        setError("Poți încărca doar fișiere de tip imagine.");
+        event.target.value = "";
+        return;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        setError(
+          "Fiecare fotografie trebuie să aibă maximum 10 MB."
+        );
+        event.target.value = "";
+        return;
+      }
+
+      validFiles.push({
+        file,
+        preview: URL.createObjectURL(file),
+      });
+    }
+
+    setImages((current) => [...current, ...validFiles]);
+
+    event.target.value = "";
+  };
+
+  const removeImage = (index) => {
+    setImages((current) => {
+      const imageToRemove = current[index];
+
+      if (imageToRemove?.preview) {
+        URL.revokeObjectURL(imageToRemove.preview);
+      }
+
+      return current.filter((_, imageIndex) => imageIndex !== index);
+    });
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/");
     router.refresh();
+  };
+
+  const cleanupUploadedFiles = async (paths) => {
+    if (!paths.length) return;
+
+    await supabase.storage
+      .from("listing-images")
+      .remove(paths);
   };
 
   const handleSubmit = async (event) => {
@@ -113,10 +196,7 @@ export default function AdaugaProprietatePage() {
       return;
     }
 
-    if (
-      !form.price_monthly ||
-      Number(form.price_monthly) <= 0
-    ) {
+    if (!form.price_monthly || Number(form.price_monthly) <= 0) {
       setError("Introdu un preț lunar valid.");
       return;
     }
@@ -131,86 +211,231 @@ export default function AdaugaProprietatePage() {
       return;
     }
 
-    setPublishing(true);
-
-    const listingData = {
-      user_id: user.id,
-      title: form.title.trim(),
-      description: form.description.trim() || null,
-      city: form.city.trim(),
-      address: form.address.trim(),
-      price_monthly: Number(form.price_monthly),
-
-      rooms: form.rooms
-        ? Number(form.rooms)
-        : null,
-
-      bedrooms: form.bedrooms
-        ? Number(form.bedrooms)
-        : null,
-
-      bathrooms: form.bathrooms
-        ? Number(form.bathrooms)
-        : null,
-
-      surface_m2: form.surface_m2
-        ? Number(form.surface_m2)
-        : null,
-
-      property_type: form.property_type,
-      listing_type: "rent",
-      furnished: form.furnished === "true",
-
-      available_from:
-        form.available_from || null,
-
-      owner_name: form.owner_name.trim(),
-      owner_phone: form.owner_phone.trim(),
-
-      owner_email:
-        form.owner_email.trim() ||
-        user.email ||
-        null,
-
-      active: true,
-    };
-
-    const { error: insertError } = await supabase
-      .from("listings")
-      .insert([listingData]);
-
-    if (insertError) {
-      console.error(insertError);
-
-      setError(
-        `Anunțul nu a putut fi publicat: ${insertError.message}`
-      );
-
-      setPublishing(false);
+    if (images.length === 0) {
+      setError("Adaugă cel puțin o fotografie a proprietății.");
       return;
     }
 
-    setSuccess("Proprietatea a fost publicată cu succes.");
+    if (images.length > 10) {
+      setError("Poți adăuga maximum 10 fotografii.");
+      return;
+    }
 
-    setForm({
-      title: "",
-      property_type: "apartment",
-      city: "",
-      address: "",
-      price_monthly: "",
-      rooms: "",
-      bedrooms: "",
-      bathrooms: "",
-      surface_m2: "",
-      furnished: "true",
-      available_from: "",
-      description: "",
-      owner_name: "",
-      owner_phone: "",
-      owner_email: user.email || "",
-    });
+    setPublishing(true);
 
-    setPublishing(false);
+    let listingId = null;
+    const uploadedPaths = [];
+
+    try {
+      /*
+        1. CREĂM ANUNȚUL
+      */
+
+      const listingData = {
+        user_id: user.id,
+        title: form.title.trim(),
+        description: form.description.trim() || null,
+        city: form.city.trim(),
+        address: form.address.trim(),
+        price_monthly: Number(form.price_monthly),
+
+        rooms: form.rooms ? Number(form.rooms) : null,
+
+        bedrooms: form.bedrooms
+          ? Number(form.bedrooms)
+          : null,
+
+        bathrooms: form.bathrooms
+          ? Number(form.bathrooms)
+          : null,
+
+        surface_m2: form.surface_m2
+          ? Number(form.surface_m2)
+          : null,
+
+        property_type: form.property_type,
+        listing_type: "rent",
+        furnished: form.furnished === "true",
+
+        available_from: form.available_from || null,
+
+        owner_name: form.owner_name.trim(),
+        owner_phone: form.owner_phone.trim(),
+
+        owner_email:
+          form.owner_email.trim() ||
+          user.email ||
+          null,
+
+        active: true,
+      };
+
+      const {
+        data: createdListing,
+        error: listingError,
+      } = await supabase
+        .from("listings")
+        .insert([listingData])
+        .select("id")
+        .single();
+
+      if (listingError) {
+        throw new Error(
+          `Anunțul nu a putut fi creat: ${listingError.message}`
+        );
+      }
+
+      listingId = createdListing.id;
+
+      /*
+        2. ÎNCĂRCĂM CELE MAXIMUM 10 POZE
+      */
+
+      const uploadedImages = [];
+
+      for (let index = 0; index < images.length; index++) {
+        const image = images[index];
+        const file = image.file;
+
+        const extension =
+          file.name.split(".").pop()?.toLowerCase() || "jpg";
+
+        const safeExtension = extension.replace(
+          /[^a-z0-9]/g,
+          ""
+        );
+
+        const fileName = `${Date.now()}-${index}-${crypto.randomUUID()}.${safeExtension}`;
+
+        const storagePath =
+          `${user.id}/${listingId}/${fileName}`;
+
+        const { error: uploadError } =
+          await supabase.storage
+            .from("listing-images")
+            .upload(storagePath, file, {
+              cacheControl: "3600",
+              upsert: false,
+              contentType: file.type,
+            });
+
+        if (uploadError) {
+          throw new Error(
+            `Fotografia ${index + 1} nu a putut fi încărcată: ${uploadError.message}`
+          );
+        }
+
+        uploadedPaths.push(storagePath);
+
+        const { data: publicUrlData } =
+          supabase.storage
+            .from("listing-images")
+            .getPublicUrl(storagePath);
+
+        const publicUrl = publicUrlData.publicUrl;
+
+        uploadedImages.push({
+          listing_id: listingId,
+          image_url: publicUrl,
+          storage_path: storagePath,
+          position: index,
+        });
+      }
+
+      /*
+        3. SALVĂM POZELE ÎN listing_images
+      */
+
+      const { error: imagesDatabaseError } =
+        await supabase
+          .from("listing_images")
+          .insert(uploadedImages);
+
+      if (imagesDatabaseError) {
+        throw new Error(
+          `Fotografiile nu au putut fi asociate anunțului: ${imagesDatabaseError.message}`
+        );
+      }
+
+      /*
+        4. PRIMA POZĂ DEVINE COPERTA
+      */
+
+      const coverImageUrl =
+        uploadedImages[0]?.image_url || null;
+
+      const { error: coverError } =
+        await supabase
+          .from("listings")
+          .update({
+            image_url: coverImageUrl,
+          })
+          .eq("id", listingId)
+          .eq("user_id", user.id);
+
+      if (coverError) {
+        throw new Error(
+          `Coperta anunțului nu a putut fi salvată: ${coverError.message}`
+        );
+      }
+
+      /*
+        5. SUCCES
+      */
+
+      images.forEach((image) => {
+        URL.revokeObjectURL(image.preview);
+      });
+
+      setImages([]);
+
+      setForm({
+        title: "",
+        property_type: "apartment",
+        city: "",
+        address: "",
+        price_monthly: "",
+        rooms: "",
+        bedrooms: "",
+        bathrooms: "",
+        surface_m2: "",
+        furnished: "true",
+        available_from: "",
+        description: "",
+        owner_name: "",
+        owner_phone: "",
+        owner_email: user.email || "",
+      });
+
+      setSuccess(
+        "Proprietatea și fotografiile au fost publicate cu succes."
+      );
+    } catch (submitError) {
+      console.error(submitError);
+
+      /*
+        Dacă upload-ul eșuează la jumătate,
+        curățăm fișierele deja încărcate și
+        ștergem anunțul incomplet.
+      */
+
+      await cleanupUploadedFiles(uploadedPaths);
+
+      if (listingId) {
+        await supabase
+          .from("listings")
+          .delete()
+          .eq("id", listingId)
+          .eq("user_id", user.id);
+      }
+
+      setError(
+        submitError.message ||
+          "A apărut o eroare la publicarea anunțului."
+      );
+    } finally {
+      setPublishing(false);
+    }
   };
 
   if (checkingAuth) {
@@ -384,7 +609,169 @@ export default function AdaugaProprietatePage() {
         </div>
 
         <form onSubmit={handleSubmit}>
-          {/* DETALII PRINCIPALE */}
+          {/* FOTOGRAFII */}
+
+          <div
+            style={{
+              background: "#ffffff",
+              border: "1px solid #e5e7eb",
+              borderRadius: "20px",
+              padding: "32px",
+              boxShadow:
+                "0 12px 35px rgba(17,24,39,0.05)",
+              marginBottom: "22px",
+            }}
+          >
+            <h2
+              style={{
+                margin: 0,
+                fontSize: "20px",
+                fontWeight: "800",
+              }}
+            >
+              Fotografii
+            </h2>
+
+            <p
+              style={{
+                color: "#6b7280",
+                fontSize: "14px",
+                lineHeight: "1.6",
+                margin: "8px 0 22px",
+              }}
+            >
+              Adaugă între 1 și 10 fotografii. Prima fotografie va fi
+              coperta anunțului.
+            </p>
+
+            <label
+              style={{
+                display: "block",
+                border: "2px dashed #d1d5db",
+                borderRadius: "14px",
+                padding: "28px 20px",
+                textAlign: "center",
+                cursor:
+                  images.length >= 10
+                    ? "not-allowed"
+                    : "pointer",
+                background: "#fafafa",
+              }}
+            >
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                disabled={images.length >= 10}
+                onChange={handleImages}
+                style={{
+                  display: "none",
+                }}
+              />
+
+              <div
+                style={{
+                  fontSize: "15px",
+                  fontWeight: "800",
+                  color: "#111827",
+                }}
+              >
+                {images.length >= 10
+                  ? "Ai adăugat numărul maxim de fotografii"
+                  : "Selectează fotografii"}
+              </div>
+
+              <div
+                style={{
+                  color: "#6b7280",
+                  fontSize: "13px",
+                  marginTop: "7px",
+                }}
+              >
+                {images.length}/10 fotografii selectate
+              </div>
+            </label>
+
+            {images.length > 0 && (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "repeat(auto-fill, minmax(150px, 1fr))",
+                  gap: "14px",
+                  marginTop: "22px",
+                }}
+              >
+                {images.map((image, index) => (
+                  <div
+                    key={`${image.file.name}-${index}`}
+                    style={{
+                      position: "relative",
+                      borderRadius: "12px",
+                      overflow: "hidden",
+                      background: "#f3f4f6",
+                      aspectRatio: "1 / 1",
+                    }}
+                  >
+                    <img
+                      src={image.preview}
+                      alt={`Fotografie ${index + 1}`}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        display: "block",
+                      }}
+                    />
+
+                    {index === 0 && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: "8px",
+                          bottom: "8px",
+                          background: "#111827",
+                          color: "#ffffff",
+                          padding: "6px 9px",
+                          borderRadius: "7px",
+                          fontSize: "11px",
+                          fontWeight: "800",
+                        }}
+                      >
+                        Copertă
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      style={{
+                        position: "absolute",
+                        top: "8px",
+                        right: "8px",
+                        width: "30px",
+                        height: "30px",
+                        border: "none",
+                        borderRadius: "50%",
+                        background: "#ffffff",
+                        color: "#111827",
+                        fontFamily: "inherit",
+                        fontSize: "17px",
+                        fontWeight: "800",
+                        cursor: "pointer",
+                        boxShadow:
+                          "0 2px 8px rgba(0,0,0,0.18)",
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* DETALII PROPRIETATE */}
 
           <div
             style={{
@@ -433,21 +820,10 @@ export default function AdaugaProprietatePage() {
                 onChange={updateField}
                 style={inputStyle}
               >
-                <option value="apartment">
-                  Apartament
-                </option>
-
-                <option value="studio">
-                  Garsonieră
-                </option>
-
-                <option value="room">
-                  Cameră
-                </option>
-
-                <option value="house">
-                  Casă
-                </option>
+                <option value="apartment">Apartament</option>
+                <option value="studio">Garsonieră</option>
+                <option value="room">Cameră</option>
+                <option value="house">Casă</option>
               </select>
             </div>
 
@@ -459,9 +835,7 @@ export default function AdaugaProprietatePage() {
               }}
             >
               <div style={fieldStyle}>
-                <label style={labelStyle}>
-                  Oraș
-                </label>
+                <label style={labelStyle}>Oraș</label>
 
                 <input
                   name="city"
@@ -515,9 +889,7 @@ export default function AdaugaProprietatePage() {
               }}
             >
               <div style={fieldStyle}>
-                <label style={labelStyle}>
-                  Camere
-                </label>
+                <label style={labelStyle}>Camere</label>
 
                 <input
                   name="rooms"
@@ -531,9 +903,7 @@ export default function AdaugaProprietatePage() {
               </div>
 
               <div style={fieldStyle}>
-                <label style={labelStyle}>
-                  Dormitoare
-                </label>
+                <label style={labelStyle}>Dormitoare</label>
 
                 <input
                   name="bedrooms"
@@ -547,9 +917,7 @@ export default function AdaugaProprietatePage() {
               </div>
 
               <div style={fieldStyle}>
-                <label style={labelStyle}>
-                  Băi
-                </label>
+                <label style={labelStyle}>Băi</label>
 
                 <input
                   name="bathrooms"
@@ -588,9 +956,7 @@ export default function AdaugaProprietatePage() {
               }}
             >
               <div style={fieldStyle}>
-                <label style={labelStyle}>
-                  Mobilat
-                </label>
+                <label style={labelStyle}>Mobilat</label>
 
                 <select
                   name="furnished"
@@ -598,13 +964,8 @@ export default function AdaugaProprietatePage() {
                   onChange={updateField}
                   style={inputStyle}
                 >
-                  <option value="true">
-                    Da
-                  </option>
-
-                  <option value="false">
-                    Nu
-                  </option>
+                  <option value="true">Da</option>
+                  <option value="false">Nu</option>
                 </select>
               </div>
 
@@ -623,14 +984,8 @@ export default function AdaugaProprietatePage() {
               </div>
             </div>
 
-            <div
-              style={{
-                marginBottom: 0,
-              }}
-            >
-              <label style={labelStyle}>
-                Descriere
-              </label>
+            <div>
+              <label style={labelStyle}>Descriere</label>
 
               <textarea
                 name="description"
@@ -683,9 +1038,7 @@ export default function AdaugaProprietatePage() {
             </p>
 
             <div style={fieldStyle}>
-              <label style={labelStyle}>
-                Nume
-              </label>
+              <label style={labelStyle}>Nume</label>
 
               <input
                 name="owner_name"
@@ -704,14 +1057,8 @@ export default function AdaugaProprietatePage() {
                 gap: "18px",
               }}
             >
-              <div
-                style={{
-                  marginBottom: 0,
-                }}
-              >
-                <label style={labelStyle}>
-                  Telefon
-                </label>
+              <div>
+                <label style={labelStyle}>Telefon</label>
 
                 <input
                   name="owner_phone"
@@ -723,14 +1070,8 @@ export default function AdaugaProprietatePage() {
                 />
               </div>
 
-              <div
-                style={{
-                  marginBottom: 0,
-                }}
-              >
-                <label style={labelStyle}>
-                  Email
-                </label>
+              <div>
+                <label style={labelStyle}>Email</label>
 
                 <input
                   name="owner_email"
@@ -744,7 +1085,7 @@ export default function AdaugaProprietatePage() {
             </div>
           </div>
 
-          {/* ERROR */}
+          {/* MESAJE */}
 
           {error && (
             <div
@@ -762,8 +1103,6 @@ export default function AdaugaProprietatePage() {
               {error}
             </div>
           )}
-
-          {/* SUCCESS */}
 
           {success && (
             <div
@@ -783,7 +1122,7 @@ export default function AdaugaProprietatePage() {
             </div>
           )}
 
-          {/* PUBLISH */}
+          {/* PUBLICARE */}
 
           <div
             style={{
@@ -814,7 +1153,8 @@ export default function AdaugaProprietatePage() {
                   marginTop: "5px",
                 }}
               >
-                Verifică informațiile înainte de publicare.
+                Verifică informațiile și fotografiile înainte de
+                publicare.
               </div>
             </div>
 
