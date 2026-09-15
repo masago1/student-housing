@@ -229,21 +229,13 @@ export default function SearchBox({ universities = [] }) {
           >
             <div
               style={{
-                height: "280px",
-                maxHeight: "280px",
+                maxHeight: "300px",
                 overflowY: "auto",
                 overflowX: "hidden",
                 overscrollBehavior: "contain",
                 WebkitOverflowScrolling: "touch",
                 scrollbarGutter: "stable",
-              }}
-              onWheel={(event) => {
-                event.stopPropagation();
-
-                const container = event.currentTarget;
-
-                container.scrollTop =
-                  container.scrollTop + event.deltaY;
+                scrollBehavior: "smooth",
               }}
             >
               {filteredCities.length > 0 ? (
@@ -274,6 +266,8 @@ export default function SearchBox({ universities = [] }) {
                       color: "#111827",
                       cursor: "pointer",
                       boxSizing: "border-box",
+                      transition:
+                        "background-color 120ms ease",
                     }}
                     onMouseEnter={(event) => {
                       event.currentTarget.style.background = "#f3f4f6";
@@ -377,20 +371,13 @@ export default function SearchBox({ universities = [] }) {
           >
             <div
               style={{
-                maxHeight: "280px",
+                maxHeight: "300px",
                 overflowY: "auto",
                 overflowX: "hidden",
                 overscrollBehavior: "contain",
                 WebkitOverflowScrolling: "touch",
                 scrollbarGutter: "stable",
-              }}
-              onWheel={(event) => {
-                event.stopPropagation();
-
-                const container = event.currentTarget;
-
-                container.scrollTop =
-                  container.scrollTop + event.deltaY;
+                scrollBehavior: "smooth",
               }}
             >
               {filteredUniversities.length > 0 ? (
@@ -416,6 +403,8 @@ export default function SearchBox({ universities = [] }) {
                       fontFamily: "inherit",
                       cursor: "pointer",
                       boxSizing: "border-box",
+                      transition:
+                        "background-color 120ms ease",
                     }}
                     onMouseEnter={(event) => {
                       event.currentTarget.style.background = "#f3f4f6";
@@ -493,6 +482,8 @@ export default function SearchBox({ universities = [] }) {
               ? "pointer"
               : "not-allowed",
           whiteSpace: "nowrap",
+          transition:
+            "background-color 150ms ease, opacity 150ms ease",
         }}
       >
         Vezi chirii
