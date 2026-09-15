@@ -253,7 +253,9 @@ export default function AdaugaProprietatePage() {
     router.refresh();
   };
 
-  const cleanupUploadedFiles = async (paths) => {
+  const cleanupUploadedFiles = async (
+    paths
+  ) => {
     if (!paths.length) return;
 
     await supabase.storage
@@ -273,12 +275,16 @@ export default function AdaugaProprietatePage() {
     }
 
     if (!form.title.trim()) {
-      setError("Completează titlul anunțului.");
+      setError(
+        "Completează titlul anunțului."
+      );
       return;
     }
 
     if (!form.city.trim()) {
-      setError("Alege orașul proprietății.");
+      setError(
+        "Alege orașul proprietății."
+      );
       return;
     }
 
@@ -290,7 +296,9 @@ export default function AdaugaProprietatePage() {
     }
 
     if (!form.address.trim()) {
-      setError("Completează adresa proprietății.");
+      setError(
+        "Completează adresa proprietății."
+      );
       return;
     }
 
@@ -298,7 +306,9 @@ export default function AdaugaProprietatePage() {
       !form.price_monthly ||
       Number(form.price_monthly) <= 0
     ) {
-      setError("Introdu un preț lunar valid.");
+      setError(
+        "Introdu un preț lunar valid."
+      );
       return;
     }
 
@@ -310,7 +320,9 @@ export default function AdaugaProprietatePage() {
     }
 
     if (!form.owner_phone.trim()) {
-      setError("Completează numărul de telefon.");
+      setError(
+        "Completează numărul de telefon."
+      );
       return;
     }
 
@@ -322,7 +334,9 @@ export default function AdaugaProprietatePage() {
     }
 
     if (images.length > 10) {
-      setError("Poți adăuga maximum 10 fotografii.");
+      setError(
+        "Poți adăuga maximum 10 fotografii."
+      );
       return;
     }
 
@@ -414,13 +428,18 @@ export default function AdaugaProprietatePage() {
       const {
         error: universityLinkError,
       } = await supabase
-        .from("listing_universities")
+        .from(
+          "listing_universities"
+        )
         .insert([
           {
             listing_id: listingId,
+
             university_id:
               selectedUniversityId,
+
             distance_meters: null,
+
             walking_minutes: null,
           },
         ]);
@@ -441,6 +460,7 @@ export default function AdaugaProprietatePage() {
         index++
       ) {
         const image = images[index];
+
         const file = image.file;
 
         const extension =
@@ -482,20 +502,27 @@ export default function AdaugaProprietatePage() {
           );
         }
 
-        uploadedPaths.push(storagePath);
+        uploadedPaths.push(
+          storagePath
+        );
 
         const {
           data: publicUrlData,
         } = supabase.storage
           .from("listing-images")
-          .getPublicUrl(storagePath);
+          .getPublicUrl(
+            storagePath
+          );
 
         uploadedImages.push({
           listing_id: listingId,
+
           image_url:
             publicUrlData.publicUrl,
+
           storage_path:
             storagePath,
+
           position: index,
         });
       }
@@ -503,7 +530,8 @@ export default function AdaugaProprietatePage() {
       // SALVĂM POZELE ÎN BAZA DE DATE
 
       const {
-        error: imagesDatabaseError,
+        error:
+          imagesDatabaseError,
       } = await supabase
         .from("listing_images")
         .insert(uploadedImages);
@@ -517,17 +545,22 @@ export default function AdaugaProprietatePage() {
       // PRIMA POZĂ DEVINE COPERTA
 
       const coverImageUrl =
-        uploadedImages[0]?.image_url || null;
+        uploadedImages[0]
+          ?.image_url || null;
 
       const {
         error: coverError,
       } = await supabase
         .from("listings")
         .update({
-          image_url: coverImageUrl,
+          image_url:
+            coverImageUrl,
         })
         .eq("id", listingId)
-        .eq("user_id", user.id);
+        .eq(
+          "user_id",
+          user.id
+        );
 
       if (coverError) {
         throw new Error(
@@ -540,11 +573,16 @@ export default function AdaugaProprietatePage() {
       );
 
       setTimeout(() => {
-        router.push("/dashboard");
+        router.push(
+          "/dashboard"
+        );
+
         router.refresh();
       }, 1000);
     } catch (submitError) {
-      console.error(submitError);
+      console.error(
+        submitError
+      );
 
       await cleanupUploadedFiles(
         uploadedPaths
@@ -554,8 +592,14 @@ export default function AdaugaProprietatePage() {
         await supabase
           .from("listings")
           .delete()
-          .eq("id", listingId)
-          .eq("user_id", user.id);
+          .eq(
+            "id",
+            listingId
+          )
+          .eq(
+            "user_id",
+            user.id
+          );
       }
 
       setError(
@@ -575,7 +619,8 @@ export default function AdaugaProprietatePage() {
           background: "#f7f8fa",
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
+          justifyContent:
+            "center",
           color: "#6b7280",
           fontSize: "15px",
           fontWeight: "600",
@@ -589,7 +634,8 @@ export default function AdaugaProprietatePage() {
   const inputStyle = {
     width: "100%",
     boxSizing: "border-box",
-    border: "1px solid #d1d5db",
+    border:
+      "1px solid #d1d5db",
     borderRadius: "11px",
     padding: "14px 15px",
     fontFamily: "inherit",
@@ -625,10 +671,12 @@ export default function AdaugaProprietatePage() {
         style={{
           height: "72px",
           background: "#ffffff",
-          borderBottom: "1px solid #e5e7eb",
+          borderBottom:
+            "1px solid #e5e7eb",
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent:
+            "space-between",
           padding: "0 7%",
         }}
       >
@@ -664,13 +712,17 @@ export default function AdaugaProprietatePage() {
 
           <button
             type="button"
-            onClick={handleLogout}
+            onClick={
+              handleLogout
+            }
             style={{
               background: "#ffffff",
               color: "#111827",
-              border: "1px solid #e5e7eb",
+              border:
+                "1px solid #e5e7eb",
               borderRadius: "10px",
-              padding: "10px 15px",
+              padding:
+                "10px 15px",
               fontFamily: "inherit",
               fontSize: "13px",
               fontWeight: "700",
@@ -686,7 +738,8 @@ export default function AdaugaProprietatePage() {
         style={{
           maxWidth: "900px",
           margin: "0 auto",
-          padding: "60px 30px 100px",
+          padding:
+            "60px 30px 100px",
         }}
       >
         {/* ÎNAPOI LA DASHBOARD */}
@@ -694,16 +747,21 @@ export default function AdaugaProprietatePage() {
         <button
           type="button"
           onClick={() => {
-            router.push("/dashboard");
+            router.push(
+              "/dashboard"
+            );
           }}
           style={{
-            display: "inline-flex",
+            display:
+              "inline-flex",
             alignItems: "center",
             gap: "8px",
             border: "none",
-            background: "transparent",
+            background:
+              "transparent",
             padding: 0,
-            marginBottom: "28px",
+            marginBottom:
+              "28px",
             color: "#4b5563",
             fontFamily: "inherit",
             fontSize: "14px",
@@ -723,17 +781,27 @@ export default function AdaugaProprietatePage() {
           Înapoi la dashboard
         </button>
 
-        <div style={{ marginBottom: "35px" }}>
+        <div
+          style={{
+            marginBottom:
+              "35px",
+          }}
+        >
           <div
             style={{
-              display: "inline-block",
-              background: "#e8f1ff",
+              display:
+                "inline-block",
+              background:
+                "#e8f1ff",
               color: "#2563eb",
-              padding: "7px 12px",
-              borderRadius: "100px",
+              padding:
+                "7px 12px",
+              borderRadius:
+                "100px",
               fontSize: "13px",
               fontWeight: "700",
-              marginBottom: "16px",
+              marginBottom:
+                "16px",
             }}
           >
             Publică o proprietate
@@ -744,7 +812,8 @@ export default function AdaugaProprietatePage() {
               margin: 0,
               fontSize: "40px",
               lineHeight: "1.15",
-              letterSpacing: "-1.5px",
+              letterSpacing:
+                "-1.5px",
               fontWeight: "800",
             }}
           >
@@ -753,7 +822,8 @@ export default function AdaugaProprietatePage() {
 
           <p
             style={{
-              margin: "13px 0 0",
+              margin:
+                "13px 0 0",
               color: "#6b7280",
               fontSize: "16px",
               lineHeight: "1.6",
@@ -764,25 +834,34 @@ export default function AdaugaProprietatePage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form
+          onSubmit={
+            handleSubmit
+          }
+        >
           {/* FOTOGRAFII */}
 
           <div
             style={{
-              background: "#ffffff",
-              border: "1px solid #e5e7eb",
-              borderRadius: "20px",
+              background:
+                "#ffffff",
+              border:
+                "1px solid #e5e7eb",
+              borderRadius:
+                "20px",
               padding: "32px",
               boxShadow:
                 "0 12px 35px rgba(17,24,39,0.05)",
-              marginBottom: "22px",
+              marginBottom:
+                "22px",
             }}
           >
             <h2
               style={{
                 margin: 0,
                 fontSize: "20px",
-                fontWeight: "800",
+                fontWeight:
+                  "800",
               }}
             >
               Fotografii
@@ -793,7 +872,8 @@ export default function AdaugaProprietatePage() {
                 color: "#6b7280",
                 fontSize: "14px",
                 lineHeight: "1.6",
-                margin: "8px 0 22px",
+                margin:
+                  "8px 0 22px",
               }}
             >
               Adaugă între 1 și 10 fotografii. Prima fotografie va fi coperta anunțului.
@@ -802,23 +882,34 @@ export default function AdaugaProprietatePage() {
             <label
               style={{
                 display: "block",
-                border: "2px dashed #d1d5db",
-                borderRadius: "14px",
-                padding: "28px 20px",
-                textAlign: "center",
+                border:
+                  "2px dashed #d1d5db",
+                borderRadius:
+                  "14px",
+                padding:
+                  "28px 20px",
+                textAlign:
+                  "center",
                 cursor:
-                  images.length >= 10
+                  images.length >=
+                  10
                     ? "not-allowed"
                     : "pointer",
-                background: "#fafafa",
+                background:
+                  "#fafafa",
               }}
             >
               <input
                 type="file"
                 accept="image/*"
                 multiple
-                disabled={images.length >= 10}
-                onChange={handleImages}
+                disabled={
+                  images.length >=
+                  10
+                }
+                onChange={
+                  handleImages
+                }
                 style={{
                   display: "none",
                 }}
@@ -826,152 +917,131 @@ export default function AdaugaProprietatePage() {
 
               <div
                 style={{
-                  fontSize: "15px",
-                  fontWeight: "800",
-                  color: "#111827",
+                  fontSize:
+                    "15px",
+                  fontWeight:
+                    "800",
+                  color:
+                    "#111827",
                 }}
               >
-                {images.length >= 10
+                {images.length >=
+                10
                   ? "Ai adăugat numărul maxim de fotografii"
                   : "Selectează fotografii"}
               </div>
 
               <div
                 style={{
-                  color: "#6b7280",
-                  fontSize: "13px",
-                  marginTop: "7px",
+                  color:
+                    "#6b7280",
+                  fontSize:
+                    "13px",
+                  marginTop:
+                    "7px",
                 }}
               >
                 {images.length}/10 fotografii selectate
               </div>
             </label>
 
-            {images.length > 0 && (
+            {images.length >
+              0 && (
               <div
                 style={{
-                  display: "grid",
+                  display:
+                    "grid",
                   gridTemplateColumns:
                     "repeat(auto-fill, minmax(150px, 1fr))",
                   gap: "14px",
-                  marginTop: "22px",
+                  marginTop:
+                    "22px",
                 }}
               >
-                {images.map((image, index) => (
-                  <div
-                    key={`${image.file.name}-${index}`}
-                    style={{
-                      position: "relative",
-                      borderRadius: "12px",
-                      overflow: "hidden",
-                      background: "#f3f4f6",
-                      aspectRatio: "1 / 1",
-                    }}
-                  >
-                    <img
-                      src={image.preview}
-                      alt={`Fotografie ${index + 1}`}
+                {images.map(
+                  (
+                    image,
+                    index
+                  ) => (
+                    <div
+                      key={`${image.file.name}-${index}`}
                       style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        display: "block",
-                      }}
-                    />
-
-                    {index === 0 && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          left: "8px",
-                          bottom: "8px",
-                          background: "#111827",
-                          color: "#ffffff",
-                          padding: "6px 9px",
-                          borderRadius: "7px",
-                          fontSize: "11px",
-                          fontWeight: "800",
-                        }}
-                      >
-                        Copertă
-                      </div>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        removeImage(index)
-                      }
-                      style={{
-                        position: "absolute",
-                        top: "8px",
-                        right: "8px",
-                        width: "30px",
-                        height: "30px",
-                        border: "none",
-                        borderRadius: "50%",
-                        background: "#ffffff",
-                        color: "#111827",
-                        fontFamily: "inherit",
-                        fontSize: "17px",
-                        fontWeight: "800",
-                        cursor: "pointer",
-                        boxShadow:
-                          "0 2px 8px rgba(0,0,0,0.18)",
+                        position:
+                          "relative",
+                        borderRadius:
+                          "12px",
+                        overflow:
+                          "hidden",
+                        background:
+                          "#f3f4f6",
+                        aspectRatio:
+                          "1 / 1",
                       }}
                     >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-                    {index === 0 && (
-                      <div
+                      <img
+                        src={
+                          image.preview
+                        }
+                        alt={`Fotografie ${index + 1}`}
+                        style={{
+                          width:
+                            "100%",
+                          height:
+                            "100%",
+                          objectFit:
+                            "cover",
+                          display:
+                            "block",
+                        }}
+                        }}
+                      />
+                      
+                      {index === 0 && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            left: "8px",
+                            bottom: "8px",
+                            background: "#111827",
+                            color: "#ffffff",
+                            padding: "6px 9px",
+                            borderRadius: "7px",
+                            fontSize: "11px",
+                            fontWeight: "800",
+                          }}
+                        >
+                          Copertă
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          removeImage(index)
+                        }
                         style={{
                           position: "absolute",
-                          left: "8px",
-                          bottom: "8px",
-                          background: "#111827",
-                          color: "#ffffff",
-                          padding: "6px 9px",
-                          borderRadius: "7px",
-                          fontSize: "11px",
+                          top: "8px",
+                          right: "8px",
+                          width: "30px",
+                          height: "30px",
+                          border: "none",
+                          borderRadius: "50%",
+                          background: "#ffffff",
+                          color: "#111827",
+                          fontFamily: "inherit",
+                          fontSize: "17px",
                           fontWeight: "800",
+                          cursor: "pointer",
+                          boxShadow:
+                            "0 2px 8px rgba(0,0,0,0.18)",
                         }}
                       >
-                        Copertă
-                      </div>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        removeImage(index)
-                      }
-                      style={{
-                        position: "absolute",
-                        top: "8px",
-                        right: "8px",
-                        width: "30px",
-                        height: "30px",
-                        border: "none",
-                        borderRadius: "50%",
-                        background: "#ffffff",
-                        color: "#111827",
-                        fontFamily: "inherit",
-                        fontSize: "17px",
-                        fontWeight: "800",
-                        cursor: "pointer",
-                        boxShadow:
-                          "0 2px 8px rgba(0,0,0,0.18)",
-                      }}
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
+                        ×
+                      </button>
+                    </div>
+                  )
+                )}
               </div>
             )}
           </div>
@@ -1079,17 +1149,14 @@ export default function AdaugaProprietatePage() {
                     ...inputStyle,
                     display: "flex",
                     alignItems: "center",
-                    justifyContent:
-                      "space-between",
+                    justifyContent: "space-between",
                     textAlign: "left",
-                    cursor:
-                      loadingUniversities
-                        ? "wait"
-                        : "pointer",
-                    background:
-                      loadingUniversities
-                        ? "#f9fafb"
-                        : "#ffffff",
+                    cursor: loadingUniversities
+                      ? "wait"
+                      : "pointer",
+                    background: loadingUniversities
+                      ? "#f9fafb"
+                      : "#ffffff",
                   }}
                 >
                   <span
@@ -1101,18 +1168,16 @@ export default function AdaugaProprietatePage() {
                   >
                     {loadingUniversities
                       ? "Se încarcă orașele..."
-                      : form.city ||
-                        "Alege orașul"}
+                      : form.city || "Alege orașul"}
                   </span>
 
                   <span
                     style={{
                       fontSize: "12px",
                       color: "#6b7280",
-                      transform:
-                        cityDropdownOpen
-                          ? "rotate(180deg)"
-                          : "rotate(0deg)",
+                      transform: cityDropdownOpen
+                        ? "rotate(180deg)"
+                        : "rotate(0deg)",
                       transition:
                         "transform 0.15s ease",
                     }}
@@ -1126,13 +1191,11 @@ export default function AdaugaProprietatePage() {
                     <div
                       style={{
                         position: "absolute",
-                        top:
-                          "calc(100% - 15px)",
+                        top: "calc(100% - 15px)",
                         left: 0,
                         right: 0,
                         background: "#ffffff",
-                        border:
-                          "1px solid #d1d5db",
+                        border: "1px solid #d1d5db",
                         borderRadius: "11px",
                         boxShadow:
                           "0 14px 35px rgba(17,24,39,0.14)",
@@ -1144,13 +1207,10 @@ export default function AdaugaProprietatePage() {
                         style={{
                           height: "240px",
                           overflowY: "scroll",
-                          overscrollBehavior:
-                            "contain",
-                          scrollbarGutter:
-                            "stable",
+                          overscrollBehavior: "contain",
+                          scrollbarGutter: "stable",
                           padding: "6px",
-                          boxSizing:
-                            "border-box",
+                          boxSizing: "border-box",
                         }}
                         onWheel={(event) => {
                           event.stopPropagation();
@@ -1161,47 +1221,35 @@ export default function AdaugaProprietatePage() {
                             key={city}
                             type="button"
                             onClick={() =>
-                              handleCitySelect(
-                                city
-                              )
+                              handleCitySelect(city)
                             }
                             style={{
                               width: "100%",
                               display: "block",
                               border: "none",
-                              borderRadius:
-                                "8px",
-                              padding:
-                                "12px 13px",
+                              borderRadius: "8px",
+                              padding: "12px 13px",
                               textAlign: "left",
-                              fontFamily:
-                                "inherit",
+                              fontFamily: "inherit",
                               fontSize: "14px",
                               fontWeight:
-                                form.city ===
-                                city
+                                form.city === city
                                   ? "800"
                                   : "600",
                               color: "#111827",
                               background:
-                                form.city ===
-                                city
+                                form.city === city
                                   ? "#f3f4f6"
                                   : "#ffffff",
                               cursor: "pointer",
                             }}
-                            onMouseEnter={(
-                              event
-                            ) => {
+                            onMouseEnter={(event) => {
                               event.currentTarget.style.background =
                                 "#f3f4f6";
                             }}
-                            onMouseLeave={(
-                              event
-                            ) => {
+                            onMouseLeave={(event) => {
                               event.currentTarget.style.background =
-                                form.city ===
-                                city
+                                form.city === city
                                   ? "#f3f4f6"
                                   : "#ffffff";
                             }}
@@ -1210,15 +1258,12 @@ export default function AdaugaProprietatePage() {
                           </button>
                         ))}
 
-                        {cities.length ===
-                          0 && (
+                        {cities.length === 0 && (
                           <div
                             style={{
                               padding: "14px",
-                              color:
-                                "#6b7280",
-                              fontSize:
-                                "14px",
+                              color: "#6b7280",
+                              fontSize: "14px",
                             }}
                           >
                             Nu există orașe disponibile.
@@ -1249,22 +1294,17 @@ export default function AdaugaProprietatePage() {
                   }
                   style={{
                     ...inputStyle,
-
                     cursor:
                       form.city &&
                       !loadingUniversities
                         ? "pointer"
                         : "not-allowed",
-
                     background:
                       form.city &&
                       !loadingUniversities
                         ? "#ffffff"
                         : "#f9fafb",
-
-                    opacity: form.city
-                      ? 1
-                      : 0.65,
+                    opacity: form.city ? 1 : 0.65,
                   }}
                 >
                   <option value="">
@@ -1292,8 +1332,7 @@ export default function AdaugaProprietatePage() {
             <div
               style={{
                 background: "#eff6ff",
-                border:
-                  "1px solid #dbeafe",
+                border: "1px solid #dbeafe",
                 color: "#1e40af",
                 borderRadius: "11px",
                 padding: "12px 14px",
@@ -1310,8 +1349,7 @@ export default function AdaugaProprietatePage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns:
-                  "1fr 1fr",
+                gridTemplateColumns: "1fr 1fr",
                 gap: "18px",
               }}
             >
@@ -1325,9 +1363,7 @@ export default function AdaugaProprietatePage() {
                   type="number"
                   min="1"
                   step="1"
-                  value={
-                    form.price_monthly
-                  }
+                  value={form.price_monthly}
                   onChange={updateField}
                   placeholder="450"
                   style={inputStyle}
@@ -1427,8 +1463,7 @@ export default function AdaugaProprietatePage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns:
-                  "1fr 1fr",
+                gridTemplateColumns: "1fr 1fr",
                 gap: "18px",
               }}
             >
@@ -1461,9 +1496,7 @@ export default function AdaugaProprietatePage() {
                 <input
                   name="available_from"
                   type="date"
-                  value={
-                    form.available_from
-                  }
+                  value={form.available_from}
                   onChange={updateField}
                   style={inputStyle}
                 />
@@ -1495,8 +1528,7 @@ export default function AdaugaProprietatePage() {
           <div
             style={{
               background: "#ffffff",
-              border:
-                "1px solid #e5e7eb",
+              border: "1px solid #e5e7eb",
               borderRadius: "20px",
               padding: "32px",
               boxShadow:
@@ -1544,8 +1576,7 @@ export default function AdaugaProprietatePage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns:
-                  "1fr 1fr",
+                gridTemplateColumns: "1fr 1fr",
                 gap: "18px",
               }}
             >
@@ -1587,8 +1618,7 @@ export default function AdaugaProprietatePage() {
             <div
               style={{
                 background: "#fef2f2",
-                border:
-                  "1px solid #fecaca",
+                border: "1px solid #fecaca",
                 color: "#b91c1c",
                 borderRadius: "12px",
                 padding: "14px 16px",
@@ -1605,8 +1635,7 @@ export default function AdaugaProprietatePage() {
             <div
               style={{
                 background: "#f0fdf4",
-                border:
-                  "1px solid #bbf7d0",
+                border: "1px solid #bbf7d0",
                 color: "#166534",
                 borderRadius: "12px",
                 padding: "14px 16px",
@@ -1625,13 +1654,11 @@ export default function AdaugaProprietatePage() {
           <div
             style={{
               background: "#ffffff",
-              border:
-                "1px solid #e5e7eb",
+              border: "1px solid #e5e7eb",
               borderRadius: "18px",
               padding: "22px",
               display: "flex",
-              justifyContent:
-                "space-between",
+              justifyContent: "space-between",
               alignItems: "center",
               gap: "20px",
             }}
@@ -1665,23 +1692,16 @@ export default function AdaugaProprietatePage() {
                 border: "none",
                 borderRadius: "11px",
                 padding: "14px 24px",
-
                 background: publishing
                   ? "#374151"
                   : "#111827",
-
                 color: "#ffffff",
-
                 fontFamily: "inherit",
-
                 fontSize: "14px",
-
                 fontWeight: "800",
-
                 cursor: publishing
                   ? "not-allowed"
                   : "pointer",
-
                 whiteSpace: "nowrap",
               }}
             >
