@@ -253,9 +253,7 @@ export default function AdaugaProprietatePage() {
     router.refresh();
   };
 
-  const cleanupUploadedFiles = async (
-    paths
-  ) => {
+  const cleanupUploadedFiles = async (paths) => {
     if (!paths.length) return;
 
     await supabase.storage
@@ -275,16 +273,12 @@ export default function AdaugaProprietatePage() {
     }
 
     if (!form.title.trim()) {
-      setError(
-        "Completează titlul anunțului."
-      );
+      setError("Completează titlul anunțului.");
       return;
     }
 
     if (!form.city.trim()) {
-      setError(
-        "Alege orașul proprietății."
-      );
+      setError("Alege orașul proprietății.");
       return;
     }
 
@@ -296,9 +290,7 @@ export default function AdaugaProprietatePage() {
     }
 
     if (!form.address.trim()) {
-      setError(
-        "Completează adresa proprietății."
-      );
+      setError("Completează adresa proprietății.");
       return;
     }
 
@@ -306,9 +298,7 @@ export default function AdaugaProprietatePage() {
       !form.price_monthly ||
       Number(form.price_monthly) <= 0
     ) {
-      setError(
-        "Introdu un preț lunar valid."
-      );
+      setError("Introdu un preț lunar valid.");
       return;
     }
 
@@ -320,9 +310,7 @@ export default function AdaugaProprietatePage() {
     }
 
     if (!form.owner_phone.trim()) {
-      setError(
-        "Completează numărul de telefon."
-      );
+      setError("Completează numărul de telefon.");
       return;
     }
 
@@ -334,9 +322,7 @@ export default function AdaugaProprietatePage() {
     }
 
     if (images.length > 10) {
-      setError(
-        "Poți adăuga maximum 10 fotografii."
-      );
+      setError("Poți adăuga maximum 10 fotografii.");
       return;
     }
 
@@ -428,18 +414,13 @@ export default function AdaugaProprietatePage() {
       const {
         error: universityLinkError,
       } = await supabase
-        .from(
-          "listing_universities"
-        )
+        .from("listing_universities")
         .insert([
           {
             listing_id: listingId,
-
             university_id:
               selectedUniversityId,
-
             distance_meters: null,
-
             walking_minutes: null,
           },
         ]);
@@ -460,7 +441,6 @@ export default function AdaugaProprietatePage() {
         index++
       ) {
         const image = images[index];
-
         const file = image.file;
 
         const extension =
@@ -502,27 +482,20 @@ export default function AdaugaProprietatePage() {
           );
         }
 
-        uploadedPaths.push(
-          storagePath
-        );
+        uploadedPaths.push(storagePath);
 
         const {
           data: publicUrlData,
         } = supabase.storage
           .from("listing-images")
-          .getPublicUrl(
-            storagePath
-          );
+          .getPublicUrl(storagePath);
 
         uploadedImages.push({
           listing_id: listingId,
-
           image_url:
             publicUrlData.publicUrl,
-
           storage_path:
             storagePath,
-
           position: index,
         });
       }
@@ -530,8 +503,7 @@ export default function AdaugaProprietatePage() {
       // SALVĂM POZELE ÎN BAZA DE DATE
 
       const {
-        error:
-          imagesDatabaseError,
+        error: imagesDatabaseError,
       } = await supabase
         .from("listing_images")
         .insert(uploadedImages);
@@ -545,22 +517,17 @@ export default function AdaugaProprietatePage() {
       // PRIMA POZĂ DEVINE COPERTA
 
       const coverImageUrl =
-        uploadedImages[0]
-          ?.image_url || null;
+        uploadedImages[0]?.image_url || null;
 
       const {
         error: coverError,
       } = await supabase
         .from("listings")
         .update({
-          image_url:
-            coverImageUrl,
+          image_url: coverImageUrl,
         })
         .eq("id", listingId)
-        .eq(
-          "user_id",
-          user.id
-        );
+        .eq("user_id", user.id);
 
       if (coverError) {
         throw new Error(
@@ -573,16 +540,11 @@ export default function AdaugaProprietatePage() {
       );
 
       setTimeout(() => {
-        router.push(
-          "/dashboard"
-        );
-
+        router.push("/dashboard");
         router.refresh();
       }, 1000);
     } catch (submitError) {
-      console.error(
-        submitError
-      );
+      console.error(submitError);
 
       await cleanupUploadedFiles(
         uploadedPaths
@@ -592,14 +554,8 @@ export default function AdaugaProprietatePage() {
         await supabase
           .from("listings")
           .delete()
-          .eq(
-            "id",
-            listingId
-          )
-          .eq(
-            "user_id",
-            user.id
-          );
+          .eq("id", listingId)
+          .eq("user_id", user.id);
       }
 
       setError(
@@ -619,8 +575,7 @@ export default function AdaugaProprietatePage() {
           background: "#f7f8fa",
           display: "flex",
           alignItems: "center",
-          justifyContent:
-            "center",
+          justifyContent: "center",
           color: "#6b7280",
           fontSize: "15px",
           fontWeight: "600",
@@ -634,8 +589,7 @@ export default function AdaugaProprietatePage() {
   const inputStyle = {
     width: "100%",
     boxSizing: "border-box",
-    border:
-      "1px solid #d1d5db",
+    border: "1px solid #d1d5db",
     borderRadius: "11px",
     padding: "14px 15px",
     fontFamily: "inherit",
@@ -671,12 +625,10 @@ export default function AdaugaProprietatePage() {
         style={{
           height: "72px",
           background: "#ffffff",
-          borderBottom:
-            "1px solid #e5e7eb",
+          borderBottom: "1px solid #e5e7eb",
           display: "flex",
           alignItems: "center",
-          justifyContent:
-            "space-between",
+          justifyContent: "space-between",
           padding: "0 7%",
         }}
       >
@@ -712,17 +664,13 @@ export default function AdaugaProprietatePage() {
 
           <button
             type="button"
-            onClick={
-              handleLogout
-            }
+            onClick={handleLogout}
             style={{
               background: "#ffffff",
               color: "#111827",
-              border:
-                "1px solid #e5e7eb",
+              border: "1px solid #e5e7eb",
               borderRadius: "10px",
-              padding:
-                "10px 15px",
+              padding: "10px 15px",
               fontFamily: "inherit",
               fontSize: "13px",
               fontWeight: "700",
@@ -738,8 +686,7 @@ export default function AdaugaProprietatePage() {
         style={{
           maxWidth: "900px",
           margin: "0 auto",
-          padding:
-            "60px 30px 100px",
+          padding: "60px 30px 100px",
         }}
       >
         {/* ÎNAPOI LA DASHBOARD */}
@@ -747,21 +694,16 @@ export default function AdaugaProprietatePage() {
         <button
           type="button"
           onClick={() => {
-            router.push(
-              "/dashboard"
-            );
+            router.push("/dashboard");
           }}
           style={{
-            display:
-              "inline-flex",
+            display: "inline-flex",
             alignItems: "center",
             gap: "8px",
             border: "none",
-            background:
-              "transparent",
+            background: "transparent",
             padding: 0,
-            marginBottom:
-              "28px",
+            marginBottom: "28px",
             color: "#4b5563",
             fontFamily: "inherit",
             fontSize: "14px",
@@ -781,27 +723,17 @@ export default function AdaugaProprietatePage() {
           Înapoi la dashboard
         </button>
 
-        <div
-          style={{
-            marginBottom:
-              "35px",
-          }}
-        >
+        <div style={{ marginBottom: "35px" }}>
           <div
             style={{
-              display:
-                "inline-block",
-              background:
-                "#e8f1ff",
+              display: "inline-block",
+              background: "#e8f1ff",
               color: "#2563eb",
-              padding:
-                "7px 12px",
-              borderRadius:
-                "100px",
+              padding: "7px 12px",
+              borderRadius: "100px",
               fontSize: "13px",
               fontWeight: "700",
-              marginBottom:
-                "16px",
+              marginBottom: "16px",
             }}
           >
             Publică o proprietate
@@ -812,8 +744,7 @@ export default function AdaugaProprietatePage() {
               margin: 0,
               fontSize: "40px",
               lineHeight: "1.15",
-              letterSpacing:
-                "-1.5px",
+              letterSpacing: "-1.5px",
               fontWeight: "800",
             }}
           >
@@ -822,8 +753,7 @@ export default function AdaugaProprietatePage() {
 
           <p
             style={{
-              margin:
-                "13px 0 0",
+              margin: "13px 0 0",
               color: "#6b7280",
               fontSize: "16px",
               lineHeight: "1.6",
@@ -834,34 +764,25 @@ export default function AdaugaProprietatePage() {
           </p>
         </div>
 
-        <form
-          onSubmit={
-            handleSubmit
-          }
-        >
+        <form onSubmit={handleSubmit}>
           {/* FOTOGRAFII */}
 
           <div
             style={{
-              background:
-                "#ffffff",
-              border:
-                "1px solid #e5e7eb",
-              borderRadius:
-                "20px",
+              background: "#ffffff",
+              border: "1px solid #e5e7eb",
+              borderRadius: "20px",
               padding: "32px",
               boxShadow:
                 "0 12px 35px rgba(17,24,39,0.05)",
-              marginBottom:
-                "22px",
+              marginBottom: "22px",
             }}
           >
             <h2
               style={{
                 margin: 0,
                 fontSize: "20px",
-                fontWeight:
-                  "800",
+                fontWeight: "800",
               }}
             >
               Fotografii
@@ -872,8 +793,7 @@ export default function AdaugaProprietatePage() {
                 color: "#6b7280",
                 fontSize: "14px",
                 lineHeight: "1.6",
-                margin:
-                  "8px 0 22px",
+                margin: "8px 0 22px",
               }}
             >
               Adaugă între 1 și 10 fotografii. Prima fotografie va fi coperta anunțului.
@@ -882,34 +802,23 @@ export default function AdaugaProprietatePage() {
             <label
               style={{
                 display: "block",
-                border:
-                  "2px dashed #d1d5db",
-                borderRadius:
-                  "14px",
-                padding:
-                  "28px 20px",
-                textAlign:
-                  "center",
+                border: "2px dashed #d1d5db",
+                borderRadius: "14px",
+                padding: "28px 20px",
+                textAlign: "center",
                 cursor:
-                  images.length >=
-                  10
+                  images.length >= 10
                     ? "not-allowed"
                     : "pointer",
-                background:
-                  "#fafafa",
+                background: "#fafafa",
               }}
             >
               <input
                 type="file"
                 accept="image/*"
                 multiple
-                disabled={
-                  images.length >=
-                  10
-                }
-                onChange={
-                  handleImages
-                }
+                disabled={images.length >= 10}
+                onChange={handleImages}
                 style={{
                   display: "none",
                 }}
@@ -917,154 +826,152 @@ export default function AdaugaProprietatePage() {
 
               <div
                 style={{
-                  fontSize:
-                    "15px",
-                  fontWeight:
-                    "800",
-                  color:
-                    "#111827",
+                  fontSize: "15px",
+                  fontWeight: "800",
+                  color: "#111827",
                 }}
               >
-                {images.length >=
-                10
+                {images.length >= 10
                   ? "Ai adăugat numărul maxim de fotografii"
                   : "Selectează fotografii"}
               </div>
 
               <div
                 style={{
-                  color:
-                    "#6b7280",
-                  fontSize:
-                    "13px",
-                  marginTop:
-                    "7px",
+                  color: "#6b7280",
+                  fontSize: "13px",
+                  marginTop: "7px",
                 }}
               >
                 {images.length}/10 fotografii selectate
               </div>
             </label>
 
-            {images.length >
-              0 && (
+            {images.length > 0 && (
               <div
                 style={{
-                  display:
-                    "grid",
+                  display: "grid",
                   gridTemplateColumns:
                     "repeat(auto-fill, minmax(150px, 1fr))",
                   gap: "14px",
-                  marginTop:
-                    "22px",
+                  marginTop: "22px",
                 }}
               >
-                {images.map(
-                  (
-                    image,
-                    index
-                  ) => (
-                    <div
-                      key={`${image.file.name}-${index}`}
+                {images.map((image, index) => (
+                  <div
+                    key={`${image.file.name}-${index}`}
+                    style={{
+                      position: "relative",
+                      borderRadius: "12px",
+                      overflow: "hidden",
+                      background: "#f3f4f6",
+                      aspectRatio: "1 / 1",
+                    }}
+                  >
+                    <img
+                      src={image.preview}
+                      alt={`Fotografie ${index + 1}`}
                       style={{
-                        position:
-                          "relative",
-                        borderRadius:
-                          "12px",
-                        overflow:
-                          "hidden",
-                        background:
-                          "#f3f4f6",
-                        aspectRatio:
-                          "1 / 1",
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        display: "block",
                       }}
-                    >
-                      <img
-                        src={
-                          image.preview
-                        }
-                        alt={`Fotografie ${index + 1}`}
-                        style={{
-                          width:
-                            "100%",
-                          height:
-                            "100%",
-                          objectFit:
-                            "cover",
-                          display:
-                            "block",
-                        }}
-                      />
+                    />
 
-                      {index ===
-                        0 && (
-                        <div
-                          style={{
-                            position:
-                              "absolute",
-                            left:
-                              "8px",
-                            bottom:
-                              "8px",
-                            background:
-                              "#111827",
-                            color:
-                              "#ffffff",
-                            padding:
-                              "6px 9px",
-                            borderRadius:
-                              "7px",
-                            fontSize:
-                              "11px",
-                            fontWeight:
-                              "800",
-                          }}
-                        >
-                          Copertă
-                        </div>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          removeImage(
-                            index
-                          )
-                        }
+                    {index === 0 && (
+                      <div
                         style={{
-                          position:
-                            "absolute",
-                          top: "8px",
-                          right:
-                            "8px",
-                          width:
-                            "30px",
-                          height:
-                            "30px",
-                          border:
-                            "none",
-                          borderRadius:
-                            "50%",
-                          background:
-                            "#ffffff",
-                          color:
-                            "#111827",
-                          fontFamily:
-                            "inherit",
-                          fontSize:
-                            "17px",
-                          fontWeight:
-                            "800",
-                          cursor:
-                            "pointer",
-                          boxShadow:
-                            "0 2px 8px rgba(0,0,0,0.18)",
+                          position: "absolute",
+                          left: "8px",
+                          bottom: "8px",
+                          background: "#111827",
+                          color: "#ffffff",
+                          padding: "6px 9px",
+                          borderRadius: "7px",
+                          fontSize: "11px",
+                          fontWeight: "800",
                         }}
                       >
-                        ×
-                      </button>
-                    </div>
-                  )
-                )}
+                        Copertă
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        removeImage(index)
+                      }
+                      style={{
+                        position: "absolute",
+                        top: "8px",
+                        right: "8px",
+                        width: "30px",
+                        height: "30px",
+                        border: "none",
+                        borderRadius: "50%",
+                        background: "#ffffff",
+                        color: "#111827",
+                        fontFamily: "inherit",
+                        fontSize: "17px",
+                        fontWeight: "800",
+                        cursor: "pointer",
+                        boxShadow:
+                          "0 2px 8px rgba(0,0,0,0.18)",
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+                    {index === 0 && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: "8px",
+                          bottom: "8px",
+                          background: "#111827",
+                          color: "#ffffff",
+                          padding: "6px 9px",
+                          borderRadius: "7px",
+                          fontSize: "11px",
+                          fontWeight: "800",
+                        }}
+                      >
+                        Copertă
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        removeImage(index)
+                      }
+                      style={{
+                        position: "absolute",
+                        top: "8px",
+                        right: "8px",
+                        width: "30px",
+                        height: "30px",
+                        border: "none",
+                        borderRadius: "50%",
+                        background: "#ffffff",
+                        color: "#111827",
+                        fontFamily: "inherit",
+                        fontSize: "17px",
+                        fontWeight: "800",
+                        cursor: "pointer",
+                        boxShadow:
+                          "0 2px 8px rgba(0,0,0,0.18)",
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -1073,84 +980,50 @@ export default function AdaugaProprietatePage() {
 
           <div
             style={{
-              background:
-                "#ffffff",
-              border:
-                "1px solid #e5e7eb",
-              borderRadius:
-                "20px",
+              background: "#ffffff",
+              border: "1px solid #e5e7eb",
+              borderRadius: "20px",
               padding: "32px",
               boxShadow:
                 "0 12px 35px rgba(17,24,39,0.05)",
-              marginBottom:
-                "22px",
+              marginBottom: "22px",
             }}
           >
             <h2
               style={{
-                margin:
-                  "0 0 27px",
+                margin: "0 0 27px",
                 fontSize: "20px",
-                fontWeight:
-                  "800",
+                fontWeight: "800",
               }}
             >
               Detalii proprietate
             </h2>
 
-            <div
-              style={
-                fieldStyle
-              }
-            >
-              <label
-                style={
-                  labelStyle
-                }
-              >
+            <div style={fieldStyle}>
+              <label style={labelStyle}>
                 Titlul anunțului
               </label>
 
               <input
                 name="title"
                 type="text"
-                value={
-                  form.title
-                }
-                onChange={
-                  updateField
-                }
+                value={form.title}
+                onChange={updateField}
                 placeholder="Ex: Apartament 2 camere aproape de UMFT"
-                style={
-                  inputStyle
-                }
+                style={inputStyle}
               />
             </div>
 
-            <div
-              style={
-                fieldStyle
-              }
-            >
-              <label
-                style={
-                  labelStyle
-                }
-              >
+            <div style={fieldStyle}>
+              <label style={labelStyle}>
                 Tipul proprietății
               </label>
 
               <select
                 name="property_type"
-                value={
-                  form.property_type
-                }
-                onChange={
-                  updateField
-                }
-                style={
-                  inputStyle
-                }
+                value={form.property_type}
+                onChange={updateField}
+                style={inputStyle}
               >
                 <option value="apartment">
                   Apartament
@@ -1175,8 +1048,7 @@ export default function AdaugaProprietatePage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns:
-                  "1fr 1fr",
+                gridTemplateColumns: "1fr 1fr",
                 gap: "18px",
               }}
             >
@@ -1185,45 +1057,31 @@ export default function AdaugaProprietatePage() {
               <div
                 style={{
                   ...fieldStyle,
-                  position:
-                    "relative",
+                  position: "relative",
                   zIndex: 30,
                 }}
               >
-                <label
-                  style={
-                    labelStyle
-                  }
-                >
+                <label style={labelStyle}>
                   Oraș
                 </label>
 
                 <button
                   type="button"
-                  disabled={
-                    loadingUniversities
-                  }
+                  disabled={loadingUniversities}
                   onClick={() => {
-                    if (
-                      !loadingUniversities
-                    ) {
+                    if (!loadingUniversities) {
                       setCityDropdownOpen(
-                        (
-                          current
-                        ) =>
-                          !current
+                        (current) => !current
                       );
                     }
                   }}
                   style={{
                     ...inputStyle,
                     display: "flex",
-                    alignItems:
-                      "center",
+                    alignItems: "center",
                     justifyContent:
                       "space-between",
-                    textAlign:
-                      "left",
+                    textAlign: "left",
                     cursor:
                       loadingUniversities
                         ? "wait"
@@ -1236,10 +1094,9 @@ export default function AdaugaProprietatePage() {
                 >
                   <span
                     style={{
-                      color:
-                        form.city
-                          ? "#111827"
-                          : "#6b7280",
+                      color: form.city
+                        ? "#111827"
+                        : "#6b7280",
                     }}
                   >
                     {loadingUniversities
@@ -1250,10 +1107,8 @@ export default function AdaugaProprietatePage() {
 
                   <span
                     style={{
-                      fontSize:
-                        "12px",
-                      color:
-                        "#6b7280",
+                      fontSize: "12px",
+                      color: "#6b7280",
                       transform:
                         cityDropdownOpen
                           ? "rotate(180deg)"
@@ -1270,112 +1125,96 @@ export default function AdaugaProprietatePage() {
                   !loadingUniversities && (
                     <div
                       style={{
-                        position:
-                          "absolute",
+                        position: "absolute",
                         top:
                           "calc(100% - 15px)",
                         left: 0,
                         right: 0,
-                        background:
-                          "#ffffff",
+                        background: "#ffffff",
                         border:
                           "1px solid #d1d5db",
-                        borderRadius:
-                          "11px",
+                        borderRadius: "11px",
                         boxShadow:
                           "0 14px 35px rgba(17,24,39,0.14)",
-                        overflow:
-                          "hidden",
+                        overflow: "hidden",
                         zIndex: 100,
                       }}
                     >
                       <div
                         style={{
-                          maxHeight:
-                            "240px",
-                          overflowY:
-                            "auto",
+                          height: "240px",
+                          overflowY: "scroll",
                           overscrollBehavior:
                             "contain",
-                          padding:
-                            "6px",
+                          scrollbarGutter:
+                            "stable",
+                          padding: "6px",
+                          boxSizing:
+                            "border-box",
+                        }}
+                        onWheel={(event) => {
+                          event.stopPropagation();
                         }}
                       >
-                        {cities.map(
-                          (
-                            city
-                          ) => (
-                            <button
-                              key={
+                        {cities.map((city) => (
+                          <button
+                            key={city}
+                            type="button"
+                            onClick={() =>
+                              handleCitySelect(
                                 city
-                              }
-                              type="button"
-                              onClick={() =>
-                                handleCitySelect(
-                                  city
-                                )
-                              }
-                              style={{
-                                width:
-                                  "100%",
-                                display:
-                                  "block",
-                                border:
-                                  "none",
-                                borderRadius:
-                                  "8px",
-                                padding:
-                                  "12px 13px",
-                                textAlign:
-                                  "left",
-                                fontFamily:
-                                  "inherit",
-                                fontSize:
-                                  "14px",
-                                fontWeight:
-                                  form.city ===
-                                  city
-                                    ? "800"
-                                    : "600",
-                                color:
-                                  "#111827",
-                                background:
-                                  form.city ===
-                                  city
-                                    ? "#f3f4f6"
-                                    : "#ffffff",
-                                cursor:
-                                  "pointer",
-                              }}
-                              onMouseEnter={(
-                                event
-                              ) => {
-                                event.currentTarget.style.background =
-                                  "#f3f4f6";
-                              }}
-                              onMouseLeave={(
-                                event
-                              ) => {
-                                event.currentTarget.style.background =
-                                  form.city ===
-                                  city
-                                    ? "#f3f4f6"
-                                    : "#ffffff";
-                              }}
-                            >
-                              {
+                              )
+                            }
+                            style={{
+                              width: "100%",
+                              display: "block",
+                              border: "none",
+                              borderRadius:
+                                "8px",
+                              padding:
+                                "12px 13px",
+                              textAlign: "left",
+                              fontFamily:
+                                "inherit",
+                              fontSize: "14px",
+                              fontWeight:
+                                form.city ===
                                 city
-                              }
-                            </button>
-                          )
-                        )}
+                                  ? "800"
+                                  : "600",
+                              color: "#111827",
+                              background:
+                                form.city ===
+                                city
+                                  ? "#f3f4f6"
+                                  : "#ffffff",
+                              cursor: "pointer",
+                            }}
+                            onMouseEnter={(
+                              event
+                            ) => {
+                              event.currentTarget.style.background =
+                                "#f3f4f6";
+                            }}
+                            onMouseLeave={(
+                              event
+                            ) => {
+                              event.currentTarget.style.background =
+                                form.city ===
+                                city
+                                  ? "#f3f4f6"
+                                  : "#ffffff";
+                            }}
+                          >
+                            {city}
+                          </button>
+                        ))}
 
                         {cities.length ===
                           0 && (
                           <div
                             style={{
-                              padding:
-                                "14px",
+                              padding: "14px",
                               color:
                                 "#6b7280",
                               fontSize:
@@ -1392,29 +1231,16 @@ export default function AdaugaProprietatePage() {
 
               {/* UNIVERSITATE */}
 
-              <div
-                style={
-                  fieldStyle
-                }
-              >
-                <label
-                  style={
-                    labelStyle
-                  }
-                >
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
                   Universitate apropiată
                 </label>
 
                 <select
-                  value={
-                    selectedUniversityId
-                  }
-                  onChange={(
-                    event
-                  ) =>
+                  value={selectedUniversityId}
+                  onChange={(event) =>
                     setSelectedUniversityId(
-                      event.target
-                        .value
+                      event.target.value
                     )
                   }
                   disabled={
@@ -1436,10 +1262,9 @@ export default function AdaugaProprietatePage() {
                         ? "#ffffff"
                         : "#f9fafb",
 
-                    opacity:
-                      form.city
-                        ? 1
-                        : 0.65,
+                    opacity: form.city
+                      ? 1
+                      : 0.65,
                   }}
                 >
                   <option value="">
@@ -1449,16 +1274,10 @@ export default function AdaugaProprietatePage() {
                   </option>
 
                   {universitiesForCity.map(
-                    (
-                      university
-                    ) => (
+                    (university) => (
                       <option
-                        key={
-                          university.id
-                        }
-                        value={
-                          university.id
-                        }
+                        key={university.id}
+                        value={university.id}
                       >
                         {university.short_name
                           ? `${university.short_name} — ${university.name}`
@@ -1472,22 +1291,15 @@ export default function AdaugaProprietatePage() {
 
             <div
               style={{
-                background:
-                  "#eff6ff",
+                background: "#eff6ff",
                 border:
                   "1px solid #dbeafe",
-                color:
-                  "#1e40af",
-                borderRadius:
-                  "11px",
-                padding:
-                  "12px 14px",
-                fontSize:
-                  "13px",
-                lineHeight:
-                  "1.5",
-                marginBottom:
-                  "22px",
+                color: "#1e40af",
+                borderRadius: "11px",
+                padding: "12px 14px",
+                fontSize: "13px",
+                lineHeight: "1.5",
+                marginBottom: "22px",
               }}
             >
               Alege universitatea cea mai relevantă pentru această proprietate.
@@ -1503,16 +1315,8 @@ export default function AdaugaProprietatePage() {
                 gap: "18px",
               }}
             >
-              <div
-                style={
-                  fieldStyle
-                }
-              >
-                <label
-                  style={
-                    labelStyle
-                  }
-                >
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
                   Preț / lună (€)
                 </label>
 
@@ -1524,42 +1328,24 @@ export default function AdaugaProprietatePage() {
                   value={
                     form.price_monthly
                   }
-                  onChange={
-                    updateField
-                  }
+                  onChange={updateField}
                   placeholder="450"
-                  style={
-                    inputStyle
-                  }
+                  style={inputStyle}
                 />
               </div>
 
-              <div
-                style={
-                  fieldStyle
-                }
-              >
-                <label
-                  style={
-                    labelStyle
-                  }
-                >
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
                   Adresa proprietății
                 </label>
 
                 <input
                   name="address"
                   type="text"
-                  value={
-                    form.address
-                  }
-                  onChange={
-                    updateField
-                  }
+                  value={form.address}
+                  onChange={updateField}
                   placeholder="Strada, număr"
-                  style={
-                    inputStyle
-                  }
+                  style={inputStyle}
                 />
               </div>
             </div>
@@ -1572,16 +1358,8 @@ export default function AdaugaProprietatePage() {
                 gap: "18px",
               }}
             >
-              <div
-                style={
-                  fieldStyle
-                }
-              >
-                <label
-                  style={
-                    labelStyle
-                  }
-                >
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
                   Camere
                 </label>
 
@@ -1589,29 +1367,15 @@ export default function AdaugaProprietatePage() {
                   name="rooms"
                   type="number"
                   min="1"
-                  value={
-                    form.rooms
-                  }
-                  onChange={
-                    updateField
-                  }
+                  value={form.rooms}
+                  onChange={updateField}
                   placeholder="2"
-                  style={
-                    inputStyle
-                  }
+                  style={inputStyle}
                 />
               </div>
 
-              <div
-                style={
-                  fieldStyle
-                }
-              >
-                <label
-                  style={
-                    labelStyle
-                  }
-                >
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
                   Dormitoare
                 </label>
 
@@ -1619,29 +1383,15 @@ export default function AdaugaProprietatePage() {
                   name="bedrooms"
                   type="number"
                   min="0"
-                  value={
-                    form.bedrooms
-                  }
-                  onChange={
-                    updateField
-                  }
+                  value={form.bedrooms}
+                  onChange={updateField}
                   placeholder="1"
-                  style={
-                    inputStyle
-                  }
+                  style={inputStyle}
                 />
               </div>
 
-              <div
-                style={
-                  fieldStyle
-                }
-              >
-                <label
-                  style={
-                    labelStyle
-                  }
-                >
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
                   Băi
                 </label>
 
@@ -1649,29 +1399,15 @@ export default function AdaugaProprietatePage() {
                   name="bathrooms"
                   type="number"
                   min="0"
-                  value={
-                    form.bathrooms
-                  }
-                  onChange={
-                    updateField
-                  }
+                  value={form.bathrooms}
+                  onChange={updateField}
                   placeholder="1"
-                  style={
-                    inputStyle
-                  }
+                  style={inputStyle}
                 />
               </div>
 
-              <div
-                style={
-                  fieldStyle
-                }
-              >
-                <label
-                  style={
-                    labelStyle
-                  }
-                >
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
                   Suprafață (m²)
                 </label>
 
@@ -1680,16 +1416,10 @@ export default function AdaugaProprietatePage() {
                   type="number"
                   min="1"
                   step="0.1"
-                  value={
-                    form.surface_m2
-                  }
-                  onChange={
-                    updateField
-                  }
+                  value={form.surface_m2}
+                  onChange={updateField}
                   placeholder="55"
-                  style={
-                    inputStyle
-                  }
+                  style={inputStyle}
                 />
               </div>
             </div>
@@ -1702,30 +1432,16 @@ export default function AdaugaProprietatePage() {
                 gap: "18px",
               }}
             >
-              <div
-                style={
-                  fieldStyle
-                }
-              >
-                <label
-                  style={
-                    labelStyle
-                  }
-                >
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
                   Mobilat
                 </label>
 
                 <select
                   name="furnished"
-                  value={
-                    form.furnished
-                  }
-                  onChange={
-                    updateField
-                  }
-                  style={
-                    inputStyle
-                  }
+                  value={form.furnished}
+                  onChange={updateField}
+                  style={inputStyle}
                 >
                   <option value="true">
                     Da
@@ -1737,16 +1453,8 @@ export default function AdaugaProprietatePage() {
                 </select>
               </div>
 
-              <div
-                style={
-                  fieldStyle
-                }
-              >
-                <label
-                  style={
-                    labelStyle
-                  }
-                >
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
                   Disponibil de la
                 </label>
 
@@ -1756,41 +1464,27 @@ export default function AdaugaProprietatePage() {
                   value={
                     form.available_from
                   }
-                  onChange={
-                    updateField
-                  }
-                  style={
-                    inputStyle
-                  }
+                  onChange={updateField}
+                  style={inputStyle}
                 />
               </div>
             </div>
 
             <div>
-              <label
-                style={
-                  labelStyle
-                }
-              >
+              <label style={labelStyle}>
                 Descriere
               </label>
 
               <textarea
                 name="description"
-                value={
-                  form.description
-                }
-                onChange={
-                  updateField
-                }
+                value={form.description}
+                onChange={updateField}
                 placeholder="Descrie proprietatea, zona, facilitățile și alte informații utile..."
                 rows={7}
                 style={{
                   ...inputStyle,
-                  resize:
-                    "vertical",
-                  lineHeight:
-                    "1.6",
+                  resize: "vertical",
+                  lineHeight: "1.6",
                 }}
               />
             </div>
@@ -1800,27 +1494,21 @@ export default function AdaugaProprietatePage() {
 
           <div
             style={{
-              background:
-                "#ffffff",
+              background: "#ffffff",
               border:
                 "1px solid #e5e7eb",
-              borderRadius:
-                "20px",
+              borderRadius: "20px",
               padding: "32px",
               boxShadow:
                 "0 12px 35px rgba(17,24,39,0.05)",
-              marginBottom:
-                "22px",
+              marginBottom: "22px",
             }}
           >
             <h2
               style={{
-                margin:
-                  "0 0 8px",
-                fontSize:
-                  "20px",
-                fontWeight:
-                  "800",
+                margin: "0 0 8px",
+                fontSize: "20px",
+                fontWeight: "800",
               }}
             >
               Date de contact
@@ -1828,105 +1516,66 @@ export default function AdaugaProprietatePage() {
 
             <p
               style={{
-                margin:
-                  "0 0 27px",
-                color:
-                  "#6b7280",
-                fontSize:
-                  "14px",
-                lineHeight:
-                  "1.6",
+                margin: "0 0 27px",
+                color: "#6b7280",
+                fontSize: "14px",
+                lineHeight: "1.6",
               }}
             >
               Aceste informații vor permite persoanelor interesate să contacteze
               proprietarul.
             </p>
 
-            <div
-              style={
-                fieldStyle
-              }
-            >
-              <label
-                style={
-                  labelStyle
-                }
-              >
+            <div style={fieldStyle}>
+              <label style={labelStyle}>
                 Nume
               </label>
 
               <input
                 name="owner_name"
                 type="text"
-                value={
-                  form.owner_name
-                }
-                onChange={
-                  updateField
-                }
+                value={form.owner_name}
+                onChange={updateField}
                 placeholder="Numele proprietarului"
-                style={
-                  inputStyle
-                }
+                style={inputStyle}
               />
             </div>
 
             <div
               style={{
-                display:
-                  "grid",
+                display: "grid",
                 gridTemplateColumns:
                   "1fr 1fr",
                 gap: "18px",
               }}
             >
               <div>
-                <label
-                  style={
-                    labelStyle
-                  }
-                >
+                <label style={labelStyle}>
                   Telefon
                 </label>
 
                 <input
                   name="owner_phone"
                   type="tel"
-                  value={
-                    form.owner_phone
-                  }
-                  onChange={
-                    updateField
-                  }
+                  value={form.owner_phone}
+                  onChange={updateField}
                   placeholder="07xx xxx xxx"
-                  style={
-                    inputStyle
-                  }
+                  style={inputStyle}
                 />
               </div>
 
               <div>
-                <label
-                  style={
-                    labelStyle
-                  }
-                >
+                <label style={labelStyle}>
                   Email
                 </label>
 
                 <input
                   name="owner_email"
                   type="email"
-                  value={
-                    form.owner_email
-                  }
-                  onChange={
-                    updateField
-                  }
+                  value={form.owner_email}
+                  onChange={updateField}
                   placeholder="email@exemplu.ro"
-                  style={
-                    inputStyle
-                  }
+                  style={inputStyle}
                 />
               </div>
             </div>
@@ -1937,22 +1586,15 @@ export default function AdaugaProprietatePage() {
           {error && (
             <div
               style={{
-                background:
-                  "#fef2f2",
+                background: "#fef2f2",
                 border:
                   "1px solid #fecaca",
-                color:
-                  "#b91c1c",
-                borderRadius:
-                  "12px",
-                padding:
-                  "14px 16px",
-                fontSize:
-                  "14px",
-                lineHeight:
-                  "1.5",
-                marginBottom:
-                  "18px",
+                color: "#b91c1c",
+                borderRadius: "12px",
+                padding: "14px 16px",
+                fontSize: "14px",
+                lineHeight: "1.5",
+                marginBottom: "18px",
               }}
             >
               {error}
@@ -1962,24 +1604,16 @@ export default function AdaugaProprietatePage() {
           {success && (
             <div
               style={{
-                background:
-                  "#f0fdf4",
+                background: "#f0fdf4",
                 border:
                   "1px solid #bbf7d0",
-                color:
-                  "#166534",
-                borderRadius:
-                  "12px",
-                padding:
-                  "14px 16px",
-                fontSize:
-                  "14px",
-                fontWeight:
-                  "600",
-                lineHeight:
-                  "1.5",
-                marginBottom:
-                  "18px",
+                color: "#166534",
+                borderRadius: "12px",
+                padding: "14px 16px",
+                fontSize: "14px",
+                fontWeight: "600",
+                lineHeight: "1.5",
+                marginBottom: "18px",
               }}
             >
               {success}
@@ -1990,28 +1624,23 @@ export default function AdaugaProprietatePage() {
 
           <div
             style={{
-              background:
-                "#ffffff",
+              background: "#ffffff",
               border:
                 "1px solid #e5e7eb",
-              borderRadius:
-                "18px",
+              borderRadius: "18px",
               padding: "22px",
               display: "flex",
               justifyContent:
                 "space-between",
-              alignItems:
-                "center",
+              alignItems: "center",
               gap: "20px",
             }}
           >
             <div>
               <div
                 style={{
-                  fontSize:
-                    "15px",
-                  fontWeight:
-                    "800",
+                  fontSize: "15px",
+                  fontWeight: "800",
                 }}
               >
                 Gata de publicare?
@@ -2019,12 +1648,9 @@ export default function AdaugaProprietatePage() {
 
               <div
                 style={{
-                  color:
-                    "#6b7280",
-                  fontSize:
-                    "13px",
-                  marginTop:
-                    "5px",
+                  color: "#6b7280",
+                  fontSize: "13px",
+                  marginTop: "5px",
                 }}
               >
                 Verifică informațiile, universitatea și fotografiile înainte de
@@ -2034,40 +1660,29 @@ export default function AdaugaProprietatePage() {
 
             <button
               type="submit"
-              disabled={
-                publishing
-              }
+              disabled={publishing}
               style={{
                 border: "none",
-                borderRadius:
-                  "11px",
-                padding:
-                  "14px 24px",
+                borderRadius: "11px",
+                padding: "14px 24px",
 
-                background:
-                  publishing
-                    ? "#374151"
-                    : "#111827",
+                background: publishing
+                  ? "#374151"
+                  : "#111827",
 
-                color:
-                  "#ffffff",
+                color: "#ffffff",
 
-                fontFamily:
-                  "inherit",
+                fontFamily: "inherit",
 
-                fontSize:
-                  "14px",
+                fontSize: "14px",
 
-                fontWeight:
-                  "800",
+                fontWeight: "800",
 
-                cursor:
-                  publishing
-                    ? "not-allowed"
-                    : "pointer",
+                cursor: publishing
+                  ? "not-allowed"
+                  : "pointer",
 
-                whiteSpace:
-                  "nowrap",
+                whiteSpace: "nowrap",
               }}
             >
               {publishing
