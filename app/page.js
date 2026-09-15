@@ -31,48 +31,54 @@ export default async function Home() {
           padding: "0 7%",
         }}
       >
-        <div
+        <a
+          href="/"
           style={{
+            color: "#111827",
+            textDecoration: "none",
             fontSize: "25px",
             fontWeight: "800",
             letterSpacing: "-1px",
           }}
         >
           StudentHousing
-        </div>
+        </a>
 
         <div
           style={{
             display: "flex",
-            gap: "28px",
+            gap: "12px",
             alignItems: "center",
-            fontSize: "15px",
-            fontWeight: "600",
+            fontSize: "14px",
+            fontWeight: "700",
           }}
         >
-          <span
+          <a
+            href="/login"
             style={{
-              cursor: "pointer",
+              color: "#111827",
+              textDecoration: "none",
+              padding: "11px 16px",
+              borderRadius: "10px",
+              border: "1px solid #e5e7eb",
+              background: "#ffffff",
             }}
           >
-            Caută chirii
-          </span>
+            Intră în cont
+          </a>
 
-          <button
+          <a
+            href="/adauga-proprietate"
             style={{
               background: "#111827",
               color: "#ffffff",
-              border: "none",
+              textDecoration: "none",
               borderRadius: "10px",
-              padding: "11px 18px",
-              fontFamily: "inherit",
-              fontSize: "14px",
-              fontWeight: "700",
-              cursor: "pointer",
+              padding: "12px 18px",
             }}
           >
             Adaugă proprietatea
-          </button>
+          </a>
         </div>
       </header>
 
@@ -113,7 +119,11 @@ export default async function Home() {
           Chiria ta.
           <br />
 
-          <span style={{ color: "#2563eb" }}>
+          <span
+            style={{
+              color: "#2563eb",
+            }}
+          >
             Aproape de facultate.
           </span>
         </h1>
@@ -159,7 +169,9 @@ export default async function Home() {
           }}
         >
           <span>Aproape de universitate</span>
+
           <span>Chirii într-un singur loc</span>
+
           <span>Direct de la proprietari</span>
         </div>
       </section>
