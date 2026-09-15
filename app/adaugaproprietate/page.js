@@ -20,8 +20,8 @@ export default function AdaugaProprietatePage() {
   const [loadingUniversities, setLoadingUniversities] =
     useState(true);
 
-  const [selectedUniversityId, setSelectedUniversityId] =
-    useState("");
+  const [selectedUniversityIds, setSelectedUniversityIds] =
+    useState([]);
 
   const [form, setForm] = useState({
     title: "",
@@ -168,7 +168,7 @@ export default function AdaugaProprietatePage() {
       city,
     }));
 
-    setSelectedUniversityId("");
+    setSelectedUniversityIds([]);
   };
 
   /* =========================
@@ -323,9 +323,9 @@ export default function AdaugaProprietatePage() {
       return;
     }
 
-    if (!selectedUniversityId) {
+    if (selectedUniversityIds.length === 0) {
       setError(
-        "Alege universitatea sau facultatea apropiată proprietății."
+        "Alege cel puțin o universitate sau facultate apropiată proprietății."
       );
       return;
     }
@@ -466,32 +466,27 @@ export default function AdaugaProprietatePage() {
         createdListing.id;
 
       /* =========================
-         UNIVERSITATE
+         UNIVERSITĂȚI
       ========================= */
+
+      const universityLinks = selectedUniversityIds.map(
+        (universityId) => ({
+          listing_id: listingId,
+          university_id: universityId,
+          distance_meters: null,
+          walking_minutes: null,
+        })
+      );
 
       const {
         error: universityLinkError,
       } = await supabase
         .from("listing_universities")
-        .insert([
-          {
-            listing_id:
-              listingId,
-
-            university_id:
-              selectedUniversityId,
-
-            distance_meters:
-              null,
-
-            walking_minutes:
-              null,
-          },
-        ]);
+        .insert(universityLinks);
 
       if (universityLinkError) {
         throw new Error(
-          `Universitatea nu a putut fi asociată anunțului: ${universityLinkError.message}`
+          `Universitățile nu au putut fi asociate anunțului: ${universityLinkError.message}`
         );
       }
 
@@ -635,7 +630,7 @@ export default function AdaugaProprietatePage() {
       }
 
       setSuccess(
-        "Proprietatea a fost publicată și asociată universității cu succes."
+        "Proprietatea a fost publicată și asociată universităților selectate cu succes."
       );
 
       setTimeout(() => {
@@ -985,23 +980,6 @@ export default function AdaugaProprietatePage() {
               "35px",
           }}
         >
-          <div
-            style={{
-              display:
-                "inline-block",
-
-              background:
-                "#e8f1ff",
-
-              color:
-                "#2563eb",
-
-              padding:
-                "7px 12px",
-
-              borderRadius:
-                "100px",
-
               fontSize:
                 "13px",
 
@@ -1469,11 +1447,7 @@ export default function AdaugaProprietatePage() {
             </div>
 
             {/* =========================
-                ORAȘ + UNIVERSITATE
-
-                IMPORTANT:
-                ORAȘUL ESTE SELECT NATIV.
-                CHROME GESTIONEAZĂ SCROLL-UL.
+                ORAȘ + UNIVERSITĂȚI
             ========================= */}
 
             <div
@@ -1558,71 +1532,111 @@ export default function AdaugaProprietatePage() {
                     labelStyle
                   }
                 >
-                  Universitate apropiată
+                  Universități apropiate
                 </label>
 
-                <select
-                  value={
-                    selectedUniversityId
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setSelectedUniversityId(
-                      event.target
-                        .value
-                    )
-                  }
-                  disabled={
-                    !form.city ||
-                    loadingUniversities
-                  }
+                <div
                   style={{
-                    ...inputStyle,
-
-                    cursor:
-                      form.city &&
-                      !loadingUniversities
-                        ? "pointer"
-                        : "not-allowed",
-
-                    background:
-                      form.city &&
-                      !loadingUniversities
-                        ? "#ffffff"
-                        : "#f9fafb",
-
-                    opacity:
-                      form.city
-                        ? 1
-                        : 0.65,
+                    border: "1px solid #d1d5db",
+                    borderRadius: "11px",
+                    background: form.city ? "#ffffff" : "#f9fafb",
+                    maxHeight: "230px",
+                    overflowY: "auto",
+                    padding: "8px",
+                    opacity: form.city ? 1 : 0.65,
                   }}
                 >
-                  <option value="">
-                    {form.city
-                      ? "Alege universitatea"
-                      : "Alege mai întâi orașul"}
-                  </option>
+                  {!form.city ? (
+                    <div
+                      style={{
+                        padding: "8px",
+                        color: "#6b7280",
+                        fontSize: "14px",
+                      }}
+                    >
+                      Alege mai întâi orașul
+                    </div>
+                  ) : universitiesForCity.length === 0 ? (
+                    <div
+                      style={{
+                        padding: "8px",
+                        color: "#6b7280",
+                        fontSize: "14px",
+                      }}
+                    >
+                      Nu există universități disponibile pentru acest oraș.
+                    </div>
+                  ) : (
+                    universitiesForCity.map((university) => {
+                      const checked = selectedUniversityIds.includes(
+                        university.id
+                      );
 
-                  {universitiesForCity.map(
-                    (
-                      university
-                    ) => (
-                      <option
-                        key={
-                          university.id
-                        }
-                        value={
-                          university.id
-                        }
-                      >
-                        {university.short_name
-                          ? `${university.short_name} — ${university.name}`
-                          : university.name}
-                      </option>
-                    )
+                      return (
+                        <label
+                          key={university.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: "10px",
+                            padding: "10px",
+                            borderRadius: "9px",
+                            cursor: "pointer",
+                            background: checked ? "#eff6ff" : "transparent",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              setSelectedUniversityIds((current) =>
+                                current.includes(university.id)
+                                  ? current.filter(
+                                      (id) => id !== university.id
+                                    )
+                                  : [...current, university.id]
+                              );
+                            }}
+                            style={{
+                              marginTop: "2px",
+                              width: "16px",
+                              height: "16px",
+                              cursor: "pointer",
+                            }}
+                          />
+
+                          <span
+                            style={{
+                              fontSize: "14px",
+                              lineHeight: "1.4",
+                              color: "#111827",
+                              fontWeight: checked ? "700" : "500",
+                            }}
+                          >
+                            {university.short_name
+                              ? `${university.short_name} — ${university.name}`
+                              : university.name}
+                          </span>
+                        </label>
+                      );
+                    })
                   )}
-                </select>
+                </div>
+
+                {form.city && selectedUniversityIds.length > 0 && (
+                  <div
+                    style={{
+                      marginTop: "8px",
+                      color: "#2563eb",
+                      fontSize: "12px",
+                      fontWeight: "700",
+                    }}
+                  >
+                    {selectedUniversityIds.length === 1
+                      ? "1 universitate selectată"
+                      : `${selectedUniversityIds.length} universități selectate`}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1653,9 +1667,8 @@ export default function AdaugaProprietatePage() {
                   "22px",
               }}
             >
-              Alege universitatea cea mai relevantă pentru această proprietate.
-              Anunțul va putea fi găsit de persoanele care caută chirii în
-              apropierea acestei universități.
+              Selectează toate universitățile aflate în apropierea proprietății.
+              Anunțul va apărea în căutările pentru fiecare universitate selectată.
             </div>
 
             <div
@@ -2252,7 +2265,7 @@ export default function AdaugaProprietatePage() {
                     "5px",
                 }}
               >
-                Verifică informațiile, universitatea și fotografiile înainte de
+                Verifică informațiile, universitățile și fotografiile înainte de
                 publicare.
               </div>
             </div>
