@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
@@ -15,6 +15,12 @@ export default function AdaugaProprietatePage() {
   const [success, setSuccess] = useState("");
 
   const [images, setImages] = useState([]);
+
+  const [universities, setUniversities] = useState([]);
+  const [loadingUniversities, setLoadingUniversities] =
+    useState(true);
+  const [selectedUniversityId, setSelectedUniversityId] =
+    useState("");
 
   const [form, setForm] = useState({
     title: "",
@@ -75,12 +81,60 @@ export default function AdaugaProprietatePage() {
   }, [router]);
 
   useEffect(() => {
+    const loadUniversities = async () => {
+      setLoadingUniversities(true);
+
+      const { data, error } = await supabase
+        .from("universities")
+        .select("id, name, short_name, city")
+        .order("city", { ascending: true })
+        .order("name", { ascending: true });
+
+      if (error) {
+        console.error(
+          "Eroare la încărcarea universităților:",
+          error
+        );
+
+        setUniversities([]);
+        setLoadingUniversities(false);
+        return;
+      }
+
+      setUniversities(data || []);
+      setLoadingUniversities(false);
+    };
+
+    loadUniversities();
+  }, []);
+
+  useEffect(() => {
     return () => {
       images.forEach((image) => {
         URL.revokeObjectURL(image.preview);
       });
     };
   }, [images]);
+
+  const cities = useMemo(() => {
+    return [
+      ...new Set(
+        universities
+          .map((university) => university.city)
+          .filter(Boolean)
+      ),
+    ].sort((a, b) => a.localeCompare(b, "ro"));
+  }, [universities]);
+
+  const universitiesForCity = useMemo(() => {
+    if (!form.city) {
+      return [];
+    }
+
+    return universities.filter(
+      (university) => university.city === form.city
+    );
+  }, [universities, form.city]);
 
   const updateField = (event) => {
     const { name, value } = event.target;
@@ -89,6 +143,17 @@ export default function AdaugaProprietatePage() {
       ...current,
       [name]: value,
     }));
+  };
+
+  const handleCityChange = (event) => {
+    const city = event.target.value;
+
+    setForm((current) => ({
+      ...current,
+      city,
+    }));
+
+    setSelectedUniversityId("");
   };
 
   const handleImages = (event) => {
@@ -189,7 +254,14 @@ export default function AdaugaProprietatePage() {
     }
 
     if (!form.city.trim()) {
-      setError("Completează orașul.");
+      setError("Alege orașul proprietății.");
+      return;
+    }
+
+    if (!selectedUniversityId) {
+      setError(
+        "Alege universitatea sau facultatea apropiată proprietății."
+      );
       return;
     }
 
@@ -217,7 +289,9 @@ export default function AdaugaProprietatePage() {
     }
 
     if (images.length === 0) {
-      setError("Adaugă cel puțin o fotografie a proprietății.");
+      setError(
+        "Adaugă cel puțin o fotografie a proprietății."
+      );
       return;
     }
 
@@ -242,9 +316,7 @@ export default function AdaugaProprietatePage() {
         address: form.address.trim(),
         price_monthly: Number(form.price_monthly),
 
-        rooms: form.rooms
-          ? Number(form.rooms)
-          : null,
+        rooms: form.rooms ? Number(form.rooms) : null,
 
         bedrooms: form.bedrooms
           ? Number(form.bedrooms)
@@ -267,9 +339,7 @@ export default function AdaugaProprietatePage() {
         owner_phone: form.owner_phone.trim(),
 
         owner_email:
-          form.owner_email.trim() ||
-          user.email ||
-          null,
+          form.owner_email.trim() || user.email || null,
 
         active: true,
       };
@@ -291,6 +361,26 @@ export default function AdaugaProprietatePage() {
 
       listingId = createdListing.id;
 
+      // ASOCIEM ANUNȚUL CU UNIVERSITATEA SELECTATĂ
+
+      const { error: universityLinkError } =
+        await supabase
+          .from("listing_universities")
+          .insert([
+            {
+              listing_id: listingId,
+              university_id: selectedUniversityId,
+              distance_meters: null,
+              walking_minutes: null,
+            },
+          ]);
+
+      if (universityLinkError) {
+        throw new Error(
+          `Universitatea nu a putut fi asociată anunțului: ${universityLinkError.message}`
+        );
+      }
+
       // ÎNCĂRCĂM POZELE
 
       const uploadedImages = [];
@@ -309,16 +399,12 @@ export default function AdaugaProprietatePage() {
             .pop()
             ?.toLowerCase() || "jpg";
 
-        const safeExtension = extension.replace(
-          /[^a-z0-9]/g,
-          ""
-        );
+        const safeExtension =
+          extension.replace(/[^a-z0-9]/g, "") || "jpg";
 
-        const fileName =
-          `${Date.now()}-${index}-${crypto.randomUUID()}.${safeExtension}`;
+        const fileName = `${Date.now()}-${index}-${crypto.randomUUID()}.${safeExtension}`;
 
-        const storagePath =
-          `${user.id}/${listingId}/${fileName}`;
+        const storagePath = `${user.id}/${listingId}/${fileName}`;
 
         const { error: uploadError } =
           await supabase.storage
@@ -368,14 +454,13 @@ export default function AdaugaProprietatePage() {
       const coverImageUrl =
         uploadedImages[0]?.image_url || null;
 
-      const { error: coverError } =
-        await supabase
-          .from("listings")
-          .update({
-            image_url: coverImageUrl,
-          })
-          .eq("id", listingId)
-          .eq("user_id", user.id);
+      const { error: coverError } = await supabase
+        .from("listings")
+        .update({
+          image_url: coverImageUrl,
+        })
+        .eq("id", listingId)
+        .eq("user_id", user.id);
 
       if (coverError) {
         throw new Error(
@@ -386,7 +471,7 @@ export default function AdaugaProprietatePage() {
       // SUCCES
 
       setSuccess(
-        "Proprietatea și fotografiile au fost publicate cu succes."
+        "Proprietatea a fost publicată și asociată universității cu succes."
       );
 
       // DUPĂ PUBLICARE MERGEM ÎN DASHBOARD
@@ -834,6 +919,8 @@ export default function AdaugaProprietatePage() {
               </select>
             </div>
 
+            {/* ORAȘ + UNIVERSITATE */}
+
             <div
               style={{
                 display: "grid",
@@ -844,16 +931,109 @@ export default function AdaugaProprietatePage() {
               <div style={fieldStyle}>
                 <label style={labelStyle}>Oraș</label>
 
-                <input
+                <select
                   name="city"
-                  type="text"
                   value={form.city}
-                  onChange={updateField}
-                  placeholder="Timișoara"
-                  style={inputStyle}
-                />
+                  onChange={handleCityChange}
+                  disabled={loadingUniversities}
+                  style={{
+                    ...inputStyle,
+                    cursor: loadingUniversities
+                      ? "wait"
+                      : "pointer",
+                    background: loadingUniversities
+                      ? "#f9fafb"
+                      : "#ffffff",
+                  }}
+                >
+                  <option value="">
+                    {loadingUniversities
+                      ? "Se încarcă orașele..."
+                      : "Alege orașul"}
+                  </option>
+
+                  {cities.map((city) => (
+                    <option key={city} value={city}>
+                      {city}
+                    </option>
+                  ))}
+                </select>
               </div>
 
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
+                  Universitate apropiată
+                </label>
+
+                <select
+                  value={selectedUniversityId}
+                  onChange={(event) =>
+                    setSelectedUniversityId(
+                      event.target.value
+                    )
+                  }
+                  disabled={
+                    !form.city || loadingUniversities
+                  }
+                  style={{
+                    ...inputStyle,
+                    cursor:
+                      form.city && !loadingUniversities
+                        ? "pointer"
+                        : "not-allowed",
+                    background:
+                      form.city && !loadingUniversities
+                        ? "#ffffff"
+                        : "#f9fafb",
+                    opacity: form.city ? 1 : 0.65,
+                  }}
+                >
+                  <option value="">
+                    {form.city
+                      ? "Alege universitatea"
+                      : "Alege mai întâi orașul"}
+                  </option>
+
+                  {universitiesForCity.map(
+                    (university) => (
+                      <option
+                        key={university.id}
+                        value={university.id}
+                      >
+                        {university.short_name
+                          ? `${university.short_name} — ${university.name}`
+                          : university.name}
+                      </option>
+                    )
+                  )}
+                </select>
+              </div>
+            </div>
+
+            <div
+              style={{
+                background: "#eff6ff",
+                border: "1px solid #dbeafe",
+                color: "#1e40af",
+                borderRadius: "11px",
+                padding: "12px 14px",
+                fontSize: "13px",
+                lineHeight: "1.5",
+                marginBottom: "22px",
+              }}
+            >
+              Alege universitatea cea mai relevantă pentru această
+              proprietate. Anunțul va putea fi găsit de persoanele care
+              caută chirii în apropierea acestei universități.
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "18px",
+              }}
+            >
               <div style={fieldStyle}>
                 <label style={labelStyle}>
                   Preț / lună (€)
@@ -870,21 +1050,21 @@ export default function AdaugaProprietatePage() {
                   style={inputStyle}
                 />
               </div>
-            </div>
 
-            <div style={fieldStyle}>
-              <label style={labelStyle}>
-                Adresa proprietății
-              </label>
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
+                  Adresa proprietății
+                </label>
 
-              <input
-                name="address"
-                type="text"
-                value={form.address}
-                onChange={updateField}
-                placeholder="Strada, număr"
-                style={inputStyle}
-              />
+                <input
+                  name="address"
+                  type="text"
+                  value={form.address}
+                  onChange={updateField}
+                  placeholder="Strada, număr"
+                  style={inputStyle}
+                />
+              </div>
             </div>
 
             <div
@@ -910,7 +1090,9 @@ export default function AdaugaProprietatePage() {
               </div>
 
               <div style={fieldStyle}>
-                <label style={labelStyle}>Dormitoare</label>
+                <label style={labelStyle}>
+                  Dormitoare
+                </label>
 
                 <input
                   name="bedrooms"
@@ -1065,7 +1247,9 @@ export default function AdaugaProprietatePage() {
               }}
             >
               <div>
-                <label style={labelStyle}>Telefon</label>
+                <label style={labelStyle}>
+                  Telefon
+                </label>
 
                 <input
                   name="owner_phone"
@@ -1160,8 +1344,8 @@ export default function AdaugaProprietatePage() {
                   marginTop: "5px",
                 }}
               >
-                Verifică informațiile și fotografiile înainte de
-                publicare.
+                Verifică informațiile, universitatea și fotografiile
+                înainte de publicare.
               </div>
             </div>
 
