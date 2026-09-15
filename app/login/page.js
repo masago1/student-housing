@@ -43,6 +43,8 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      // CREARE CONT
+
       if (mode === "register") {
         const { data, error: signUpError } =
           await supabase.auth.signUp({
@@ -55,16 +57,28 @@ export default function LoginPage() {
           return;
         }
 
+        /*
+          Dacă Supabase creează direct sesiunea,
+          utilizatorul intră imediat în dashboard.
+        */
+
         if (data.session) {
-          router.push("/adaugaproprietate");
+          router.push("/dashboard");
           router.refresh();
           return;
         }
 
+        /*
+          Dacă este necesară confirmarea emailului,
+          utilizatorul primește mesajul de mai jos.
+        */
+
         setMessage(
-          "Contul a fost creat. Verifică emailul pentru confirmarea contului."
+          "Contul a fost creat. Verifică emailul pentru confirmarea contului, apoi autentifică-te."
         );
       } else {
+        // LOGIN
+
         const { error: signInError } =
           await supabase.auth.signInWithPassword({
             email,
@@ -76,7 +90,12 @@ export default function LoginPage() {
           return;
         }
 
-        router.push("/adaugaproprietate");
+        /*
+          Orice utilizator autentificat ajunge
+          direct în dashboard.
+        */
+
+        router.push("/dashboard");
         router.refresh();
       }
     } catch {
