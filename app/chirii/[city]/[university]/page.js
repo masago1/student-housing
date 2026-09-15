@@ -292,15 +292,24 @@ export default async function ListingsPage({ params }) {
             }}
           >
             {listings.map((listing) => (
-              <div
+              <a
                 key={listing.id}
+                href={`/proprietate/${listing.id}`}
                 style={{
+                  display: "block",
                   background: "#ffffff",
                   border: "1px solid #e5e7eb",
                   borderRadius: "18px",
                   overflow: "hidden",
+                  textDecoration: "none",
+                  color: "#111827",
+                  cursor: "pointer",
+                  boxShadow: "0 4px 15px rgba(0,0,0,0.03)",
+                  transition:
+                    "transform 150ms ease, box-shadow 150ms ease",
                 }}
               >
+                {/* IMAGINE */}
                 <div
                   style={{
                     height: "210px",
@@ -336,6 +345,7 @@ export default async function ListingsPage({ params }) {
                   )}
                 </div>
 
+                {/* INFORMAȚII */}
                 <div
                   style={{
                     padding: "20px",
@@ -369,16 +379,18 @@ export default async function ListingsPage({ params }) {
                     {listing.title}
                   </h2>
 
-                  <div
-                    style={{
-                      marginTop: "9px",
-                      color: "#6b7280",
-                      fontSize: "14px",
-                      lineHeight: "1.5",
-                    }}
-                  >
-                    {listing.address}
-                  </div>
+                  {listing.address && (
+                    <div
+                      style={{
+                        marginTop: "9px",
+                        color: "#6b7280",
+                        fontSize: "14px",
+                        lineHeight: "1.5",
+                      }}
+                    >
+                      {listing.address}
+                    </div>
+                  )}
 
                   <div
                     style={{
@@ -392,7 +404,10 @@ export default async function ListingsPage({ params }) {
                     }}
                   >
                     {listing.rooms && (
-                      <span>{listing.rooms} camere</span>
+                      <span>
+                        {listing.rooms}{" "}
+                        {listing.rooms === 1 ? "cameră" : "camere"}
+                      </span>
                     )}
 
                     {listing.surface_m2 && (
@@ -404,6 +419,7 @@ export default async function ListingsPage({ params }) {
                     )}
                   </div>
 
+                  {/* PREȚ */}
                   <div
                     style={{
                       marginTop: "20px",
@@ -414,6 +430,7 @@ export default async function ListingsPage({ params }) {
                     }}
                   >
                     {Number(listing.price_monthly).toLocaleString("ro-RO")} €
+
                     <span
                       style={{
                         fontSize: "13px",
@@ -426,7 +443,7 @@ export default async function ListingsPage({ params }) {
                     </span>
                   </div>
                 </div>
-              </div>
+              </a>
             ))}
           </div>
         )}
