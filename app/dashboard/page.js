@@ -246,7 +246,7 @@ export default function DashboardPage() {
               marginBottom: "14px",
             }}
           >
-            CONT PROPRIETAR
+            CONTUL MEU
           </div>
 
           <nav
@@ -352,7 +352,7 @@ export default function DashboardPage() {
                     fontSize: "15px",
                   }}
                 >
-                  Administrează proprietățile și mesajele tale.
+                  Administrează anunțurile și mesajele tale.
                 </p>
               </div>
 
@@ -464,8 +464,7 @@ export default function DashboardPage() {
                       fontSize: "15px",
                     }}
                   >
-                    Vezi și administrează toate proprietățile
-                    publicate.
+                    Vezi și administrează toate anunțurile publicate.
                   </p>
                 </div>
 
@@ -520,8 +519,8 @@ export default function DashboardPage() {
                   fontSize: "15px",
                 }}
               >
-                Mesajele persoanelor interesate de proprietățile tale
-                vor apărea aici.
+                Mesajele persoanelor interesate de anunțurile tale vor
+                apărea aici.
               </p>
 
               <EmptyCard
@@ -553,12 +552,12 @@ export default function DashboardPage() {
                   fontSize: "15px",
                 }}
               >
-                Proprietățile salvate vor apărea aici.
+                Anunțurile salvate vor apărea aici.
               </p>
 
               <EmptyCard
-                title="Nu ai proprietăți favorite"
-                text="Poți salva proprietățile care te interesează pentru a reveni rapid la ele."
+                title="Nu ai anunțuri favorite"
+                text="Poți salva anunțurile care te interesează pentru a reveni rapid la ele."
               />
             </>
           )}
