@@ -3,17 +3,42 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function SearchBox({ universities = [] }) {
+export default function SearchBox({
+  universities = [],
+  cities = [],
+  neighborhoods = [],
+}) {
   const router = useRouter();
 
+  /* =========================
+     ORAȘ
+  ========================= */
+
   const [cityQuery, setCityQuery] = useState("");
-  const [selectedCity, setSelectedCity] = useState("");
+  const [selectedCity, setSelectedCity] = useState(null);
   const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+
+  /* =========================
+     CARTIER
+  ========================= */
+
+  const [neighborhoodQuery, setNeighborhoodQuery] = useState("");
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState(null);
+  const [showNeighborhoodSuggestions, setShowNeighborhoodSuggestions] =
+    useState(false);
+
+  /* =========================
+     UNIVERSITATE
+  ========================= */
 
   const [universityQuery, setUniversityQuery] = useState("");
   const [selectedUniversity, setSelectedUniversity] = useState(null);
   const [showUniversitySuggestions, setShowUniversitySuggestions] =
     useState(false);
+
+  /* =========================
+     HELPERS
+  ========================= */
 
   const normalizeText = (text = "") =>
     text
@@ -35,30 +60,66 @@ export default function SearchBox({ universities = [] }) {
      ORAȘE
   ========================= */
 
-  const cities = useMemo(() => {
-    return [
-      ...new Set(
-        universities
-          .map((university) => university.city)
-          .filter(Boolean)
-      ),
-    ].sort((a, b) => a.localeCompare(b, "ro"));
-  }, [universities]);
+  const sortedCities = useMemo(() => {
+    return [...cities].sort((a, b) =>
+      (a.name || "").localeCompare(b.name || "", "ro")
+    );
+  }, [cities]);
 
   const filteredCities = useMemo(() => {
     const query = normalizeText(cityQuery);
 
-    if (!query || selectedCity === cityQuery) {
-      return cities;
+    if (!query || selectedCity?.name === cityQuery) {
+      return sortedCities;
     }
 
-    return cities.filter((city) =>
-      normalizeText(city).includes(query)
+    return sortedCities.filter((city) =>
+      normalizeText(city.name).includes(query)
     );
-  }, [cityQuery, selectedCity, cities]);
+  }, [cityQuery, selectedCity, sortedCities]);
 
   /* =========================
-     UNIVERSITĂȚI
+     CARTIERE PENTRU ORAȘ
+  ========================= */
+
+  const neighborhoodsForCity = useMemo(() => {
+    if (!selectedCity) {
+      return [];
+    }
+
+    return neighborhoods
+      .filter(
+        (neighborhood) =>
+          String(neighborhood.city_id) === String(selectedCity.id)
+      )
+      .sort((a, b) =>
+        (a.name || "").localeCompare(b.name || "", "ro")
+      );
+  }, [neighborhoods, selectedCity]);
+
+  const filteredNeighborhoods = useMemo(() => {
+    const query = normalizeText(neighborhoodQuery);
+
+    if (!selectedCity) {
+      return [];
+    }
+
+    if (!query || selectedNeighborhood?.name === neighborhoodQuery) {
+      return neighborhoodsForCity;
+    }
+
+    return neighborhoodsForCity.filter((neighborhood) =>
+      normalizeText(neighborhood.name).includes(query)
+    );
+  }, [
+    neighborhoodQuery,
+    selectedCity,
+    selectedNeighborhood,
+    neighborhoodsForCity,
+  ]);
+
+  /* =========================
+     UNIVERSITĂȚI PENTRU ORAȘ
   ========================= */
 
   const universitiesForCity = useMemo(() => {
@@ -67,7 +128,7 @@ export default function SearchBox({ universities = [] }) {
     }
 
     return universities.filter(
-      (university) => university.city === selectedCity
+      (university) => university.city === selectedCity.name
     );
   }, [universities, selectedCity]);
 
@@ -102,13 +163,30 @@ export default function SearchBox({ universities = [] }) {
 
   const chooseCity = (city) => {
     setSelectedCity(city);
-    setCityQuery(city);
+    setCityQuery(city.name);
 
+    // Resetăm cartierul când schimbăm orașul
+    setSelectedNeighborhood(null);
+    setNeighborhoodQuery("");
+
+    // Resetăm universitatea când schimbăm orașul
     setSelectedUniversity(null);
     setUniversityQuery("");
 
     setShowCitySuggestions(false);
+    setShowNeighborhoodSuggestions(false);
     setShowUniversitySuggestions(false);
+  };
+
+  /* =========================
+     SELECTARE CARTIER
+  ========================= */
+
+  const chooseNeighborhood = (neighborhood) => {
+    setSelectedNeighborhood(neighborhood);
+    setNeighborhoodQuery(neighborhood.name);
+
+    setShowNeighborhoodSuggestions(false);
   };
 
   /* =========================
@@ -136,34 +214,85 @@ export default function SearchBox({ universities = [] }) {
       return;
     }
 
-    const citySlug = slugify(selectedCity);
+    const citySlug =
+      selectedCity.slug || slugify(selectedCity.name);
+
+    const neighborhoodPart = selectedNeighborhood?.slug
+      ? `?zona=${encodeURIComponent(selectedNeighborhood.slug)}`
+      : "";
 
     /*
-      Dacă NU este selectată o universitate,
-      mergem la toate chiriile din oraș.
+      FĂRĂ UNIVERSITATE:
+      /chirii/timisoara
+      sau
+      /chirii/timisoara?zona=complex-studentesc
     */
 
     if (!selectedUniversity) {
-      router.push(`/chirii/${citySlug}`);
+      router.push(`/chirii/${citySlug}${neighborhoodPart}`);
       return;
     }
 
     /*
-      Dacă avem și universitate,
-      mergem la pagina specifică universității.
+      CU UNIVERSITATE:
+      /chirii/timisoara/umft
+      sau
+      /chirii/timisoara/umft?zona=complex-studentesc
     */
 
     const universitySlug = slugify(
       selectedUniversity.short_name || selectedUniversity.name
     );
 
-    router.push(`/chirii/${citySlug}/${universitySlug}`);
+    router.push(
+      `/chirii/${citySlug}/${universitySlug}${neighborhoodPart}`
+    );
+  };
+
+  /* =========================
+     INPUT STYLE
+  ========================= */
+
+  const inputStyle = {
+    width: "100%",
+    boxSizing: "border-box",
+    border: "1px solid #E2E8F0",
+    borderRadius: "12px",
+    padding: "17px",
+    fontSize: "15px",
+    fontFamily: "inherit",
+    fontWeight: "500",
+    color: "#0F172A",
+    outline: "none",
+  };
+
+  const dropdownStyle = {
+    position: "absolute",
+    top: "calc(100% + 8px)",
+    left: 0,
+    right: 0,
+    background: "#ffffff",
+    border: "1px solid #E2E8F0",
+    borderRadius: "12px",
+    boxShadow: "0 12px 30px rgba(15, 23, 42, 0.12)",
+    zIndex: 9999,
+    overflow: "hidden",
+  };
+
+  const dropdownScrollStyle = {
+    maxHeight: "300px",
+    overflowY: "auto",
+    overflowX: "hidden",
+    overscrollBehavior: "contain",
+    WebkitOverflowScrolling: "touch",
+    scrollbarGutter: "stable",
+    scrollBehavior: "smooth",
   };
 
   return (
     <div
       style={{
-        maxWidth: "900px",
+        maxWidth: "950px",
         margin: "0 auto",
         background: "#ffffff",
         borderRadius: "18px",
@@ -171,6 +300,7 @@ export default function SearchBox({ universities = [] }) {
         boxShadow: "0 15px 45px rgba(15, 23, 42, 0.10)",
         display: "grid",
         gridTemplateColumns: "1fr 1.6fr auto",
+        gridTemplateRows: "auto auto",
         gap: "10px",
         position: "relative",
         textAlign: "left",
@@ -185,6 +315,8 @@ export default function SearchBox({ universities = [] }) {
         style={{
           position: "relative",
           minWidth: 0,
+          gridColumn: "1",
+          gridRow: "1",
         }}
       >
         <input
@@ -194,34 +326,32 @@ export default function SearchBox({ universities = [] }) {
           autoComplete="off"
           onFocus={() => {
             setShowCitySuggestions(true);
+            setShowNeighborhoodSuggestions(false);
             setShowUniversitySuggestions(false);
           }}
           onClick={() => {
             setShowCitySuggestions(true);
+            setShowNeighborhoodSuggestions(false);
             setShowUniversitySuggestions(false);
           }}
           onChange={(event) => {
             const value = event.target.value;
 
             setCityQuery(value);
-            setSelectedCity("");
+            setSelectedCity(null);
+
+            setSelectedNeighborhood(null);
+            setNeighborhoodQuery("");
+
             setSelectedUniversity(null);
             setUniversityQuery("");
 
             setShowCitySuggestions(true);
+            setShowNeighborhoodSuggestions(false);
             setShowUniversitySuggestions(false);
           }}
           style={{
-            width: "100%",
-            boxSizing: "border-box",
-            border: "1px solid #E2E8F0",
-            borderRadius: "12px",
-            padding: "17px",
-            fontSize: "15px",
-            fontFamily: "inherit",
-            fontWeight: "500",
-            color: "#0F172A",
-            outline: "none",
+            ...inputStyle,
             background: "#ffffff",
           }}
         />
@@ -229,35 +359,12 @@ export default function SearchBox({ universities = [] }) {
         {/* DROPDOWN ORAȘE */}
 
         {showCitySuggestions && (
-          <div
-            style={{
-              position: "absolute",
-              top: "calc(100% + 8px)",
-              left: 0,
-              right: 0,
-              background: "#ffffff",
-              border: "1px solid #E2E8F0",
-              borderRadius: "12px",
-              boxShadow: "0 12px 30px rgba(15, 23, 42, 0.12)",
-              zIndex: 9999,
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                maxHeight: "300px",
-                overflowY: "auto",
-                overflowX: "hidden",
-                overscrollBehavior: "contain",
-                WebkitOverflowScrolling: "touch",
-                scrollbarGutter: "stable",
-                scrollBehavior: "smooth",
-              }}
-            >
+          <div style={dropdownStyle}>
+            <div style={dropdownScrollStyle}>
               {filteredCities.length > 0 ? (
                 filteredCities.map((city) => (
                   <button
-                    key={city}
+                    key={city.id}
                     type="button"
                     onMouseDown={(event) => {
                       event.preventDefault();
@@ -270,7 +377,7 @@ export default function SearchBox({ universities = [] }) {
                       border: "none",
                       borderBottom: "1px solid #F1F5F9",
                       background:
-                        selectedCity === city
+                        selectedCity?.id === city.id
                           ? "#EFF6FF"
                           : "#ffffff",
                       padding: "13px 16px",
@@ -278,9 +385,9 @@ export default function SearchBox({ universities = [] }) {
                       fontFamily: "inherit",
                       fontSize: "14px",
                       fontWeight:
-                        selectedCity === city ? "800" : "600",
+                        selectedCity?.id === city.id ? "800" : "600",
                       color:
-                        selectedCity === city
+                        selectedCity?.id === city.id
                           ? "#2563EB"
                           : "#0F172A",
                       cursor: "pointer",
@@ -292,12 +399,12 @@ export default function SearchBox({ universities = [] }) {
                     }}
                     onMouseLeave={(event) => {
                       event.currentTarget.style.background =
-                        selectedCity === city
+                        selectedCity?.id === city.id
                           ? "#EFF6FF"
                           : "#ffffff";
                     }}
                   >
-                    {city}
+                    {city.name}
                   </button>
                 ))
               ) : (
@@ -317,6 +424,174 @@ export default function SearchBox({ universities = [] }) {
       </div>
 
       {/* =========================
+          CARTIER
+      ========================= */}
+
+      <div
+        style={{
+          position: "relative",
+          minWidth: 0,
+          gridColumn: "1",
+          gridRow: "2",
+        }}
+      >
+        <input
+          type="text"
+          value={neighborhoodQuery}
+          placeholder={
+            selectedCity
+              ? "Zonă / cartier (opțional)"
+              : "Alege mai întâi orașul"
+          }
+          disabled={!selectedCity}
+          autoComplete="off"
+          onFocus={() => {
+            if (selectedCity) {
+              setShowNeighborhoodSuggestions(true);
+              setShowCitySuggestions(false);
+              setShowUniversitySuggestions(false);
+            }
+          }}
+          onClick={() => {
+            if (selectedCity) {
+              setShowNeighborhoodSuggestions(true);
+              setShowCitySuggestions(false);
+              setShowUniversitySuggestions(false);
+            }
+          }}
+          onChange={(event) => {
+            setNeighborhoodQuery(event.target.value);
+            setSelectedNeighborhood(null);
+
+            setShowNeighborhoodSuggestions(true);
+            setShowCitySuggestions(false);
+            setShowUniversitySuggestions(false);
+          }}
+          style={{
+            ...inputStyle,
+            background: selectedCity ? "#ffffff" : "#F8FAFC",
+            cursor: selectedCity ? "text" : "not-allowed",
+            opacity: selectedCity ? 1 : 0.65,
+          }}
+        />
+
+        {/* DROPDOWN CARTIERE */}
+
+        {showNeighborhoodSuggestions && selectedCity && (
+          <div style={dropdownStyle}>
+            <div style={dropdownScrollStyle}>
+              {/* TOATE ZONELE */}
+
+              <button
+                type="button"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                }}
+                onClick={() => {
+                  setSelectedNeighborhood(null);
+                  setNeighborhoodQuery("");
+                  setShowNeighborhoodSuggestions(false);
+                }}
+                style={{
+                  width: "100%",
+                  display: "block",
+                  border: "none",
+                  borderBottom: "1px solid #E2E8F0",
+                  background: "#EFF6FF",
+                  padding: "14px 16px",
+                  textAlign: "left",
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                  boxSizing: "border-box",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "800",
+                    color: "#2563EB",
+                  }}
+                >
+                  Toate zonele din {selectedCity.name}
+                </div>
+
+                <div
+                  style={{
+                    fontSize: "12px",
+                    color: "#64748B",
+                    marginTop: "4px",
+                    lineHeight: "1.4",
+                  }}
+                >
+                  Fără filtrare după cartier
+                </div>
+              </button>
+
+              {filteredNeighborhoods.length > 0 ? (
+                filteredNeighborhoods.map((neighborhood) => (
+                  <button
+                    key={neighborhood.id}
+                    type="button"
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                    }}
+                    onClick={() => chooseNeighborhood(neighborhood)}
+                    style={{
+                      width: "100%",
+                      minHeight: "46px",
+                      display: "block",
+                      border: "none",
+                      borderBottom: "1px solid #F1F5F9",
+                      background:
+                        selectedNeighborhood?.id === neighborhood.id
+                          ? "#EFF6FF"
+                          : "#ffffff",
+                      padding: "13px 16px",
+                      textAlign: "left",
+                      fontFamily: "inherit",
+                      fontSize: "14px",
+                      fontWeight:
+                        selectedNeighborhood?.id === neighborhood.id
+                          ? "800"
+                          : "600",
+                      color:
+                        selectedNeighborhood?.id === neighborhood.id
+                          ? "#2563EB"
+                          : "#0F172A",
+                      cursor: "pointer",
+                      boxSizing: "border-box",
+                      transition: "background-color 120ms ease",
+                    }}
+                    onMouseEnter={(event) => {
+                      event.currentTarget.style.background = "#F8FAFC";
+                    }}
+                    onMouseLeave={(event) => {
+                      event.currentTarget.style.background =
+                        selectedNeighborhood?.id === neighborhood.id
+                          ? "#EFF6FF"
+                          : "#ffffff";
+                    }}
+                  >
+                    {neighborhood.name}
+                  </button>
+                ))
+              ) : (
+                <div
+                  style={{
+                    padding: "16px",
+                    color: "#64748B",
+                    fontSize: "14px",
+                  }}
+                >
+                  Nicio zonă găsită
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* =========================
           UNIVERSITATE
       ========================= */}
 
@@ -324,6 +599,10 @@ export default function SearchBox({ universities = [] }) {
         style={{
           position: "relative",
           minWidth: 0,
+          gridColumn: "2",
+          gridRow: "1 / span 2",
+          display: "flex",
+          alignItems: "stretch",
         }}
       >
         <input
@@ -340,12 +619,14 @@ export default function SearchBox({ universities = [] }) {
             if (selectedCity) {
               setShowUniversitySuggestions(true);
               setShowCitySuggestions(false);
+              setShowNeighborhoodSuggestions(false);
             }
           }}
           onClick={() => {
             if (selectedCity) {
               setShowUniversitySuggestions(true);
               setShowCitySuggestions(false);
+              setShowNeighborhoodSuggestions(false);
             }
           }}
           onChange={(event) => {
@@ -354,18 +635,11 @@ export default function SearchBox({ universities = [] }) {
 
             setShowUniversitySuggestions(true);
             setShowCitySuggestions(false);
+            setShowNeighborhoodSuggestions(false);
           }}
           style={{
-            width: "100%",
-            boxSizing: "border-box",
-            border: "1px solid #E2E8F0",
-            borderRadius: "12px",
-            padding: "17px",
-            fontSize: "15px",
-            fontFamily: "inherit",
-            fontWeight: "500",
-            color: "#0F172A",
-            outline: "none",
+            ...inputStyle,
+            height: "100%",
             background: selectedCity ? "#ffffff" : "#F8FAFC",
             cursor: selectedCity ? "text" : "not-allowed",
             opacity: selectedCity ? 1 : 0.65,
@@ -375,32 +649,9 @@ export default function SearchBox({ universities = [] }) {
         {/* DROPDOWN UNIVERSITĂȚI */}
 
         {showUniversitySuggestions && selectedCity && (
-          <div
-            style={{
-              position: "absolute",
-              top: "calc(100% + 8px)",
-              left: 0,
-              right: 0,
-              background: "#ffffff",
-              border: "1px solid #E2E8F0",
-              borderRadius: "12px",
-              boxShadow: "0 12px 30px rgba(15, 23, 42, 0.12)",
-              zIndex: 9999,
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                maxHeight: "300px",
-                overflowY: "auto",
-                overflowX: "hidden",
-                overscrollBehavior: "contain",
-                WebkitOverflowScrolling: "touch",
-                scrollbarGutter: "stable",
-                scrollBehavior: "smooth",
-              }}
-            >
-              {/* OPȚIUNEA TOATE CHIRIILE */}
+          <div style={dropdownStyle}>
+            <div style={dropdownScrollStyle}>
+              {/* TOATE CHIRIILE */}
 
               <button
                 type="button"
@@ -432,7 +683,7 @@ export default function SearchBox({ universities = [] }) {
                     color: "#2563EB",
                   }}
                 >
-                  Toate chiriile din {selectedCity}
+                  Toate chiriile din {selectedCity.name}
                 </div>
 
                 <div
@@ -531,20 +782,18 @@ export default function SearchBox({ universities = [] }) {
         onClick={handleSearch}
         disabled={!selectedCity}
         style={{
+          gridColumn: "3",
+          gridRow: "1 / span 2",
           border: "none",
           borderRadius: "12px",
           padding: "0 27px",
           minHeight: "54px",
-          background: selectedCity
-            ? "#172554"
-            : "#94A3B8",
+          background: selectedCity ? "#172554" : "#94A3B8",
           color: "#ffffff",
           fontSize: "16px",
           fontFamily: "inherit",
           fontWeight: "700",
-          cursor: selectedCity
-            ? "pointer"
-            : "not-allowed",
+          cursor: selectedCity ? "pointer" : "not-allowed",
           whiteSpace: "nowrap",
           transition:
             "background-color 150ms ease, opacity 150ms ease",
