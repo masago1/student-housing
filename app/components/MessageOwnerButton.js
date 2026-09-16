@@ -10,21 +10,12 @@ export default function MessageOwnerButton({
 }) {
   const router = useRouter();
 
-  const [showLoginModal, setShowLoginModal] =
-    useState(false);
-
-  const [showMessageModal, setShowMessageModal] =
-    useState(false);
-
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
   const [message, setMessage] = useState("");
-
   const [checking, setChecking] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
-
-  /*
-    APĂSARE PE "TRIMITE MESAJ"
-  */
 
   async function handleContactOwner() {
     if (checking) return;
@@ -45,30 +36,16 @@ export default function MessageOwnerButton({
         );
       }
 
-      /*
-        UTILIZATOR NELOGAT
-      */
-
       if (!user) {
         setShowLoginModal(true);
         return;
       }
 
-      /*
-        PROPRIETARUL ÎȘI VEDE PROPRIUL ANUNȚ
-      */
-
       if (user.id === ownerId) {
-        setError(
-          "Acesta este propriul tău anunț."
-        );
+        setError("Acesta este propriul tău anunț.");
         setShowMessageModal(true);
         return;
       }
-
-      /*
-        UTILIZATOR LOGAT
-      */
 
       setShowMessageModal(true);
     } catch (err) {
@@ -84,10 +61,6 @@ export default function MessageOwnerButton({
       setChecking(false);
     }
   }
-
-  /*
-    TRIMITERE PRIMUL MESAJ
-  */
 
   async function handleSendMessage(event) {
     event.preventDefault();
@@ -112,10 +85,6 @@ export default function MessageOwnerButton({
     setError("");
 
     try {
-      /*
-        VERIFICĂM DIN NOU USERUL
-      */
-
       const {
         data: { user },
         error: userError,
@@ -138,10 +107,6 @@ export default function MessageOwnerButton({
         return;
       }
 
-      /*
-        CĂUTĂM DACĂ EXISTĂ DEJA CONVERSAȚIA
-      */
-
       const {
         data: existingConversation,
         error: conversationSearchError,
@@ -160,10 +125,6 @@ export default function MessageOwnerButton({
       let conversationId =
         existingConversation?.id || null;
 
-      /*
-        DACĂ NU EXISTĂ, O CREĂM
-      */
-
       if (!conversationId) {
         const {
           data: newConversation,
@@ -177,11 +138,6 @@ export default function MessageOwnerButton({
           })
           .select("id")
           .single();
-
-        /*
-          Dacă între timp conversația a fost creată
-          din alt tab / alt request, o căutăm din nou.
-        */
 
         if (conversationCreateError) {
           if (
@@ -212,10 +168,6 @@ export default function MessageOwnerButton({
         }
       }
 
-      /*
-        SALVĂM MESAJUL
-      */
-
       const { error: messageError } = await supabase
         .from("messages")
         .insert({
@@ -227,10 +179,6 @@ export default function MessageOwnerButton({
       if (messageError) {
         throw messageError;
       }
-
-      /*
-        ACTUALIZĂM CONVERSAȚIA
-      */
 
       const { error: updateError } = await supabase
         .from("conversations")
@@ -245,10 +193,6 @@ export default function MessageOwnerButton({
           updateError
         );
       }
-
-      /*
-        GATA
-      */
 
       setMessage("");
       setShowMessageModal(false);
@@ -270,22 +214,13 @@ export default function MessageOwnerButton({
     }
   }
 
-  /*
-    LOGIN
-  */
-
   function goToLogin(event) {
     event.preventDefault();
     event.stopPropagation();
 
     setShowLoginModal(false);
-
     router.push("/login");
   }
-
-  /*
-    ÎNCHIDERE LOGIN MODAL
-  */
 
   function closeLoginModal(event) {
     if (event) {
@@ -295,10 +230,6 @@ export default function MessageOwnerButton({
 
     setShowLoginModal(false);
   }
-
-  /*
-    ÎNCHIDERE MESSAGE MODAL
-  */
 
   function closeMessageModal(event) {
     if (event) {
@@ -361,9 +292,7 @@ export default function MessageOwnerButton({
           : "Trimite mesaj proprietarului"}
       </button>
 
-      {/* =====================================================
-          POPUP - UTILIZATOR NELOGAT
-      ===================================================== */}
+      {/* POPUP UTILIZATOR NELOGAT */}
 
       {showLoginModal && (
         <div
@@ -482,9 +411,7 @@ export default function MessageOwnerButton({
         </div>
       )}
 
-      {/* =====================================================
-          POPUP - SCRIERE MESAJ
-      ===================================================== */}
+      {/* POPUP SCRIERE MESAJ */}
 
       {showMessageModal && (
         <div
@@ -537,7 +464,7 @@ export default function MessageOwnerButton({
 
             <h3
               style={{
-                margin: 0,
+                margin: "0 0 20px",
                 color: "#172554",
                 fontSize: "20px",
                 lineHeight: "1.3",
@@ -545,19 +472,8 @@ export default function MessageOwnerButton({
                 letterSpacing: "-0.4px",
               }}
             >
-              Trimite mesaj proprietarului
+              Trimite un mesaj proprietarului
             </h3>
-
-            <p
-              style={{
-                margin: "9px 0 20px",
-                color: "#64748B",
-                fontSize: "13px",
-                lineHeight: "1.6",
-              }}
-            >
-              Trimite un mesaj proprietarului.
-            </p>
 
             {error &&
             error !== "Acesta este propriul tău anunț." ? (
