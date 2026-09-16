@@ -9,6 +9,7 @@ export default function DashboardPage() {
 
   const [user, setUser] = useState(null);
   const [listings, setListings] = useState([]);
+  const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [error, setError] = useState("");
@@ -29,6 +30,10 @@ export default function DashboardPage() {
       }
 
       setUser(user);
+
+      /*
+        ANUNȚURILE UTILIZATORULUI
+      */
 
       const { data, error: listingsError } = await supabase
         .from("listings")
@@ -54,6 +59,47 @@ export default function DashboardPage() {
         setListings(data || []);
       }
 
+      /*
+        FAVORITELE UTILIZATORULUI
+      */
+
+      const { data: favoriteRows, error: favoritesError } =
+        await supabase
+          .from("favorites")
+          .select(`
+            id,
+            listing_id,
+            created_at,
+            listings (
+              id,
+              title,
+              city,
+              address,
+              price_monthly,
+              rooms,
+              surface_m2,
+              image_url,
+              active,
+              created_at
+            )
+          `)
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
+
+      if (favoritesError) {
+        console.error("Eroare favorite:", favoritesError);
+        setError("Favoritele nu au putut fi încărcate.");
+      } else {
+        setFavorites(
+          (favoriteRows || [])
+            .filter((favorite) => favorite.listings)
+            .map((favorite) => ({
+              favoriteId: favorite.id,
+              ...favorite.listings,
+            }))
+        );
+      }
+
       setLoading(false);
     };
 
@@ -72,11 +118,19 @@ export default function DashboardPage() {
     };
   }, [router]);
 
+  /*
+    LOGOUT
+  */
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/");
     router.refresh();
   };
+
+  /*
+    ACTIVEAZĂ / DEZACTIVEAZĂ ANUNȚ
+  */
 
   const toggleListing = async (listing) => {
     setError("");
@@ -107,16 +161,62 @@ export default function DashboardPage() {
           : item
       )
     );
+
+    /*
+      Dacă anunțul apare și la favorite,
+      actualizăm și statusul de acolo.
+    */
+
+    setFavorites((current) =>
+      current.map((item) =>
+        item.id === listing.id
+          ? {
+              ...item,
+              active: newStatus,
+            }
+          : item
+      )
+    );
+  };
+
+  /*
+    ELIMINĂ DIN FAVORITE
+  */
+
+  const removeFavorite = async (listing) => {
+    if (!user) return;
+
+    setError("");
+
+    const { error: deleteError } = await supabase
+      .from("favorites")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("listing_id", listing.id);
+
+    if (deleteError) {
+      console.error("Eroare ștergere favorit:", deleteError);
+      setError("Anunțul nu a putut fi eliminat din favorite.");
+      return;
+    }
+
+    setFavorites((current) =>
+      current.filter((item) => item.id !== listing.id)
+    );
   };
 
   const activeListings = listings.filter(
     (listing) => listing.active
   ).length;
 
+  /*
+    STIL MENIU
+  */
+
   const menuItemStyle = (section) => ({
     width: "100%",
     border: "none",
-    borderRadius: "10px",
+    borderRadius: "9px",
     padding: "13px 14px",
     textAlign: "left",
     fontFamily: "inherit",
@@ -126,9 +226,12 @@ export default function DashboardPage() {
     background:
       activeSection === section ? "#EFF6FF" : "transparent",
     color:
-      activeSection === section ? "#3B82F6" : "#64748B",
-    transition: "all 0.2s ease",
+      activeSection === section ? "#172554" : "#64748B",
   });
+
+  /*
+    LOADING
+  */
 
   if (loading) {
     return (
@@ -169,7 +272,6 @@ export default function DashboardPage() {
           justifyContent: "space-between",
           padding: "0 5%",
           boxSizing: "border-box",
-          boxShadow: "0 1px 8px rgba(15, 23, 42, 0.03)",
         }}
       >
         <a
@@ -225,15 +327,17 @@ export default function DashboardPage() {
       {/* DASHBOARD */}
 
       <div
+        className="dashboard-layout"
         style={{
           minHeight: "calc(100vh - 73px)",
           display: "grid",
           gridTemplateColumns: "250px minmax(0, 1fr)",
         }}
       >
-        {/* SIDEBAR STÂNGA */}
+        {/* SIDEBAR */}
 
         <aside
+          className="dashboard-sidebar"
           style={{
             background: "#FFFFFF",
             borderRight: "1px solid #E2E8F0",
@@ -291,6 +395,9 @@ export default function DashboardPage() {
               style={menuItemStyle("favorites")}
             >
               Favorite
+              {favorites.length > 0
+                ? ` (${favorites.length})`
+                : ""}
             </button>
           </nav>
 
@@ -315,7 +422,8 @@ export default function DashboardPage() {
                 fontSize: "14px",
                 fontWeight: "800",
                 cursor: "pointer",
-                boxShadow: "0 6px 16px rgba(23, 37, 84, 0.16)",
+                boxShadow:
+                  "0 6px 16px rgba(23, 37, 84, 0.16)",
               }}
             >
               + Adaugă anunț
@@ -326,6 +434,7 @@ export default function DashboardPage() {
         {/* PARTEA DREAPTĂ */}
 
         <section
+          className="dashboard-content"
           style={{
             padding: "45px 5% 80px",
             minWidth: 0,
@@ -363,9 +472,10 @@ export default function DashboardPage() {
                 </p>
               </div>
 
-              {/* CARDURI STATISTICI */}
+              {/* STATISTICI */}
 
               <div
+                className="stats-grid"
                 style={{
                   display: "grid",
                   gridTemplateColumns:
@@ -379,10 +489,7 @@ export default function DashboardPage() {
                   title="Anunțuri"
                 />
 
-                <StatCard
-                  number="0"
-                  title="Mesaje"
-                />
+                <StatCard number="0" title="Mesaje" />
 
                 <StatCard
                   number={activeListings}
@@ -473,7 +580,8 @@ export default function DashboardPage() {
                       fontSize: "15px",
                     }}
                   >
-                    Vezi și administrează toate anunțurile publicate.
+                    Vezi și administrează toate anunțurile
+                    publicate.
                   </p>
                 </div>
 
@@ -531,8 +639,8 @@ export default function DashboardPage() {
                   fontSize: "15px",
                 }}
               >
-                Mesajele persoanelor interesate de anunțurile tale vor
-                apărea aici.
+                Mesajele persoanelor interesate de anunțurile
+                tale vor apărea aici.
               </p>
 
               <EmptyCard
@@ -546,34 +654,51 @@ export default function DashboardPage() {
 
           {activeSection === "favorites" && (
             <>
-              <h1
+              <div
                 style={{
-                  margin: 0,
-                  fontSize: "34px",
-                  fontWeight: "800",
-                  letterSpacing: "-1px",
-                  color: "#172554",
+                  marginBottom: "28px",
                 }}
               >
-                Favorite
-              </h1>
+                <h1
+                  style={{
+                    margin: 0,
+                    fontSize: "34px",
+                    fontWeight: "800",
+                    letterSpacing: "-1px",
+                    color: "#172554",
+                  }}
+                >
+                  Favorite
+                </h1>
 
-              <p
-                style={{
-                  margin: "9px 0 28px",
-                  color: "#64748B",
-                  fontSize: "15px",
-                }}
-              >
-                Anunțurile salvate vor apărea aici.
-              </p>
+                <p
+                  style={{
+                    margin: "9px 0 0",
+                    color: "#64748B",
+                    fontSize: "15px",
+                  }}
+                >
+                  Anunțurile pe care le-ai salvat pentru mai
+                  târziu.
+                </p>
+              </div>
 
-              <EmptyCard
-                title="Nu ai anunțuri favorite"
-                text="Poți salva anunțurile care te interesează pentru a reveni rapid la ele."
-              />
+              {favorites.length === 0 ? (
+                <EmptyCard
+                  title="Nu ai anunțuri favorite"
+                  text="Poți salva anunțurile care te interesează pentru a reveni rapid la ele."
+                />
+              ) : (
+                <FavoritesList
+                  favorites={favorites}
+                  router={router}
+                  removeFavorite={removeFavorite}
+                />
+              )}
             </>
           )}
+
+          {/* EROARE */}
 
           {error && (
             <div
@@ -592,9 +717,64 @@ export default function DashboardPage() {
           )}
         </section>
       </div>
+
+      {/* RESPONSIVE */}
+
+      <style>{`
+        @media (max-width: 800px) {
+          .dashboard-layout {
+            grid-template-columns: 1fr !important;
+          }
+
+          .dashboard-sidebar {
+            border-right: none !important;
+            border-bottom: 1px solid #E2E8F0 !important;
+          }
+
+          .stats-grid {
+            grid-template-columns: 1fr !important;
+          }
+
+          .dashboard-content {
+            padding: 30px 20px 60px !important;
+          }
+
+          .dashboard-listing-card,
+          .favorite-card {
+            grid-template-columns: 110px minmax(0, 1fr) !important;
+          }
+
+          .dashboard-listing-image,
+          .favorite-image {
+            width: 110px !important;
+          }
+        }
+
+        @media (max-width: 560px) {
+          .dashboard-listing-card,
+          .favorite-card {
+            grid-template-columns: 1fr !important;
+          }
+
+          .dashboard-listing-image,
+          .favorite-image {
+            width: 100% !important;
+            height: 190px !important;
+          }
+
+          .favorite-header,
+          .listing-header {
+            flex-direction: column !important;
+          }
+        }
+      `}</style>
     </main>
   );
 }
+
+/*
+  CARD STATISTICĂ
+*/
 
 function StatCard({ number, title }) {
   return (
@@ -602,7 +782,8 @@ function StatCard({ number, title }) {
       style={{
         background: "#FFFFFF",
         border: "1px solid #E2E8F0",
-        boxShadow: "0 8px 24px rgba(15, 23, 42, 0.05)",
+        boxShadow:
+          "0 8px 24px rgba(15, 23, 42, 0.05)",
         borderRadius: "14px",
         padding: "22px",
         minHeight: "95px",
@@ -635,6 +816,10 @@ function StatCard({ number, title }) {
   );
 }
 
+/*
+  ANUNȚURILE UTILIZATORULUI
+*/
+
 function ListingsList({
   listings,
   router,
@@ -648,7 +833,8 @@ function ListingsList({
           border: "1px solid #E2E8F0",
           borderRadius: "16px",
           padding: "45px 25px",
-          boxShadow: "0 8px 24px rgba(15, 23, 42, 0.04)",
+          boxShadow:
+            "0 8px 24px rgba(15, 23, 42, 0.04)",
         }}
       >
         <div
@@ -685,14 +871,17 @@ function ListingsList({
       {listings.map((listing) => (
         <div
           key={listing.id}
+          className="dashboard-listing-card"
           style={{
             background: "#FFFFFF",
             border: "1px solid #E2E8F0",
-            boxShadow: "0 8px 24px rgba(15, 23, 42, 0.04)",
+            boxShadow:
+              "0 8px 24px rgba(15, 23, 42, 0.04)",
             borderRadius: "15px",
             padding: "14px",
             display: "grid",
-            gridTemplateColumns: "135px minmax(0, 1fr)",
+            gridTemplateColumns:
+              "135px minmax(0, 1fr)",
             gap: "18px",
             maxWidth: "850px",
           }}
@@ -700,10 +889,11 @@ function ListingsList({
           {/* POZA */}
 
           <div
+            className="dashboard-listing-image"
             style={{
               width: "135px",
               height: "105px",
-              background: "#EFF6FF",
+              background: "#F8FAFC",
               borderRadius: "10px",
               overflow: "hidden",
             }}
@@ -738,12 +928,9 @@ function ListingsList({
 
           {/* INFO */}
 
-          <div
-            style={{
-              minWidth: 0,
-            }}
-          >
+          <div style={{ minWidth: 0 }}>
             <div
+              className="listing-header"
               style={{
                 display: "flex",
                 justifyContent: "space-between",
@@ -751,13 +938,13 @@ function ListingsList({
                 gap: "15px",
               }}
             >
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <h3
                   style={{
                     margin: 0,
                     fontSize: "16px",
                     fontWeight: "800",
-                    color: "#0F172A",
+                    color: "#172554",
                   }}
                 >
                   {listing.title}
@@ -781,14 +968,15 @@ function ListingsList({
                 style={{
                   fontSize: "18px",
                   fontWeight: "800",
-                  whiteSpace: "nowrap",
                   color: "#172554",
+                  whiteSpace: "nowrap",
                 }}
               >
                 {Number(
                   listing.price_monthly
                 ).toLocaleString("ro-RO")}{" "}
                 €
+
                 <span
                   style={{
                     color: "#94A3B8",
@@ -806,6 +994,7 @@ function ListingsList({
               style={{
                 display: "flex",
                 alignItems: "center",
+                flexWrap: "wrap",
                 gap: "10px",
                 marginTop: "11px",
               }}
@@ -814,7 +1003,7 @@ function ListingsList({
                 style={{
                   background: listing.active
                     ? "#DCFCE7"
-                    : "#EFF6FF",
+                    : "#F1F5F9",
                   color: listing.active
                     ? "#15803D"
                     : "#64748B",
@@ -827,18 +1016,21 @@ function ListingsList({
                 {listing.active ? "Activ" : "Inactiv"}
               </span>
 
-              {listing.rooms && (
+              {Number(listing.rooms) > 0 && (
                 <span
                   style={{
                     color: "#64748B",
                     fontSize: "11px",
                   }}
                 >
-                  {listing.rooms} camere
+                  {listing.rooms}{" "}
+                  {Number(listing.rooms) === 1
+                    ? "cameră"
+                    : "camere"}
                 </span>
               )}
 
-              {listing.surface_m2 && (
+              {Number(listing.surface_m2) > 0 && (
                 <span
                   style={{
                     color: "#64748B",
@@ -850,12 +1042,13 @@ function ListingsList({
               )}
             </div>
 
-            {/* ACTIUNI */}
+            {/* ACȚIUNI */}
 
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
+                flexWrap: "wrap",
                 gap: "15px",
                 marginTop: "14px",
               }}
@@ -863,7 +1056,9 @@ function ListingsList({
               <button
                 type="button"
                 onClick={() =>
-                  router.push(`/proprietate/${listing.id}`)
+                  router.push(
+                    `/proprietate/${listing.id}`
+                  )
                 }
                 style={actionButton}
               >
@@ -904,6 +1099,259 @@ function ListingsList({
   );
 }
 
+/*
+  LISTA FAVORITE
+*/
+
+function FavoritesList({
+  favorites,
+  router,
+  removeFavorite,
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px",
+      }}
+    >
+      {favorites.map((listing) => (
+        <div
+          key={listing.id}
+          className="favorite-card"
+          style={{
+            background: "#FFFFFF",
+            border: "1px solid #E2E8F0",
+            boxShadow:
+              "0 8px 24px rgba(15, 23, 42, 0.04)",
+            borderRadius: "15px",
+            padding: "14px",
+            display: "grid",
+            gridTemplateColumns:
+              "135px minmax(0, 1fr)",
+            gap: "18px",
+            maxWidth: "850px",
+          }}
+        >
+          {/* POZA */}
+
+          <div
+            className="favorite-image"
+            style={{
+              width: "135px",
+              height: "105px",
+              background: "#F8FAFC",
+              borderRadius: "10px",
+              overflow: "hidden",
+            }}
+          >
+            {listing.image_url ? (
+              <img
+                src={listing.image_url}
+                alt={listing.title}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  display: "block",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#94A3B8",
+                  fontSize: "11px",
+                }}
+              >
+                Fără fotografie
+              </div>
+            )}
+          </div>
+
+          {/* INFO */}
+
+          <div style={{ minWidth: 0 }}>
+            <div
+              className="favorite-header"
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                gap: "15px",
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
+                <h3
+                  style={{
+                    margin: 0,
+                    fontSize: "16px",
+                    fontWeight: "800",
+                    color: "#172554",
+                  }}
+                >
+                  {listing.title}
+                </h3>
+
+                <div
+                  style={{
+                    color: "#64748B",
+                    fontSize: "12px",
+                    marginTop: "5px",
+                  }}
+                >
+                  {listing.city}
+                  {listing.address
+                    ? ` · ${listing.address}`
+                    : ""}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  fontSize: "18px",
+                  fontWeight: "800",
+                  color: "#172554",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {Number(
+                  listing.price_monthly
+                ).toLocaleString("ro-RO")}{" "}
+                €
+
+                <span
+                  style={{
+                    color: "#94A3B8",
+                    fontSize: "11px",
+                    fontWeight: "600",
+                  }}
+                >
+                  {" "}
+                  / lună
+                </span>
+              </div>
+            </div>
+
+            {/* DETALII */}
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "10px",
+                marginTop: "11px",
+              }}
+            >
+              {Number(listing.rooms) > 0 && (
+                <span
+                  style={{
+                    color: "#64748B",
+                    fontSize: "11px",
+                  }}
+                >
+                  {listing.rooms}{" "}
+                  {Number(listing.rooms) === 1
+                    ? "cameră"
+                    : "camere"}
+                </span>
+              )}
+
+              {Number(listing.surface_m2) > 0 && (
+                <span
+                  style={{
+                    color: "#64748B",
+                    fontSize: "11px",
+                  }}
+                >
+                  {listing.surface_m2} m²
+                </span>
+              )}
+
+              {listing.active === false && (
+                <span
+                  style={{
+                    background: "#F1F5F9",
+                    color: "#64748B",
+                    borderRadius: "100px",
+                    padding: "5px 8px",
+                    fontSize: "10px",
+                    fontWeight: "800",
+                  }}
+                >
+                  Inactiv
+                </span>
+              )}
+            </div>
+
+            {/* ACȚIUNI */}
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "18px",
+                marginTop: "18px",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(
+                    `/proprietate/${listing.id}`
+                  )
+                }
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  padding: 0,
+                  color: "#3B82F6",
+                  fontFamily: "inherit",
+                  fontSize: "12px",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                }}
+              >
+                Vezi anunțul
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  removeFavorite(listing)
+                }
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  padding: 0,
+                  color: "#DC2626",
+                  fontFamily: "inherit",
+                  fontSize: "12px",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                }}
+              >
+                ♥ Elimină din favorite
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/*
+  CARD GOL
+*/
+
 function EmptyCard({ title, text }) {
   return (
     <div
@@ -913,7 +1361,8 @@ function EmptyCard({ title, text }) {
         border: "1px solid #E2E8F0",
         borderRadius: "16px",
         padding: "45px 25px",
-        boxShadow: "0 8px 24px rgba(15, 23, 42, 0.04)",
+        boxShadow:
+          "0 8px 24px rgba(15, 23, 42, 0.04)",
       }}
     >
       <div
@@ -939,6 +1388,10 @@ function EmptyCard({ title, text }) {
     </div>
   );
 }
+
+/*
+  BUTOANE ACȚIUNI
+*/
 
 const actionButton = {
   border: "none",
