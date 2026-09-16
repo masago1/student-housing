@@ -1,4 +1,5 @@
 import { supabase } from "../../lib/supabase";
+import MessageOwnerButton from "../../components/MessageOwnerButton";
 
 export const dynamic = "force-dynamic";
 
@@ -194,7 +195,8 @@ export default async function PropertyPage({ params }) {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: allImages.length > 1 ? "2fr 1fr" : "1fr",
+            gridTemplateColumns:
+              allImages.length > 1 ? "2fr 1fr" : "1fr",
             gap: "10px",
             height: "470px",
             borderRadius: "20px",
@@ -542,9 +544,9 @@ export default async function PropertyPage({ params }) {
                 fontWeight: "800",
               }}
             >
-              {Number(listing.price_monthly).toLocaleString(
-                "ro-RO"
-              )}{" "}
+              {Number(
+                listing.price_monthly
+              ).toLocaleString("ro-RO")}{" "}
               €
 
               <span
@@ -577,23 +579,11 @@ export default async function PropertyPage({ params }) {
               </div>
             )}
 
-            <button
-              type="button"
-              style={{
-                width: "100%",
-                marginTop: "25px",
-                border: "none",
-                borderRadius: "12px",
-                padding: "16px",
-                background: "#2563eb",
-                color: "#ffffff",
-                fontSize: "16px",
-                fontWeight: "800",
-                cursor: "pointer",
-              }}
-            >
-              Contactează proprietarul
-            </button>
+            {/* MESAJ PROPRIETAR */}
+            <MessageOwnerButton
+              listingId={listing.id}
+              ownerId={listing.user_id}
+            />
 
             <div
               style={{
@@ -603,7 +593,7 @@ export default async function PropertyPage({ params }) {
                 fontSize: "12px",
               }}
             >
-              Contact direct cu proprietarul
+              Mesaj direct către proprietar
             </div>
           </aside>
         </div>
