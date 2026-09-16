@@ -20,57 +20,80 @@ export default function LoginPage() {
   /*
     VERIFICĂM DACĂ UTILIZATORUL ESTE DEJA LOGAT
 
-    Supabase păstrează sesiunea în browser.
-    Dacă există deja o sesiune activă, utilizatorul
-    nu mai vede pagina de login și este trimis
-    direct în dashboard.
+    Dacă există deja o sesiune activă când intrăm
+    pe pagina /login, trimitem utilizatorul în dashboard.
+
+    IMPORTANT:
+    Nu mai folosim onAuthStateChange pentru redirect.
+    Redirect-ul după login este făcut direct în handleSubmit.
   */
 
   useEffect(() => {
     let mounted = true;
 
     const checkSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      try {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
 
-      if (!mounted) {
-        return;
+        if (!mounted) {
+          return;
+        }
+
+        if (sessionError) {
+          console.error(
+            "Eroare la verificarea sesiunii:",
+            sessionError
+          );
+
+          setCheckingSession(false);
+          return;
+        }
+
+        if (session?.user) {
+          router.replace("/dashboard");
+          return;
+        }
+
+        setCheckingSession(false);
+      } catch (sessionError) {
+        console.error(
+          "Eroare la verificarea sesiunii:",
+          sessionError
+        );
+
+        if (mounted) {
+          setCheckingSession(false);
+        }
       }
-
-      if (session?.user) {
-        router.replace("/dashboard");
-        return;
-      }
-
-      setCheckingSession(false);
     };
 
     checkSession();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (session?.user) {
-          router.replace("/dashboard");
-        }
-      }
-    );
-
     return () => {
       mounted = false;
-      subscription.unsubscribe();
     };
   }, [router]);
+
+  /*
+    LOGIN / REGISTER
+  */
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    if (loading) {
+      return;
+    }
+
     setError("");
     setMessage("");
 
-    if (!email || !password) {
+    const cleanEmail = email.trim();
+
+    if (!cleanEmail || !password) {
       setError("Completează adresa de email și parola.");
       return;
     }
@@ -91,14 +114,18 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // CREARE CONT
+      /*
+        CREARE CONT
+      */
 
       if (mode === "register") {
-        const { data, error: signUpError } =
-          await supabase.auth.signUp({
-            email,
-            password,
-          });
+        const {
+          data,
+          error: signUpError,
+        } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+        });
 
         if (signUpError) {
           setError(signUpError.message);
@@ -110,44 +137,61 @@ export default function LoginPage() {
           utilizatorul intră imediat în dashboard.
         */
 
-        if (data.session) {
+        if (data?.session?.user) {
           router.replace("/dashboard");
-          router.refresh();
           return;
         }
 
         /*
-          Dacă este necesară confirmarea emailului,
-          utilizatorul primește mesajul de mai jos.
+          Dacă este necesară confirmarea emailului.
         */
 
         setMessage(
           "Contul a fost creat. Verifică emailul pentru confirmarea contului, apoi autentifică-te."
         );
-      } else {
-        // LOGIN
 
-        const { error: signInError } =
-          await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
-
-        if (signInError) {
-          setError("Email sau parolă incorectă.");
-          return;
-        }
-
-        /*
-          Sesiunea este salvată de Supabase.
-          Utilizatorul va rămâne autentificat
-          inclusiv după închiderea browserului.
-        */
-
-        router.replace("/dashboard");
-        router.refresh();
+        return;
       }
-    } catch {
+
+      /*
+        LOGIN
+      */
+
+      const {
+        data,
+        error: signInError,
+      } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password,
+      });
+
+      if (signInError) {
+        setError("Email sau parolă incorectă.");
+        return;
+      }
+
+      /*
+        Verificăm direct răspunsul Supabase.
+
+        Nu așteptăm un onAuthStateChange separat.
+        Dacă avem user + session, login-ul este terminat
+        și mergem direct în dashboard.
+      */
+
+      if (!data?.session || !data?.user) {
+        setError(
+          "Autentificarea a reușit, dar sesiunea nu a putut fi inițializată. Încearcă din nou."
+        );
+        return;
+      }
+
+      router.replace("/dashboard");
+    } catch (loginError) {
+      console.error(
+        "Eroare autentificare:",
+        loginError
+      );
+
       setError(
         "A apărut o eroare. Încearcă din nou."
       );
@@ -155,6 +199,10 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  /*
+    SCHIMBARE LOGIN / REGISTER
+  */
 
   const changeMode = (newMode) => {
     setMode(newMode);
@@ -165,9 +213,7 @@ export default function LoginPage() {
   };
 
   /*
-    Cât timp verificăm dacă există deja o sesiune,
-    nu afișăm formularul de login pentru o fracțiune
-    de secundă.
+    LOADING SESIUNE
   */
 
   if (checkingSession) {
@@ -378,6 +424,7 @@ export default function LoginPage() {
               }
               placeholder="nume@email.com"
               autoComplete="email"
+              disabled={loading}
               style={{
                 width: "100%",
                 boxSizing: "border-box",
@@ -416,6 +463,7 @@ export default function LoginPage() {
                   ? "current-password"
                   : "new-password"
               }
+              disabled={loading}
               style={{
                 width: "100%",
                 boxSizing: "border-box",
@@ -457,6 +505,7 @@ export default function LoginPage() {
                   }
                   placeholder="Repetă parola"
                   autoComplete="new-password"
+                  disabled={loading}
                   style={{
                     width: "100%",
                     boxSizing: "border-box",
