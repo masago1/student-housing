@@ -10,35 +10,19 @@ export default function SearchBox({
 }) {
   const router = useRouter();
 
-  /* =========================
-     ORAȘ
-  ========================= */
-
   const [cityQuery, setCityQuery] = useState("");
   const [selectedCity, setSelectedCity] = useState(null);
   const [showCitySuggestions, setShowCitySuggestions] = useState(false);
-
-  /* =========================
-     CARTIER
-  ========================= */
 
   const [neighborhoodQuery, setNeighborhoodQuery] = useState("");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState(null);
   const [showNeighborhoodSuggestions, setShowNeighborhoodSuggestions] =
     useState(false);
 
-  /* =========================
-     UNIVERSITATE
-  ========================= */
-
   const [universityQuery, setUniversityQuery] = useState("");
   const [selectedUniversity, setSelectedUniversity] = useState(null);
   const [showUniversitySuggestions, setShowUniversitySuggestions] =
     useState(false);
-
-  /* =========================
-     HELPERS
-  ========================= */
 
   const normalizeText = (text = "") =>
     text
@@ -79,13 +63,11 @@ export default function SearchBox({
   }, [cityQuery, selectedCity, sortedCities]);
 
   /* =========================
-     CARTIERE PENTRU ORAȘ
+     CARTIERE
   ========================= */
 
   const neighborhoodsForCity = useMemo(() => {
-    if (!selectedCity) {
-      return [];
-    }
+    if (!selectedCity) return [];
 
     return neighborhoods
       .filter(
@@ -100,9 +82,7 @@ export default function SearchBox({
   const filteredNeighborhoods = useMemo(() => {
     const query = normalizeText(neighborhoodQuery);
 
-    if (!selectedCity) {
-      return [];
-    }
+    if (!selectedCity) return [];
 
     if (!query || selectedNeighborhood?.name === neighborhoodQuery) {
       return neighborhoodsForCity;
@@ -119,13 +99,11 @@ export default function SearchBox({
   ]);
 
   /* =========================
-     UNIVERSITĂȚI PENTRU ORAȘ
+     UNIVERSITĂȚI
   ========================= */
 
   const universitiesForCity = useMemo(() => {
-    if (!selectedCity) {
-      return [];
-    }
+    if (!selectedCity) return [];
 
     return universities.filter(
       (university) => university.city === selectedCity.name
@@ -135,9 +113,7 @@ export default function SearchBox({
   const filteredUniversities = useMemo(() => {
     const query = normalizeText(universityQuery);
 
-    if (!selectedCity) {
-      return [];
-    }
+    if (!selectedCity) return [];
 
     if (!query || selectedUniversity) {
       return universitiesForCity;
@@ -183,7 +159,6 @@ export default function SearchBox({
   const chooseNeighborhood = (neighborhood) => {
     setSelectedNeighborhood(neighborhood);
     setNeighborhoodQuery(neighborhood.name);
-
     setShowNeighborhoodSuggestions(false);
   };
 
@@ -208,9 +183,7 @@ export default function SearchBox({
   ========================= */
 
   const handleSearch = () => {
-    if (!selectedCity) {
-      return;
-    }
+    if (!selectedCity) return;
 
     const citySlug =
       selectedCity.slug || slugify(selectedCity.name);
@@ -239,11 +212,12 @@ export default function SearchBox({
 
   const inputStyle = {
     width: "100%",
+    height: "54px",
     boxSizing: "border-box",
     border: "1px solid #E2E8F0",
     borderRadius: "12px",
-    padding: "17px",
-    fontSize: "15px",
+    padding: "0 15px",
+    fontSize: "14px",
     fontFamily: "inherit",
     fontWeight: "500",
     color: "#0F172A",
@@ -252,7 +226,7 @@ export default function SearchBox({
 
   const dropdownStyle = {
     position: "absolute",
-    top: "calc(100% + 8px)",
+    top: "calc(100% + 7px)",
     left: 0,
     right: 0,
     background: "#ffffff",
@@ -264,32 +238,51 @@ export default function SearchBox({
   };
 
   const dropdownScrollStyle = {
-    maxHeight: "300px",
+    maxHeight: "280px",
     overflowY: "auto",
     overflowX: "hidden",
     overscrollBehavior: "contain",
     WebkitOverflowScrolling: "touch",
     scrollbarGutter: "stable",
-    scrollBehavior: "smooth",
+  };
+
+  const optionStyle = {
+    width: "100%",
+    minHeight: "44px",
+    display: "block",
+    border: "none",
+    borderBottom: "1px solid #F1F5F9",
+    padding: "12px 15px",
+    textAlign: "left",
+    fontFamily: "inherit",
+    fontSize: "14px",
+    fontWeight: "600",
+    color: "#0F172A",
+    cursor: "pointer",
+    boxSizing: "border-box",
   };
 
   return (
     <div
       style={{
-        maxWidth: "850px",
+        width: "100%",
+        maxWidth: "760px",
         margin: "0 auto",
         background: "#ffffff",
         borderRadius: "18px",
         padding: "12px",
+        boxSizing: "border-box",
         boxShadow: "0 15px 45px rgba(15, 23, 42, 0.10)",
+        border: "1px solid #E2E8F0",
+
         display: "grid",
-        gridTemplateColumns: "1fr 1.15fr auto",
-        gridTemplateRows: "auto auto",
-        columnGap: "16px",
+        gridTemplateColumns: "210px 1fr 120px",
+        gridTemplateRows: "54px 54px",
+        columnGap: "12px",
         rowGap: "10px",
+
         position: "relative",
         textAlign: "left",
-        border: "1px solid #E2E8F0",
       }}
     >
       {/* =========================
@@ -299,9 +292,9 @@ export default function SearchBox({
       <div
         style={{
           position: "relative",
-          minWidth: 0,
           gridColumn: "1",
           gridRow: "1",
+          minWidth: 0,
         }}
       >
         <input
@@ -349,33 +342,20 @@ export default function SearchBox({
                   <button
                     key={city.id}
                     type="button"
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                    }}
+                    onMouseDown={(event) => event.preventDefault()}
                     onClick={() => chooseCity(city)}
                     style={{
-                      width: "100%",
-                      minHeight: "46px",
-                      display: "block",
-                      border: "none",
-                      borderBottom: "1px solid #F1F5F9",
+                      ...optionStyle,
                       background:
                         selectedCity?.id === city.id
                           ? "#EFF6FF"
                           : "#ffffff",
-                      padding: "13px 16px",
-                      textAlign: "left",
-                      fontFamily: "inherit",
-                      fontSize: "14px",
-                      fontWeight:
-                        selectedCity?.id === city.id ? "800" : "600",
                       color:
                         selectedCity?.id === city.id
                           ? "#2563EB"
                           : "#0F172A",
-                      cursor: "pointer",
-                      boxSizing: "border-box",
-                      transition: "background-color 120ms ease",
+                      fontWeight:
+                        selectedCity?.id === city.id ? "800" : "600",
                     }}
                     onMouseEnter={(event) => {
                       event.currentTarget.style.background = "#F8FAFC";
@@ -393,7 +373,7 @@ export default function SearchBox({
               ) : (
                 <div
                   style={{
-                    padding: "16px",
+                    padding: "15px",
                     color: "#64748B",
                     fontSize: "14px",
                   }}
@@ -413,9 +393,9 @@ export default function SearchBox({
       <div
         style={{
           position: "relative",
-          minWidth: 0,
           gridColumn: "1",
           gridRow: "2",
+          minWidth: 0,
         }}
       >
         <input
@@ -463,47 +443,20 @@ export default function SearchBox({
             <div style={dropdownScrollStyle}>
               <button
                 type="button"
-                onMouseDown={(event) => {
-                  event.preventDefault();
-                }}
+                onMouseDown={(event) => event.preventDefault()}
                 onClick={() => {
                   setSelectedNeighborhood(null);
                   setNeighborhoodQuery("");
                   setShowNeighborhoodSuggestions(false);
                 }}
                 style={{
-                  width: "100%",
-                  display: "block",
-                  border: "none",
-                  borderBottom: "1px solid #E2E8F0",
+                  ...optionStyle,
                   background: "#EFF6FF",
-                  padding: "14px 16px",
-                  textAlign: "left",
-                  fontFamily: "inherit",
-                  cursor: "pointer",
-                  boxSizing: "border-box",
+                  color: "#2563EB",
+                  fontWeight: "800",
                 }}
               >
-                <div
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: "800",
-                    color: "#2563EB",
-                  }}
-                >
-                  Toate zonele din {selectedCity.name}
-                </div>
-
-                <div
-                  style={{
-                    fontSize: "12px",
-                    color: "#64748B",
-                    marginTop: "4px",
-                    lineHeight: "1.4",
-                  }}
-                >
-                  Fără filtrare după cartier
-                </div>
+                Toate zonele
               </button>
 
               {filteredNeighborhoods.length > 0 ? (
@@ -511,35 +464,22 @@ export default function SearchBox({
                   <button
                     key={neighborhood.id}
                     type="button"
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                    }}
+                    onMouseDown={(event) => event.preventDefault()}
                     onClick={() => chooseNeighborhood(neighborhood)}
                     style={{
-                      width: "100%",
-                      minHeight: "46px",
-                      display: "block",
-                      border: "none",
-                      borderBottom: "1px solid #F1F5F9",
+                      ...optionStyle,
                       background:
                         selectedNeighborhood?.id === neighborhood.id
                           ? "#EFF6FF"
                           : "#ffffff",
-                      padding: "13px 16px",
-                      textAlign: "left",
-                      fontFamily: "inherit",
-                      fontSize: "14px",
-                      fontWeight:
-                        selectedNeighborhood?.id === neighborhood.id
-                          ? "800"
-                          : "600",
                       color:
                         selectedNeighborhood?.id === neighborhood.id
                           ? "#2563EB"
                           : "#0F172A",
-                      cursor: "pointer",
-                      boxSizing: "border-box",
-                      transition: "background-color 120ms ease",
+                      fontWeight:
+                        selectedNeighborhood?.id === neighborhood.id
+                          ? "800"
+                          : "600",
                     }}
                     onMouseEnter={(event) => {
                       event.currentTarget.style.background = "#F8FAFC";
@@ -557,7 +497,7 @@ export default function SearchBox({
               ) : (
                 <div
                   style={{
-                    padding: "16px",
+                    padding: "15px",
                     color: "#64748B",
                     fontSize: "14px",
                   }}
@@ -577,11 +517,9 @@ export default function SearchBox({
       <div
         style={{
           position: "relative",
-          minWidth: 0,
           gridColumn: "2",
-          gridRow: "1 / span 2",
-          display: "flex",
-          alignItems: "stretch",
+          gridRow: "1",
+          minWidth: 0,
         }}
       >
         <input
@@ -618,7 +556,6 @@ export default function SearchBox({
           }}
           style={{
             ...inputStyle,
-            height: "100%",
             background: selectedCity ? "#ffffff" : "#F8FAFC",
             cursor: selectedCity ? "text" : "not-allowed",
             opacity: selectedCity ? 1 : 0.65,
@@ -630,43 +567,27 @@ export default function SearchBox({
             <div style={dropdownScrollStyle}>
               <button
                 type="button"
-                onMouseDown={(event) => {
-                  event.preventDefault();
-                }}
+                onMouseDown={(event) => event.preventDefault()}
                 onClick={() => {
                   setSelectedUniversity(null);
                   setUniversityQuery("");
                   setShowUniversitySuggestions(false);
                 }}
                 style={{
-                  width: "100%",
-                  display: "block",
-                  border: "none",
-                  borderBottom: "1px solid #E2E8F0",
+                  ...optionStyle,
                   background: "#EFF6FF",
-                  padding: "14px 16px",
-                  textAlign: "left",
-                  fontFamily: "inherit",
-                  cursor: "pointer",
-                  boxSizing: "border-box",
+                  color: "#2563EB",
+                  fontWeight: "800",
                 }}
               >
-                <div
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: "800",
-                    color: "#2563EB",
-                  }}
-                >
-                  Toate chiriile din {selectedCity.name}
-                </div>
+                <div>Toate chiriile din {selectedCity.name}</div>
 
                 <div
                   style={{
                     fontSize: "12px",
                     color: "#64748B",
-                    marginTop: "4px",
-                    lineHeight: "1.4",
+                    marginTop: "3px",
+                    fontWeight: "500",
                   }}
                 >
                   Fără filtrare după universitate
@@ -678,25 +599,14 @@ export default function SearchBox({
                   <button
                     key={university.id}
                     type="button"
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                    }}
+                    onMouseDown={(event) => event.preventDefault()}
                     onClick={() => chooseUniversity(university)}
                     style={{
-                      width: "100%",
-                      display: "block",
-                      border: "none",
-                      borderBottom: "1px solid #F1F5F9",
+                      ...optionStyle,
                       background:
                         selectedUniversity?.id === university.id
                           ? "#EFF6FF"
                           : "#ffffff",
-                      padding: "13px 16px",
-                      textAlign: "left",
-                      fontFamily: "inherit",
-                      cursor: "pointer",
-                      boxSizing: "border-box",
-                      transition: "background-color 120ms ease",
                     }}
                     onMouseEnter={(event) => {
                       event.currentTarget.style.background = "#F8FAFC";
@@ -710,7 +620,6 @@ export default function SearchBox({
                   >
                     <div
                       style={{
-                        fontSize: "14px",
                         fontWeight: "700",
                         color: "#0F172A",
                       }}
@@ -723,8 +632,8 @@ export default function SearchBox({
                         style={{
                           fontSize: "12px",
                           color: "#64748B",
-                          marginTop: "4px",
-                          lineHeight: "1.4",
+                          marginTop: "3px",
+                          lineHeight: "1.35",
                         }}
                       >
                         {university.name}
@@ -735,7 +644,7 @@ export default function SearchBox({
               ) : (
                 <div
                   style={{
-                    padding: "16px",
+                    padding: "15px",
                     color: "#64748B",
                     fontSize: "14px",
                   }}
@@ -749,7 +658,7 @@ export default function SearchBox({
       </div>
 
       {/* =========================
-          BUTON CĂUTARE
+          BUTON
       ========================= */}
 
       <button
@@ -758,20 +667,20 @@ export default function SearchBox({
         disabled={!selectedCity}
         style={{
           gridColumn: "3",
-          gridRow: "1 / span 2",
+          gridRow: "1",
+          width: "120px",
+          height: "54px",
           border: "none",
           borderRadius: "12px",
-          padding: "0 24px",
-          minHeight: "54px",
+          padding: "0 15px",
           background: selectedCity ? "#172554" : "#94A3B8",
           color: "#ffffff",
-          fontSize: "16px",
+          fontSize: "14px",
           fontFamily: "inherit",
           fontWeight: "700",
           cursor: selectedCity ? "pointer" : "not-allowed",
           whiteSpace: "nowrap",
-          transition:
-            "background-color 150ms ease, opacity 150ms ease",
+          transition: "background-color 150ms ease",
           boxShadow: selectedCity
             ? "0 6px 16px rgba(23, 37, 84, 0.16)"
             : "none",
@@ -779,6 +688,8 @@ export default function SearchBox({
       >
         Vezi chirii
       </button>
+
+      {/* spațiul de sub universitate/buton rămâne liber intenționat */}
     </div>
   );
 }
