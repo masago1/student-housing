@@ -3,7 +3,7 @@ import { supabase } from "../../lib/supabase";
 export const dynamic = "force-dynamic";
 
 /*
-  Normalizăm numele orașului DOAR intern pentru comparație.
+  Normalizăm numele orașului DOAR intern.
 
   Exemple:
   Timișoara    -> timisoara
@@ -12,8 +12,6 @@ export const dynamic = "force-dynamic";
   Brașov       -> brasov
   Constanța    -> constanta
   Târgu Mureș  -> targu-mures
-
-  Utilizatorul NU vede această variantă.
 */
 function normalizeCity(value = "") {
   return decodeURIComponent(value)
@@ -24,10 +22,6 @@ function normalizeCity(value = "") {
     .replace(/\s+/g, "-");
 }
 
-/*
-  Folosit doar dacă nu avem încă niciun anunț
-  din care să putem lua numele real al orașului.
-*/
 function formatFallbackCityName(city = "") {
   return decodeURIComponent(city)
     .replace(/-/g, " ")
@@ -56,10 +50,6 @@ export default async function CityListingsPage({ params }) {
 
   /*
     Luăm toate anunțurile active.
-
-    Filtrarea după oraș o facem mai jos, după normalizare,
-    ca /chirii/timisoara să găsească "Timișoara",
-    /chirii/iasi să găsească "Iași" etc.
   */
   const { data: listings, error } = await supabase
     .from("listings")
@@ -93,9 +83,8 @@ export default async function CityListingsPage({ params }) {
   /*
     Filtrăm după oraș ignorând diacriticele.
 
-    Exemplu:
     URL: timisoara
-    DB:  Timișoara
+    DB: Timișoara
     => MATCH
   */
   const cityListings = (listings || []).filter(
@@ -105,10 +94,8 @@ export default async function CityListingsPage({ params }) {
   );
 
   /*
-    Pentru afișare folosim numele REAL din baza de date,
+    Pentru afișare folosim numele real din baza de date,
     cu diacritice.
-
-    /chirii/timisoara -> "Timișoara"
   */
   const cityName =
     cityListings.length > 0
@@ -395,7 +382,7 @@ export default async function CityListingsPage({ params }) {
                     }}
                   >
                     <div>
-                      {/* TITLU ANUNȚ */}
+                      {/* TITLU */}
 
                       <h2
                         style={{
@@ -426,6 +413,7 @@ export default async function CityListingsPage({ params }) {
                         }}
                       >
                         📍 {listing.city}
+
                         {listing.address
                           ? ` · ${listing.address}`
                           : ""}
@@ -442,7 +430,9 @@ export default async function CityListingsPage({ params }) {
                           marginTop: "13px",
                         }}
                       >
-                        {listing.rooms && (
+                        {/* CAMERE - afișăm doar dacă > 0 */}
+
+                        {Number(listing.rooms) > 0 && (
                           <span style={detailBadge}>
                             {listing.rooms}{" "}
                             {Number(listing.rooms) === 1
@@ -451,19 +441,25 @@ export default async function CityListingsPage({ params }) {
                           </span>
                         )}
 
-                        {listing.surface_m2 && (
+                        {/* SUPRAFAȚĂ - afișăm doar dacă > 0 */}
+
+                        {Number(listing.surface_m2) > 0 && (
                           <span style={detailBadge}>
                             {listing.surface_m2} m²
                           </span>
                         )}
 
-                        {listing.furnished && (
+                        {/* MOBILAT */}
+
+                        {listing.furnished === true && (
                           <span style={detailBadge}>
                             Mobilat
                           </span>
                         )}
 
-                        {listing.bathrooms && (
+                        {/* BĂI - afișăm doar dacă > 0 */}
+
+                        {Number(listing.bathrooms) > 0 && (
                           <span style={detailBadge}>
                             {listing.bathrooms}{" "}
                             {Number(listing.bathrooms) === 1
@@ -472,7 +468,9 @@ export default async function CityListingsPage({ params }) {
                           </span>
                         )}
 
-                        {listing.bedrooms && (
+                        {/* DORMITOARE - afișăm doar dacă > 0 */}
+
+                        {Number(listing.bedrooms) > 0 && (
                           <span style={detailBadge}>
                             {listing.bedrooms}{" "}
                             {Number(listing.bedrooms) === 1
@@ -483,7 +481,7 @@ export default async function CityListingsPage({ params }) {
                       </div>
                     </div>
 
-                    {/* INFORMAȚII SECUNDARE */}
+                    {/* DATE */}
 
                     <div
                       style={{
