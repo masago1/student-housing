@@ -165,11 +165,9 @@ export default function SearchBox({
     setSelectedCity(city);
     setCityQuery(city.name);
 
-    // Resetăm cartierul când schimbăm orașul
     setSelectedNeighborhood(null);
     setNeighborhoodQuery("");
 
-    // Resetăm universitatea când schimbăm orașul
     setSelectedUniversity(null);
     setUniversityQuery("");
 
@@ -221,24 +219,10 @@ export default function SearchBox({
       ? `?zona=${encodeURIComponent(selectedNeighborhood.slug)}`
       : "";
 
-    /*
-      FĂRĂ UNIVERSITATE:
-      /chirii/timisoara
-      sau
-      /chirii/timisoara?zona=complex-studentesc
-    */
-
     if (!selectedUniversity) {
       router.push(`/chirii/${citySlug}${neighborhoodPart}`);
       return;
     }
-
-    /*
-      CU UNIVERSITATE:
-      /chirii/timisoara/umft
-      sau
-      /chirii/timisoara/umft?zona=complex-studentesc
-    */
 
     const universitySlug = slugify(
       selectedUniversity.short_name || selectedUniversity.name
@@ -250,7 +234,7 @@ export default function SearchBox({
   };
 
   /* =========================
-     INPUT STYLE
+     STILURI
   ========================= */
 
   const inputStyle = {
@@ -292,16 +276,17 @@ export default function SearchBox({
   return (
     <div
       style={{
-        maxWidth: "950px",
+        maxWidth: "850px",
         margin: "0 auto",
         background: "#ffffff",
         borderRadius: "18px",
         padding: "12px",
         boxShadow: "0 15px 45px rgba(15, 23, 42, 0.10)",
         display: "grid",
-        gridTemplateColumns: "1fr 1.6fr auto",
+        gridTemplateColumns: "1fr 1.15fr auto",
         gridTemplateRows: "auto auto",
-        gap: "10px",
+        columnGap: "16px",
+        rowGap: "10px",
         position: "relative",
         textAlign: "left",
         border: "1px solid #E2E8F0",
@@ -355,8 +340,6 @@ export default function SearchBox({
             background: "#ffffff",
           }}
         />
-
-        {/* DROPDOWN ORAȘE */}
 
         {showCitySuggestions && (
           <div style={dropdownStyle}>
@@ -475,13 +458,9 @@ export default function SearchBox({
           }}
         />
 
-        {/* DROPDOWN CARTIERE */}
-
         {showNeighborhoodSuggestions && selectedCity && (
           <div style={dropdownStyle}>
             <div style={dropdownScrollStyle}>
-              {/* TOATE ZONELE */}
-
               <button
                 type="button"
                 onMouseDown={(event) => {
@@ -646,13 +625,9 @@ export default function SearchBox({
           }}
         />
 
-        {/* DROPDOWN UNIVERSITĂȚI */}
-
         {showUniversitySuggestions && selectedCity && (
           <div style={dropdownStyle}>
             <div style={dropdownScrollStyle}>
-              {/* TOATE CHIRIILE */}
-
               <button
                 type="button"
                 onMouseDown={(event) => {
@@ -786,7 +761,7 @@ export default function SearchBox({
           gridRow: "1 / span 2",
           border: "none",
           borderRadius: "12px",
-          padding: "0 27px",
+          padding: "0 24px",
           minHeight: "54px",
           background: selectedCity ? "#172554" : "#94A3B8",
           color: "#ffffff",
