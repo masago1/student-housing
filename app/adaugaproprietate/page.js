@@ -283,12 +283,7 @@ export default function AdaugaProprietatePage() {
             return;
         }
 
-        if (selectedUniversityIds.length === 0) {
-            setError(
-                "Alege cel puțin o universitate sau facultate apropiată proprietății."
-            );
-            return;
-        }
+        // UNIVERSITATEA NU MAI ESTE OBLIGATORIE
 
         if (!form.address.trim()) {
             setError("Completează adresa proprietății.");
@@ -409,29 +404,31 @@ export default function AdaugaProprietatePage() {
             listingId = createdListing.id;
 
             /* =========================
-               UNIVERSITĂȚI
+               UNIVERSITĂȚI - OPȚIONAL
             ========================= */
 
-            const universityLinks =
-                selectedUniversityIds.map(
-                    (universityId) => ({
-                        listing_id: listingId,
-                        university_id: universityId,
-                        distance_meters: null,
-                        walking_minutes: null,
-                    })
-                );
+            if (selectedUniversityIds.length > 0) {
+                const universityLinks =
+                    selectedUniversityIds.map(
+                        (universityId) => ({
+                            listing_id: listingId,
+                            university_id: universityId,
+                            distance_meters: null,
+                            walking_minutes: null,
+                        })
+                    );
 
-            const {
-                error: universityLinkError,
-            } = await supabase
-                .from("listing_universities")
-                .insert(universityLinks);
+                const {
+                    error: universityLinkError,
+                } = await supabase
+                    .from("listing_universities")
+                    .insert(universityLinks);
 
-            if (universityLinkError) {
-                throw new Error(
-                    `Universitățile nu au putut fi asociate anunțului: ${universityLinkError.message}`
-                );
+                if (universityLinkError) {
+                    throw new Error(
+                        `Universitățile nu au putut fi asociate anunțului: ${universityLinkError.message}`
+                    );
+                }
             }
 
             /* =========================
@@ -545,7 +542,7 @@ export default function AdaugaProprietatePage() {
             }
 
             setSuccess(
-                "Proprietatea a fost publicată și asociată universităților selectate cu succes."
+                "Proprietatea a fost publicată cu succes."
             );
 
             setTimeout(() => {
@@ -790,7 +787,7 @@ export default function AdaugaProprietatePage() {
                 </div>
 
                 <form onSubmit={handleSubmit}>
-                                              {/* =========================
+                    {/* =========================
                         FOTOGRAFII
                     ========================= */}
 
@@ -987,7 +984,7 @@ export default function AdaugaProprietatePage() {
                                 type="text"
                                 value={form.title}
                                 onChange={updateField}
-                                placeholder="Ex: Apartament 2 camere aproape de UMFT"
+                                placeholder="Ex: Apartament 2 camere în Timișoara"
                                 style={inputStyle}
                             />
                         </div>
@@ -1070,7 +1067,7 @@ export default function AdaugaProprietatePage() {
 
                             <div style={fieldStyle}>
                                 <label style={labelStyle}>
-                                    Universități apropiate
+                                    Universități apropiate (opțional)
                                 </label>
 
                                 <div
@@ -1198,8 +1195,7 @@ export default function AdaugaProprietatePage() {
                                                 fontWeight: "700",
                                             }}
                                         >
-                                            {selectedUniversityIds.length ===
-                                            1
+                                            {selectedUniversityIds.length === 1
                                                 ? "1 universitate selectată"
                                                 : `${selectedUniversityIds.length} universități selectate`}
                                         </div>
@@ -1219,11 +1215,10 @@ export default function AdaugaProprietatePage() {
                                 marginBottom: "22px",
                             }}
                         >
-                            Selectează toate universitățile aflate în apropierea
-                            proprietății. Anunțul va apărea în căutările pentru
-                            fiecare universitate selectată.
+                            Poți selecta una sau mai multe universități apropiate dacă
+                            dorești. Este opțional. Anunțul va apărea oricum în
+                            căutările generale pentru orașul selectat.
                         </div>
-
                         <div
                             style={{
                                 display: "grid",
@@ -1411,7 +1406,8 @@ export default function AdaugaProprietatePage() {
                             border: "1px solid #e5e7eb",
                             borderRadius: "20px",
                             padding: "32px",
-                            boxShadow: "0 12px 35px rgba(17,24,39,0.05)",
+                            boxShadow:
+                                "0 12px 35px rgba(17,24,39,0.05)",
                             marginBottom: "22px",
                         }}
                     >
@@ -1563,8 +1559,9 @@ export default function AdaugaProprietatePage() {
                                     marginTop: "5px",
                                 }}
                             >
-                                Verifică informațiile, universitățile și
-                                fotografiile înainte de publicare.
+                                Verifică informațiile și fotografiile înainte
+                                de publicare. Asocierea cu universități este
+                                opțională.
                             </div>
                         </div>
 
