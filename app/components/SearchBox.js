@@ -132,11 +132,26 @@ export default function SearchBox({ universities = [] }) {
   ========================= */
 
   const handleSearch = () => {
-    if (!selectedCity || !selectedUniversity) {
+    if (!selectedCity) {
       return;
     }
 
     const citySlug = slugify(selectedCity);
+
+    /*
+      Dacă NU este selectată o universitate,
+      mergem la toate chiriile din oraș.
+    */
+
+    if (!selectedUniversity) {
+      router.push(`/chirii/${citySlug}`);
+      return;
+    }
+
+    /*
+      Dacă avem și universitate,
+      mergem la pagina specifică universității.
+    */
 
     const universitySlug = slugify(
       selectedUniversity.short_name || selectedUniversity.name
@@ -153,12 +168,13 @@ export default function SearchBox({ universities = [] }) {
         background: "#ffffff",
         borderRadius: "18px",
         padding: "12px",
-        boxShadow: "0 15px 45px rgba(0,0,0,0.10)",
+        boxShadow: "0 15px 45px rgba(15, 23, 42, 0.10)",
         display: "grid",
         gridTemplateColumns: "1fr 1.6fr auto",
         gap: "10px",
         position: "relative",
         textAlign: "left",
+        border: "1px solid #E2E8F0",
       }}
     >
       {/* =========================
@@ -198,13 +214,13 @@ export default function SearchBox({ universities = [] }) {
           style={{
             width: "100%",
             boxSizing: "border-box",
-            border: "1px solid #e5e7eb",
+            border: "1px solid #E2E8F0",
             borderRadius: "12px",
             padding: "17px",
             fontSize: "15px",
             fontFamily: "inherit",
             fontWeight: "500",
-            color: "#111827",
+            color: "#0F172A",
             outline: "none",
             background: "#ffffff",
           }}
@@ -220,9 +236,9 @@ export default function SearchBox({ universities = [] }) {
               left: 0,
               right: 0,
               background: "#ffffff",
-              border: "1px solid #e5e7eb",
+              border: "1px solid #E2E8F0",
               borderRadius: "12px",
-              boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
+              boxShadow: "0 12px 30px rgba(15, 23, 42, 0.12)",
               zIndex: 9999,
               overflow: "hidden",
             }}
@@ -252,10 +268,10 @@ export default function SearchBox({ universities = [] }) {
                       minHeight: "46px",
                       display: "block",
                       border: "none",
-                      borderBottom: "1px solid #f3f4f6",
+                      borderBottom: "1px solid #F1F5F9",
                       background:
                         selectedCity === city
-                          ? "#eff6ff"
+                          ? "#EFF6FF"
                           : "#ffffff",
                       padding: "13px 16px",
                       textAlign: "left",
@@ -263,18 +279,22 @@ export default function SearchBox({ universities = [] }) {
                       fontSize: "14px",
                       fontWeight:
                         selectedCity === city ? "800" : "600",
-                      color: "#111827",
+                      color:
+                        selectedCity === city
+                          ? "#2563EB"
+                          : "#0F172A",
                       cursor: "pointer",
                       boxSizing: "border-box",
-                      transition:
-                        "background-color 120ms ease",
+                      transition: "background-color 120ms ease",
                     }}
                     onMouseEnter={(event) => {
-                      event.currentTarget.style.background = "#f3f4f6";
+                      event.currentTarget.style.background = "#F8FAFC";
                     }}
                     onMouseLeave={(event) => {
                       event.currentTarget.style.background =
-                        selectedCity === city ? "#eff6ff" : "#ffffff";
+                        selectedCity === city
+                          ? "#EFF6FF"
+                          : "#ffffff";
                     }}
                   >
                     {city}
@@ -284,7 +304,7 @@ export default function SearchBox({ universities = [] }) {
                 <div
                   style={{
                     padding: "16px",
-                    color: "#6b7280",
+                    color: "#64748B",
                     fontSize: "14px",
                   }}
                 >
@@ -311,7 +331,7 @@ export default function SearchBox({ universities = [] }) {
           value={universityQuery}
           placeholder={
             selectedCity
-              ? "Alege universitatea"
+              ? "Universitate (opțional)"
               : "Alege mai întâi orașul"
           }
           disabled={!selectedCity}
@@ -338,15 +358,15 @@ export default function SearchBox({ universities = [] }) {
           style={{
             width: "100%",
             boxSizing: "border-box",
-            border: "1px solid #e5e7eb",
+            border: "1px solid #E2E8F0",
             borderRadius: "12px",
             padding: "17px",
             fontSize: "15px",
             fontFamily: "inherit",
             fontWeight: "500",
-            color: "#111827",
+            color: "#0F172A",
             outline: "none",
-            background: selectedCity ? "#ffffff" : "#f9fafb",
+            background: selectedCity ? "#ffffff" : "#F8FAFC",
             cursor: selectedCity ? "text" : "not-allowed",
             opacity: selectedCity ? 1 : 0.65,
           }}
@@ -362,9 +382,9 @@ export default function SearchBox({ universities = [] }) {
               left: 0,
               right: 0,
               background: "#ffffff",
-              border: "1px solid #e5e7eb",
+              border: "1px solid #E2E8F0",
               borderRadius: "12px",
-              boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
+              boxShadow: "0 12px 30px rgba(15, 23, 42, 0.12)",
               zIndex: 9999,
               overflow: "hidden",
             }}
@@ -380,6 +400,53 @@ export default function SearchBox({ universities = [] }) {
                 scrollBehavior: "smooth",
               }}
             >
+              {/* OPȚIUNEA TOATE CHIRIILE */}
+
+              <button
+                type="button"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                }}
+                onClick={() => {
+                  setSelectedUniversity(null);
+                  setUniversityQuery("");
+                  setShowUniversitySuggestions(false);
+                }}
+                style={{
+                  width: "100%",
+                  display: "block",
+                  border: "none",
+                  borderBottom: "1px solid #E2E8F0",
+                  background: "#EFF6FF",
+                  padding: "14px 16px",
+                  textAlign: "left",
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                  boxSizing: "border-box",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "800",
+                    color: "#2563EB",
+                  }}
+                >
+                  Toate chiriile din {selectedCity}
+                </div>
+
+                <div
+                  style={{
+                    fontSize: "12px",
+                    color: "#64748B",
+                    marginTop: "4px",
+                    lineHeight: "1.4",
+                  }}
+                >
+                  Fără filtrare după universitate
+                </div>
+              </button>
+
               {filteredUniversities.length > 0 ? (
                 filteredUniversities.map((university) => (
                   <button
@@ -393,26 +460,25 @@ export default function SearchBox({ universities = [] }) {
                       width: "100%",
                       display: "block",
                       border: "none",
-                      borderBottom: "1px solid #f3f4f6",
+                      borderBottom: "1px solid #F1F5F9",
                       background:
                         selectedUniversity?.id === university.id
-                          ? "#eff6ff"
+                          ? "#EFF6FF"
                           : "#ffffff",
                       padding: "13px 16px",
                       textAlign: "left",
                       fontFamily: "inherit",
                       cursor: "pointer",
                       boxSizing: "border-box",
-                      transition:
-                        "background-color 120ms ease",
+                      transition: "background-color 120ms ease",
                     }}
                     onMouseEnter={(event) => {
-                      event.currentTarget.style.background = "#f3f4f6";
+                      event.currentTarget.style.background = "#F8FAFC";
                     }}
                     onMouseLeave={(event) => {
                       event.currentTarget.style.background =
                         selectedUniversity?.id === university.id
-                          ? "#eff6ff"
+                          ? "#EFF6FF"
                           : "#ffffff";
                     }}
                   >
@@ -420,7 +486,7 @@ export default function SearchBox({ universities = [] }) {
                       style={{
                         fontSize: "14px",
                         fontWeight: "700",
-                        color: "#111827",
+                        color: "#0F172A",
                       }}
                     >
                       {university.short_name || university.name}
@@ -430,7 +496,7 @@ export default function SearchBox({ universities = [] }) {
                       <div
                         style={{
                           fontSize: "12px",
-                          color: "#6b7280",
+                          color: "#64748B",
                           marginTop: "4px",
                           lineHeight: "1.4",
                         }}
@@ -444,7 +510,7 @@ export default function SearchBox({ universities = [] }) {
                 <div
                   style={{
                     padding: "16px",
-                    color: "#6b7280",
+                    color: "#64748B",
                     fontSize: "14px",
                   }}
                 >
@@ -463,27 +529,28 @@ export default function SearchBox({ universities = [] }) {
       <button
         type="button"
         onClick={handleSearch}
-        disabled={!selectedCity || !selectedUniversity}
+        disabled={!selectedCity}
         style={{
           border: "none",
           borderRadius: "12px",
           padding: "0 27px",
           minHeight: "54px",
-          background:
-            selectedCity && selectedUniversity
-              ? "#2563eb"
-              : "#93b4f5",
+          background: selectedCity
+            ? "#172554"
+            : "#94A3B8",
           color: "#ffffff",
           fontSize: "16px",
           fontFamily: "inherit",
           fontWeight: "700",
-          cursor:
-            selectedCity && selectedUniversity
-              ? "pointer"
-              : "not-allowed",
+          cursor: selectedCity
+            ? "pointer"
+            : "not-allowed",
           whiteSpace: "nowrap",
           transition:
             "background-color 150ms ease, opacity 150ms ease",
+          boxShadow: selectedCity
+            ? "0 6px 16px rgba(23, 37, 84, 0.16)"
+            : "none",
         }}
       >
         Vezi chirii
