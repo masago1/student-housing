@@ -116,7 +116,7 @@ export default function DashboardPage() {
   const menuItemStyle = (section) => ({
     width: "100%",
     border: "none",
-    borderRadius: "9px",
+    borderRadius: "10px",
     padding: "13px 14px",
     textAlign: "left",
     fontFamily: "inherit",
@@ -124,9 +124,10 @@ export default function DashboardPage() {
     fontWeight: activeSection === section ? "800" : "600",
     cursor: "pointer",
     background:
-      activeSection === section ? "#f3f4f6" : "transparent",
+      activeSection === section ? "#EFF6FF" : "transparent",
     color:
-      activeSection === section ? "#111827" : "#6b7280",
+      activeSection === section ? "#3B82F6" : "#64748B",
+    transition: "all 0.2s ease",
   });
 
   if (loading) {
@@ -134,11 +135,11 @@ export default function DashboardPage() {
       <main
         style={{
           minHeight: "100vh",
-          background: "#f7f8fa",
+          background: "#F4F7FB",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: "#6b7280",
+          color: "#64748B",
           fontSize: "15px",
           fontWeight: "600",
         }}
@@ -152,8 +153,8 @@ export default function DashboardPage() {
     <main
       style={{
         minHeight: "100vh",
-        background: "#f7f8fa",
-        color: "#111827",
+        background: "#F4F7FB",
+        color: "#0F172A",
       }}
     >
       {/* HEADER */}
@@ -161,26 +162,27 @@ export default function DashboardPage() {
       <header
         style={{
           height: "72px",
-          background: "#ffffff",
-          borderBottom: "1px solid #e5e7eb",
+          background: "#FFFFFF",
+          borderBottom: "1px solid #E2E8F0",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           padding: "0 5%",
           boxSizing: "border-box",
+          boxShadow: "0 1px 8px rgba(15, 23, 42, 0.03)",
         }}
       >
         <a
           href="/"
           style={{
-            color: "#111827",
             textDecoration: "none",
             fontSize: "25px",
             fontWeight: "800",
             letterSpacing: "-1px",
           }}
         >
-          StudentHousing
+          <span style={{ color: "#172554" }}>Student</span>
+          <span style={{ color: "#3B82F6" }}>Housing</span>
         </a>
 
         <div
@@ -192,7 +194,7 @@ export default function DashboardPage() {
         >
           <span
             style={{
-              color: "#6b7280",
+              color: "#64748B",
               fontSize: "13px",
               fontWeight: "600",
             }}
@@ -204,11 +206,11 @@ export default function DashboardPage() {
             type="button"
             onClick={handleLogout}
             style={{
-              border: "1px solid #e5e7eb",
-              background: "#ffffff",
+              border: "1px solid #E2E8F0",
+              background: "#FFFFFF",
               borderRadius: "9px",
               padding: "9px 14px",
-              color: "#111827",
+              color: "#172554",
               fontFamily: "inherit",
               fontSize: "13px",
               fontWeight: "700",
@@ -233,8 +235,8 @@ export default function DashboardPage() {
 
         <aside
           style={{
-            background: "#ffffff",
-            borderRight: "1px solid #e5e7eb",
+            background: "#FFFFFF",
+            borderRight: "1px solid #E2E8F0",
             padding: "32px 20px",
             boxSizing: "border-box",
           }}
@@ -243,7 +245,7 @@ export default function DashboardPage() {
             style={{
               fontSize: "11px",
               fontWeight: "800",
-              color: "#9ca3af",
+              color: "#94A3B8",
               letterSpacing: "0.7px",
               padding: "0 14px",
               marginBottom: "14px",
@@ -296,7 +298,7 @@ export default function DashboardPage() {
             style={{
               marginTop: "25px",
               paddingTop: "22px",
-              borderTop: "1px solid #f3f4f6",
+              borderTop: "1px solid #EFF6FF",
             }}
           >
             <button
@@ -307,12 +309,13 @@ export default function DashboardPage() {
                 border: "none",
                 borderRadius: "10px",
                 padding: "13px",
-                background: "#111827",
-                color: "#ffffff",
+                background: "#172554",
+                color: "#FFFFFF",
                 fontFamily: "inherit",
                 fontSize: "14px",
                 fontWeight: "800",
                 cursor: "pointer",
+                boxShadow: "0 6px 16px rgba(23, 37, 84, 0.16)",
               }}
             >
               + Adaugă anunț
@@ -343,6 +346,7 @@ export default function DashboardPage() {
                     fontSize: "34px",
                     fontWeight: "800",
                     letterSpacing: "-1px",
+                    color: "#172554",
                   }}
                 >
                   Bun venit
@@ -351,7 +355,7 @@ export default function DashboardPage() {
                 <p
                   style={{
                     margin: "9px 0 0",
-                    color: "#6b7280",
+                    color: "#64748B",
                     fontSize: "15px",
                   }}
                 >
@@ -401,6 +405,7 @@ export default function DashboardPage() {
                     margin: 0,
                     fontSize: "21px",
                     fontWeight: "800",
+                    color: "#172554",
                   }}
                 >
                   Anunțurile tale
@@ -415,7 +420,7 @@ export default function DashboardPage() {
                     style={{
                       border: "none",
                       background: "transparent",
-                      color: "#2563eb",
+                      color: "#3B82F6",
                       fontFamily: "inherit",
                       fontSize: "13px",
                       fontWeight: "700",
@@ -455,6 +460,7 @@ export default function DashboardPage() {
                       fontSize: "34px",
                       fontWeight: "800",
                       letterSpacing: "-1px",
+                      color: "#172554",
                     }}
                   >
                     Anunțurile tale
@@ -463,7 +469,7 @@ export default function DashboardPage() {
                   <p
                     style={{
                       margin: "9px 0 0",
-                      color: "#6b7280",
+                      color: "#64748B",
                       fontSize: "15px",
                     }}
                   >
@@ -480,12 +486,14 @@ export default function DashboardPage() {
                     border: "none",
                     borderRadius: "10px",
                     padding: "12px 17px",
-                    background: "#111827",
-                    color: "#ffffff",
+                    background: "#172554",
+                    color: "#FFFFFF",
                     fontFamily: "inherit",
                     fontSize: "13px",
                     fontWeight: "800",
                     cursor: "pointer",
+                    boxShadow:
+                      "0 6px 16px rgba(23, 37, 84, 0.16)",
                   }}
                 >
                   + Adaugă anunț
@@ -510,6 +518,7 @@ export default function DashboardPage() {
                   fontSize: "34px",
                   fontWeight: "800",
                   letterSpacing: "-1px",
+                  color: "#172554",
                 }}
               >
                 Mesaje
@@ -518,7 +527,7 @@ export default function DashboardPage() {
               <p
                 style={{
                   margin: "9px 0 28px",
-                  color: "#6b7280",
+                  color: "#64748B",
                   fontSize: "15px",
                 }}
               >
@@ -543,6 +552,7 @@ export default function DashboardPage() {
                   fontSize: "34px",
                   fontWeight: "800",
                   letterSpacing: "-1px",
+                  color: "#172554",
                 }}
               >
                 Favorite
@@ -551,7 +561,7 @@ export default function DashboardPage() {
               <p
                 style={{
                   margin: "9px 0 28px",
-                  color: "#6b7280",
+                  color: "#64748B",
                   fontSize: "15px",
                 }}
               >
@@ -569,9 +579,9 @@ export default function DashboardPage() {
             <div
               style={{
                 marginTop: "22px",
-                background: "#fef2f2",
-                border: "1px solid #fecaca",
-                color: "#b91c1c",
+                background: "#FEF2F2",
+                border: "1px solid #FECACA",
+                color: "#B91C1C",
                 borderRadius: "11px",
                 padding: "13px 15px",
                 fontSize: "13px",
@@ -590,8 +600,9 @@ function StatCard({ number, title }) {
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #e5e7eb",
+        background: "#FFFFFF",
+        border: "1px solid #E2E8F0",
+        boxShadow: "0 8px 24px rgba(15, 23, 42, 0.05)",
         borderRadius: "14px",
         padding: "22px",
         minHeight: "95px",
@@ -604,6 +615,7 @@ function StatCard({ number, title }) {
           lineHeight: "1",
           fontWeight: "800",
           letterSpacing: "-1px",
+          color: "#172554",
         }}
       >
         {number}
@@ -612,7 +624,7 @@ function StatCard({ number, title }) {
       <div
         style={{
           marginTop: "11px",
-          color: "#6b7280",
+          color: "#64748B",
           fontSize: "13px",
           fontWeight: "700",
         }}
@@ -632,16 +644,18 @@ function ListingsList({
     return (
       <div
         style={{
-          background: "#ffffff",
-          border: "1px solid #e5e7eb",
+          background: "#FFFFFF",
+          border: "1px solid #E2E8F0",
           borderRadius: "16px",
           padding: "45px 25px",
+          boxShadow: "0 8px 24px rgba(15, 23, 42, 0.04)",
         }}
       >
         <div
           style={{
             fontSize: "17px",
             fontWeight: "800",
+            color: "#172554",
           }}
         >
           Nu ai publicat încă niciun anunț
@@ -649,7 +663,7 @@ function ListingsList({
 
         <div
           style={{
-            color: "#6b7280",
+            color: "#64748B",
             fontSize: "13px",
             marginTop: "7px",
           }}
@@ -672,8 +686,9 @@ function ListingsList({
         <div
           key={listing.id}
           style={{
-            background: "#ffffff",
-            border: "1px solid #e5e7eb",
+            background: "#FFFFFF",
+            border: "1px solid #E2E8F0",
+            boxShadow: "0 8px 24px rgba(15, 23, 42, 0.04)",
             borderRadius: "15px",
             padding: "14px",
             display: "grid",
@@ -688,7 +703,7 @@ function ListingsList({
             style={{
               width: "135px",
               height: "105px",
-              background: "#f3f4f6",
+              background: "#EFF6FF",
               borderRadius: "10px",
               overflow: "hidden",
             }}
@@ -712,7 +727,7 @@ function ListingsList({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: "#9ca3af",
+                  color: "#94A3B8",
                   fontSize: "11px",
                 }}
               >
@@ -742,6 +757,7 @@ function ListingsList({
                     margin: 0,
                     fontSize: "16px",
                     fontWeight: "800",
+                    color: "#0F172A",
                   }}
                 >
                   {listing.title}
@@ -749,7 +765,7 @@ function ListingsList({
 
                 <div
                   style={{
-                    color: "#6b7280",
+                    color: "#64748B",
                     fontSize: "12px",
                     marginTop: "5px",
                   }}
@@ -766,6 +782,7 @@ function ListingsList({
                   fontSize: "18px",
                   fontWeight: "800",
                   whiteSpace: "nowrap",
+                  color: "#172554",
                 }}
               >
                 {Number(
@@ -774,7 +791,7 @@ function ListingsList({
                 €
                 <span
                   style={{
-                    color: "#9ca3af",
+                    color: "#94A3B8",
                     fontSize: "11px",
                     fontWeight: "600",
                   }}
@@ -796,11 +813,11 @@ function ListingsList({
               <span
                 style={{
                   background: listing.active
-                    ? "#f0fdf4"
-                    : "#f3f4f6",
+                    ? "#DCFCE7"
+                    : "#EFF6FF",
                   color: listing.active
-                    ? "#166534"
-                    : "#6b7280",
+                    ? "#15803D"
+                    : "#64748B",
                   borderRadius: "100px",
                   padding: "5px 8px",
                   fontSize: "10px",
@@ -813,7 +830,7 @@ function ListingsList({
               {listing.rooms && (
                 <span
                   style={{
-                    color: "#6b7280",
+                    color: "#64748B",
                     fontSize: "11px",
                   }}
                 >
@@ -824,7 +841,7 @@ function ListingsList({
               {listing.surface_m2 && (
                 <span
                   style={{
-                    color: "#6b7280",
+                    color: "#64748B",
                     fontSize: "11px",
                   }}
                 >
@@ -871,8 +888,8 @@ function ListingsList({
                 style={{
                   ...actionButton,
                   color: listing.active
-                    ? "#b45309"
-                    : "#166534",
+                    ? "#D97706"
+                    : "#15803D",
                 }}
               >
                 {listing.active
@@ -892,16 +909,18 @@ function EmptyCard({ title, text }) {
     <div
       style={{
         maxWidth: "850px",
-        background: "#ffffff",
-        border: "1px solid #e5e7eb",
+        background: "#FFFFFF",
+        border: "1px solid #E2E8F0",
         borderRadius: "16px",
         padding: "45px 25px",
+        boxShadow: "0 8px 24px rgba(15, 23, 42, 0.04)",
       }}
     >
       <div
         style={{
           fontSize: "17px",
           fontWeight: "800",
+          color: "#172554",
         }}
       >
         {title}
@@ -909,7 +928,7 @@ function EmptyCard({ title, text }) {
 
       <div
         style={{
-          color: "#6b7280",
+          color: "#64748B",
           fontSize: "13px",
           lineHeight: "1.6",
           marginTop: "7px",
@@ -925,7 +944,7 @@ const actionButton = {
   border: "none",
   background: "transparent",
   padding: 0,
-  color: "#2563eb",
+  color: "#3B82F6",
   fontFamily: "inherit",
   fontSize: "12px",
   fontWeight: "700",
