@@ -230,7 +230,6 @@ export default function MessageOwnerButton({
 
       /*
         ACTUALIZĂM CONVERSAȚIA
-        ca să știm care conversație este cea mai recentă
       */
 
       const { error: updateError } = await supabase
@@ -249,8 +248,6 @@ export default function MessageOwnerButton({
 
       /*
         GATA
-        Trimitem utilizatorul în Dashboard -> Mesaje
-        și păstrăm id-ul conversației în URL.
       */
 
       setMessage("");
@@ -400,8 +397,6 @@ export default function MessageOwnerButton({
                 "0 25px 70px rgba(15, 23, 42, 0.25)",
             }}
           >
-            {/* ICON */}
-
             <div
               style={{
                 width: "48px",
@@ -561,9 +556,7 @@ export default function MessageOwnerButton({
                 lineHeight: "1.6",
               }}
             >
-              Scrie un mesaj despre această proprietate.
-              Proprietarul îl va vedea în contul său
-              StudentHousing.
+              Trimite un mesaj proprietarului.
             </p>
 
             {error &&
