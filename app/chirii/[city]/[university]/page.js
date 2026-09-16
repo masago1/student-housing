@@ -1,138 +1,55 @@
-import { supabase } from "../../../lib/supabase";
+import { supabase } from "../../lib/supabase";
 
 export const dynamic = "force-dynamic";
 
-export default async function ListingsPage({ params }) {
-  const { city, university: universitySlug } = await params;
+function formatCityName(city) {
+  if (!city) return "";
 
-  // Găsim universitatea selectată
-  const { data: university, error: universityError } =
-    await supabase
-      .from("universities")
-      .select("*")
-      .ilike("short_name", universitySlug)
-      .single();
+  return decodeURIComponent(city)
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
 
-  if (universityError || !university) {
-    return (
-      <main
-        style={{
-          minHeight: "100vh",
-          background: "#f7f8fa",
-          color: "#111827",
-        }}
-      >
-        <header
-          style={{
-            height: "72px",
-            background: "#ffffff",
-            borderBottom: "1px solid #e5e7eb",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "0 7%",
-          }}
-        >
-          <a
-            href="/"
-            style={{
-              color: "#111827",
-              textDecoration: "none",
-              fontSize: "25px",
-              fontWeight: "800",
-              letterSpacing: "-1px",
-            }}
-          >
-            StudentHousing
-          </a>
-        </header>
+export default async function CityListingsPage({ params }) {
+  const resolvedParams = await params;
+  const citySlug = resolvedParams.city;
+  const cityName = formatCityName(citySlug);
 
-        <section
-          style={{
-            maxWidth: "1180px",
-            margin: "0 auto",
-            padding: "80px 30px",
-          }}
-        >
-          <h1
-            style={{
-              fontSize: "38px",
-              margin: 0,
-            }}
-          >
-            Universitatea nu a fost găsită
-          </h1>
+  const { data: listings, error } = await supabase
+    .from("listings")
+    .select(`
+      id,
+      title,
+      description,
+      city,
+      address,
+      price_monthly,
+      rooms,
+      bedrooms,
+      bathrooms,
+      surface_m2,
+      furnished,
+      available_from,
+      image_url,
+      active,
+      created_at
+    `)
+    .ilike("city", cityName)
+    .eq("active", true)
+    .order("created_at", { ascending: false });
 
-          <p
-            style={{
-              color: "#6b7280",
-              fontSize: "17px",
-              marginTop: "15px",
-            }}
-          >
-            Verifică universitatea selectată și încearcă din nou.
-          </p>
-
-          <a
-            href="/"
-            style={{
-              display: "inline-block",
-              marginTop: "20px",
-              color: "#2563eb",
-              fontWeight: "700",
-              textDecoration: "none",
-            }}
-          >
-            Înapoi la căutare
-          </a>
-        </section>
-      </main>
-    );
+  if (error) {
+    console.error("Eroare la încărcarea chiriilor:", error);
   }
 
-  // Luăm DOAR chiriile ACTIVE asociate universității
-  const { data: listingLinks, error: listingsError } =
-    await supabase
-      .from("listing_universities")
-      .select(`
-        distance_meters,
-        walking_minutes,
-        listings!inner (
-          id,
-          title,
-          description,
-          city,
-          address,
-          price_monthly,
-          rooms,
-          bedrooms,
-          bathrooms,
-          surface_m2,
-          furnished,
-          available_from,
-          image_url,
-          active
-        )
-      `)
-      .eq("university_id", university.id)
-      .eq("listings.active", true)
-      .order("walking_minutes", { ascending: true });
-
-  const listings = (listingLinks || [])
-    .filter((item) => item.listings)
-    .map((item) => ({
-      ...item.listings,
-      distance_meters: item.distance_meters,
-      walking_minutes: item.walking_minutes,
-    }));
+  const cityListings = listings || [];
 
   return (
     <main
       style={{
-        margin: 0,
         minHeight: "100vh",
-        background: "#f7f8fa",
-        color: "#111827",
+        background: "#F4F7FB",
+        color: "#0F172A",
       }}
     >
       {/* HEADER */}
@@ -140,37 +57,38 @@ export default async function ListingsPage({ params }) {
       <header
         style={{
           height: "72px",
-          background: "#ffffff",
-          borderBottom: "1px solid #e5e7eb",
+          background: "#FFFFFF",
+          borderBottom: "1px solid #E2E8F0",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "0 7%",
+          padding: "0 6%",
+          boxSizing: "border-box",
         }}
       >
         <a
           href="/"
           style={{
-            color: "#111827",
             textDecoration: "none",
             fontSize: "25px",
             fontWeight: "800",
             letterSpacing: "-1px",
           }}
         >
-          StudentHousing
+          <span style={{ color: "#172554" }}>Student</span>
+          <span style={{ color: "#3B82F6" }}>Housing</span>
         </a>
 
         <a
           href="/"
           style={{
-            color: "#374151",
+            color: "#64748B",
             textDecoration: "none",
-            fontSize: "14px",
+            fontSize: "13px",
             fontWeight: "700",
           }}
         >
-          Schimbă căutarea
+          Înapoi la căutare
         </a>
       </header>
 
@@ -180,148 +98,151 @@ export default async function ListingsPage({ params }) {
         style={{
           maxWidth: "1180px",
           margin: "0 auto",
-          padding: "55px 30px 90px",
+          padding: "55px 24px 90px",
         }}
       >
+        {/* TITLU */}
+
         <div
           style={{
-            marginBottom: "40px",
+            marginBottom: "35px",
           }}
         >
           <div
             style={{
-              color: "#2563eb",
-              fontSize: "14px",
-              fontWeight: "700",
-              marginBottom: "12px",
+              display: "inline-flex",
+              alignItems: "center",
+              background: "#EFF6FF",
+              color: "#3B82F6",
+              borderRadius: "100px",
+              padding: "7px 12px",
+              fontSize: "12px",
+              fontWeight: "800",
+              marginBottom: "15px",
             }}
           >
-            {university.city}
+            Chirii pentru studenți
           </div>
 
           <h1
             style={{
               margin: 0,
-              fontSize: "42px",
+              color: "#172554",
+              fontSize: "38px",
               lineHeight: "1.15",
-              letterSpacing: "-1.5px",
+              letterSpacing: "-1.4px",
               fontWeight: "800",
             }}
           >
-            Chirii aproape de{" "}
-            {university.short_name || university.name}
+            Chirii în {cityName}
           </h1>
 
           <p
             style={{
-              color: "#6b7280",
-              fontSize: "17px",
+              margin: "12px 0 0",
+              color: "#64748B",
+              fontSize: "15px",
               lineHeight: "1.6",
-              marginTop: "14px",
-              maxWidth: "750px",
+              maxWidth: "650px",
             }}
           >
-            {university.name}
+            Descoperă toate locuințele disponibile pentru închiriere în{" "}
+            {cityName}, indiferent de universitatea la care studiezi.
           </p>
+        </div>
 
+        {/* NUMĂR REZULTATE */}
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "20px",
+          }}
+        >
           <div
             style={{
-              marginTop: "22px",
+              color: "#64748B",
               fontSize: "14px",
-              fontWeight: "700",
-              color: "#374151",
+              fontWeight: "600",
             }}
           >
-            {listings.length === 1
+            {cityListings.length === 1
               ? "1 proprietate disponibilă"
-              : `${listings.length} proprietăți disponibile`}
+              : `${cityListings.length} proprietăți disponibile`}
           </div>
         </div>
 
-        {listingsError && (
-          <div
-            style={{
-              background: "#ffffff",
-              border: "1px solid #fecaca",
-              borderRadius: "14px",
-              padding: "20px",
-              color: "#b91c1c",
-            }}
-          >
-            Nu am putut încărca proprietățile.
-          </div>
-        )}
+        {/* FĂRĂ REZULTATE */}
 
-        {!listingsError && listings.length === 0 && (
+        {cityListings.length === 0 && (
           <div
             style={{
-              background: "#ffffff",
-              border: "1px solid #e5e7eb",
+              background: "#FFFFFF",
+              border: "1px solid #E2E8F0",
               borderRadius: "18px",
-              padding: "55px 35px",
+              padding: "55px 30px",
               textAlign: "center",
+              boxShadow: "0 8px 30px rgba(15, 23, 42, 0.04)",
             }}
           >
-            <h2
+            <div
               style={{
-                margin: 0,
-                fontSize: "24px",
+                color: "#172554",
+                fontSize: "20px",
                 fontWeight: "800",
               }}
             >
-              Momentan nu sunt chirii disponibile aici
-            </h2>
+              Momentan nu există chirii în {cityName}
+            </div>
 
             <p
               style={{
-                color: "#6b7280",
-                margin: "12px auto 0",
-                maxWidth: "500px",
+                color: "#64748B",
+                fontSize: "14px",
+                margin: "10px auto 0",
                 lineHeight: "1.6",
               }}
             >
-              Proprietățile noi care sunt adăugate în apropierea acestei
-              universități vor apărea aici.
+              Încearcă din nou mai târziu sau caută într-un alt oraș.
             </p>
           </div>
         )}
 
-        {/* LISTINGS */}
+        {/* GRID ANUNȚURI */}
 
-        {!listingsError && listings.length > 0 && (
+        {cityListings.length > 0 && (
           <div
             style={{
               display: "grid",
               gridTemplateColumns:
-                "repeat(auto-fill, minmax(300px, 1fr))",
+                "repeat(auto-fill, minmax(290px, 1fr))",
               gap: "22px",
             }}
           >
-            {listings.map((listing) => (
+            {cityListings.map((listing) => (
               <a
                 key={listing.id}
                 href={`/proprietate/${listing.id}`}
                 style={{
                   display: "block",
-                  background: "#ffffff",
-                  border: "1px solid #e5e7eb",
+                  background: "#FFFFFF",
+                  border: "1px solid #E2E8F0",
                   borderRadius: "18px",
                   overflow: "hidden",
                   textDecoration: "none",
-                  color: "#111827",
-                  cursor: "pointer",
+                  color: "inherit",
                   boxShadow:
-                    "0 4px 15px rgba(0,0,0,0.03)",
-                  transition:
-                    "transform 150ms ease, box-shadow 150ms ease",
+                    "0 8px 30px rgba(15, 23, 42, 0.05)",
                 }}
               >
                 {/* IMAGINE */}
 
                 <div
                   style={{
-                    height: "210px",
-                    background: "#e5e7eb",
+                    height: "205px",
+                    background: "#EFF6FF",
                     overflow: "hidden",
                   }}
                 >
@@ -333,6 +254,7 @@ export default async function ListingsPage({ params }) {
                         width: "100%",
                         height: "100%",
                         objectFit: "cover",
+                        display: "block",
                       }}
                     />
                   ) : (
@@ -343,12 +265,12 @@ export default async function ListingsPage({ params }) {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        color: "#9ca3af",
-                        fontSize: "14px",
+                        color: "#94A3B8",
+                        fontSize: "13px",
                         fontWeight: "600",
                       }}
                     >
-                      Fotografie indisponibilă
+                      Fără fotografie
                     </div>
                   )}
                 </div>
@@ -357,108 +279,118 @@ export default async function ListingsPage({ params }) {
 
                 <div
                   style={{
-                    padding: "20px",
+                    padding: "19px",
                   }}
                 >
-                  {listing.walking_minutes && (
-                    <div
-                      style={{
-                        display: "inline-block",
-                        background: "#eff6ff",
-                        color: "#2563eb",
-                        borderRadius: "100px",
-                        padding: "6px 10px",
-                        fontSize: "12px",
-                        fontWeight: "800",
-                        marginBottom: "13px",
-                      }}
-                    >
-                      {listing.walking_minutes} min pe jos
-                    </div>
-                  )}
-
-                  <h2
+                  <div
                     style={{
-                      margin: 0,
-                      fontSize: "19px",
-                      lineHeight: "1.35",
-                      fontWeight: "800",
+                      display: "flex",
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
+                      gap: "15px",
                     }}
                   >
-                    {listing.title}
-                  </h2>
-
-                  {listing.address && (
-                    <div
+                    <h2
                       style={{
-                        marginTop: "9px",
-                        color: "#6b7280",
-                        fontSize: "14px",
-                        lineHeight: "1.5",
+                        margin: 0,
+                        color: "#0F172A",
+                        fontSize: "17px",
+                        lineHeight: "1.35",
+                        fontWeight: "800",
                       }}
                     >
-                      {listing.address}
+                      {listing.title}
+                    </h2>
+
+                    <div
+                      style={{
+                        color: "#172554",
+                        fontSize: "18px",
+                        fontWeight: "800",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {Number(
+                        listing.price_monthly
+                      ).toLocaleString("ro-RO")}
+                      €
                     </div>
-                  )}
+                  </div>
+
+                  <div
+                    style={{
+                      color: "#64748B",
+                      fontSize: "12px",
+                      marginTop: "7px",
+                      lineHeight: "1.5",
+                    }}
+                  >
+                    {listing.city}
+                    {listing.address
+                      ? ` · ${listing.address}`
+                      : ""}
+                  </div>
+
+                  {/* DETALII */}
 
                   <div
                     style={{
                       display: "flex",
-                      gap: "14px",
                       flexWrap: "wrap",
+                      alignItems: "center",
+                      gap: "8px",
                       marginTop: "15px",
-                      color: "#4b5563",
-                      fontSize: "13px",
-                      fontWeight: "600",
                     }}
                   >
                     {listing.rooms && (
-                      <span>
-                        {listing.rooms}{" "}
-                        {listing.rooms === 1
-                          ? "cameră"
-                          : "camere"}
+                      <span style={detailBadge}>
+                        {listing.rooms} camere
                       </span>
                     )}
 
                     {listing.surface_m2 && (
-                      <span>
+                      <span style={detailBadge}>
                         {listing.surface_m2} m²
                       </span>
                     )}
 
-                    {listing.distance_meters && (
-                      <span>
-                        {listing.distance_meters} m
+                    {listing.furnished && (
+                      <span style={detailBadge}>
+                        Mobilat
                       </span>
                     )}
                   </div>
 
-                  {/* PREȚ */}
-
                   <div
                     style={{
-                      marginTop: "20px",
-                      paddingTop: "18px",
-                      borderTop: "1px solid #f3f4f6",
-                      fontSize: "23px",
-                      fontWeight: "800",
+                      borderTop: "1px solid #F1F5F9",
+                      marginTop: "17px",
+                      paddingTop: "15px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
                     }}
                   >
-                    {Number(
-                      listing.price_monthly
-                    ).toLocaleString("ro-RO")}{" "}
-                    €
+                    <span
+                      style={{
+                        color: "#64748B",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                      }}
+                    >
+                      {listing.price_monthly
+                        ? "Preț lunar"
+                        : ""}
+                    </span>
 
                     <span
                       style={{
-                        fontSize: "13px",
-                        fontWeight: "600",
-                        color: "#6b7280",
+                        color: "#3B82F6",
+                        fontSize: "12px",
+                        fontWeight: "800",
                       }}
                     >
-                      {" "}
-                      / lună
+                      Vezi proprietatea →
                     </span>
                   </div>
                 </div>
@@ -470,3 +402,13 @@ export default async function ListingsPage({ params }) {
     </main>
   );
 }
+
+const detailBadge = {
+  background: "#F8FAFC",
+  border: "1px solid #E2E8F0",
+  color: "#475569",
+  borderRadius: "100px",
+  padding: "5px 9px",
+  fontSize: "11px",
+  fontWeight: "700",
+};
