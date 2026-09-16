@@ -2,9 +2,32 @@ import { supabase } from "../../lib/supabase";
 
 export const dynamic = "force-dynamic";
 
-function formatCityName(city) {
-  if (!city) return "";
+/*
+  Transformă orice text într-o formă comparabilă pentru URL.
 
+  Exemple:
+  Timișoara  -> timisoara
+  București  -> bucuresti
+  Iași       -> iasi
+  Brașov     -> brasov
+  Constanța  -> constanta
+  Târgu Mureș -> targu-mures
+*/
+function normalizeCity(value = "") {
+  return decodeURIComponent(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-");
+}
+
+/*
+  Numele afișat în pagină.
+  Folosim numele real din baza de date atunci când îl găsim,
+  deci va apărea "Timișoara", nu "Timisoara".
+*/
+function formatFallbackCityName(city = "") {
   return decodeURIComponent(city)
     .replace(/-/g, " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
@@ -13,8 +36,15 @@ function formatCityName(city) {
 export default async function CityListingsPage({ params }) {
   const resolvedParams = await params;
   const citySlug = resolvedParams.city;
-  const cityName = formatCityName(citySlug);
 
+  const normalizedRequestedCity = normalizeCity(citySlug);
+
+  /*
+    Luăm toate anunțurile active.
+
+    După aceea comparăm orașul într-o formă normalizată,
+    astfel încât diacriticele să nu afecteze căutarea.
+  */
   const { data: listings, error } = await supabase
     .from("listings")
     .select(`
@@ -34,15 +64,38 @@ export default async function CityListingsPage({ params }) {
       active,
       created_at
     `)
-    .ilike("city", cityName)
     .eq("active", true)
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Eroare la încărcarea chiriilor:", error);
+    console.error(
+      "Eroare la încărcarea chiriilor:",
+      error
+    );
   }
 
-  const cityListings = listings || [];
+  /*
+    Păstrăm doar anunțurile al căror oraș corespunde
+    orașului din URL după eliminarea diacriticelor.
+  */
+  const cityListings = (listings || []).filter(
+    (listing) =>
+      normalizeCity(listing.city) ===
+      normalizedRequestedCity
+  );
+
+  /*
+    Pentru titlu folosim numele real din baza de date.
+
+    De exemplu:
+    URL: /chirii/timisoara
+    DB:  Timișoara
+    Titlu: "Chirii în Timișoara"
+  */
+  const cityName =
+    cityListings.length > 0
+      ? cityListings[0].city
+      : formatFallbackCityName(citySlug);
 
   return (
     <main
@@ -75,8 +128,13 @@ export default async function CityListingsPage({ params }) {
             letterSpacing: "-1px",
           }}
         >
-          <span style={{ color: "#172554" }}>Student</span>
-          <span style={{ color: "#3B82F6" }}>Housing</span>
+          <span style={{ color: "#172554" }}>
+            Student
+          </span>
+
+          <span style={{ color: "#3B82F6" }}>
+            Housing
+          </span>
         </a>
 
         <a
@@ -146,8 +204,9 @@ export default async function CityListingsPage({ params }) {
               maxWidth: "650px",
             }}
           >
-            Descoperă toate locuințele disponibile pentru închiriere în{" "}
-            {cityName}, indiferent de universitatea la care studiezi.
+            Descoperă toate locuințele disponibile pentru
+            închiriere în {cityName}, indiferent de
+            universitatea la care studiezi.
           </p>
         </div>
 
@@ -184,7 +243,8 @@ export default async function CityListingsPage({ params }) {
               borderRadius: "18px",
               padding: "55px 30px",
               textAlign: "center",
-              boxShadow: "0 8px 30px rgba(15, 23, 42, 0.04)",
+              boxShadow:
+                "0 8px 30px rgba(15, 23, 42, 0.04)",
             }}
           >
             <div
@@ -205,7 +265,8 @@ export default async function CityListingsPage({ params }) {
                 lineHeight: "1.6",
               }}
             >
-              Încearcă din nou mai târziu sau caută într-un alt oraș.
+              Încearcă din nou mai târziu sau caută
+              într-un alt oraș.
             </p>
           </div>
         )}
@@ -326,6 +387,7 @@ export default async function CityListingsPage({ params }) {
                     }}
                   >
                     {listing.city}
+
                     {listing.address
                       ? ` · ${listing.address}`
                       : ""}
