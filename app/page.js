@@ -5,11 +5,32 @@ import AccountButton from "./components/AccountButton";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const { data: universities, error } = await supabase
-    .from("universities")
-    .select("*")
-    .order("city")
-    .order("name");
+  const [
+    { data: universities, error: universitiesError },
+    { data: cities, error: citiesError },
+    { data: neighborhoods, error: neighborhoodsError },
+  ] = await Promise.all([
+    supabase
+      .from("universities")
+      .select("*")
+      .order("city")
+      .order("name"),
+
+    supabase
+      .from("cities")
+      .select("id, name, slug")
+      .order("name"),
+
+    supabase
+      .from("neighborhoods")
+      .select("id, city_id, name, slug")
+      .order("name"),
+  ]);
+
+  const error =
+    universitiesError ||
+    citiesError ||
+    neighborhoodsError;
 
   return (
     <main
@@ -131,7 +152,11 @@ export default async function Home() {
         </p>
 
         {/* SEARCH */}
-        <SearchBox universities={universities || []} />
+        <SearchBox
+          universities={universities || []}
+          cities={cities || []}
+          neighborhoods={neighborhoods || []}
+        />
 
         {error && (
           <p
