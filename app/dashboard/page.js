@@ -1215,6 +1215,7 @@ export default function DashboardPage() {
       </main>
     );
   }
+
   return (
     <main
       style={{
@@ -2478,56 +2479,41 @@ export default function DashboardPage() {
                     )}
                   </div>
 
+                  {/* CONTINUĂ ÎN PARTEA 3/3 */}
                   <div
                     className="chat-panel"
                     style={{
                       minWidth: 0,
                       display: "flex",
-                      flexDirection:
-                        "column",
-                      background:
-                        "#FFFFFF",
+                      flexDirection: "column",
+                      height: "100%",
                     }}
                   >
                     {!selectedConversation ? (
                       <div
                         style={{
                           flex: 1,
-                          display:
-                            "flex",
-                          alignItems:
-                            "center",
-                          justifyContent:
-                            "center",
-                          color:
-                            "#94A3B8",
-                          fontSize:
-                            "13px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#94A3B8",
+                          fontSize: "14px",
                         }}
                       >
-                        Selectează o
-                        conversație.
+                        Selectează o conversație.
                       </div>
                     ) : (
                       <>
                         <div
                           style={{
-                            minHeight:
-                              "72px",
-                            padding:
-                              "13px 18px",
-                            borderBottom:
-                              "1px solid #E2E8F0",
-                            display:
-                              "flex",
-                            alignItems:
-                              "center",
-                            justifyContent:
-                              "space-between",
-                            gap:
-                              "15px",
-                            boxSizing:
-                              "border-box",
+                            minHeight: "74px",
+                            borderBottom: "1px solid #E2E8F0",
+                            padding: "14px 20px",
+                            boxSizing: "border-box",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: "15px",
                           }}
                         >
                           <div
@@ -2537,86 +2523,58 @@ export default function DashboardPage() {
                           >
                             <div
                               style={{
-                                fontSize:
-                                  "14px",
-                                fontWeight:
-                                  "800",
-                                color:
-                                  "#172554",
-                                overflow:
-                                  "hidden",
-                                textOverflow:
-                                  "ellipsis",
-                                whiteSpace:
-                                  "nowrap",
+                                color: "#172554",
+                                fontSize: "15px",
+                                fontWeight: "900",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
                               }}
                             >
-                              {selectedConversation
-                                .listings
-                                ?.title ||
-                                "Anunț indisponibil"}
+                              {conversationDetails[
+                                selectedConversation.id
+                              ]?.otherUserName || "Utilizator"}
                             </div>
 
                             <div
                               style={{
-                                marginTop:
-                                  "5px",
-                                color:
-                                  "#64748B",
-                                fontSize:
-                                  "11px",
-                                overflow:
-                                  "hidden",
-                                textOverflow:
-                                  "ellipsis",
-                                whiteSpace:
-                                  "nowrap",
+                                marginTop: "4px",
+                                color: "#64748B",
+                                fontSize: "11px",
+                                fontWeight: "600",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
                               }}
                             >
-                              {conversationDetails[
-                                selectedConversation
-                                  .id
-                              ]
-                                ?.otherUserName ||
-                                "Utilizator"}
+                              {selectedConversation.listings?.title ||
+                                "Anunț indisponibil"}
 
-                              {selectedConversation
-                                .listings
-                                ?.city
+                              {selectedConversation.listings?.city
                                 ? ` · ${selectedConversation.listings.city}`
                                 : ""}
                             </div>
                           </div>
 
-                          {selectedConversation.listing_id && (
+                          {selectedConversation.listings?.id && (
                             <button
                               type="button"
                               onClick={() =>
                                 router.push(
-                                  `/proprietate/${selectedConversation.listing_id}`
+                                  `/proprietate/${selectedConversation.listings.id}`
                                 )
                               }
                               style={{
-                                border:
-                                  "1px solid #DBEAFE",
-                                background:
-                                  "#EFF6FF",
-                                color:
-                                  "#2563EB",
-                                borderRadius:
-                                  "9px",
-                                padding:
-                                  "9px 12px",
-                                fontFamily:
-                                  "inherit",
-                                fontSize:
-                                  "11px",
-                                fontWeight:
-                                  "800",
-                                cursor:
-                                  "pointer",
-                                whiteSpace:
-                                  "nowrap",
+                                flexShrink: 0,
+                                border: "1px solid #CBD5E1",
+                                background: "#FFFFFF",
+                                borderRadius: "9px",
+                                padding: "9px 12px",
+                                color: "#172554",
+                                fontFamily: "inherit",
+                                fontSize: "11px",
+                                fontWeight: "800",
+                                cursor: "pointer",
                               }}
                             >
                               Vezi anunțul
@@ -2624,319 +2582,147 @@ export default function DashboardPage() {
                           )}
                         </div>
 
-                        {/* MESAJE */}
-
                         <div
-                          className="messages-scroll"
                           style={{
                             flex: 1,
-                            minHeight: 0,
-                            overflowY:
-                              "auto",
-                            padding: "22px",
-                            background:
-                              "#F8FAFC",
+                            overflowY: "auto",
+                            padding: "20px",
+                            background: "#F8FAFC",
                           }}
                         >
                           {messagesLoading ? (
                             <div
                               style={{
-                                textAlign:
-                                  "center",
-                                color:
-                                  "#94A3B8",
-                                fontSize:
-                                  "12px",
-                                paddingTop:
-                                  "30px",
+                                color: "#94A3B8",
+                                fontSize: "13px",
                               }}
                             >
                               Se încarcă mesajele...
                             </div>
-                          ) : messages.length ===
-                            0 ? (
+                          ) : messages.length === 0 ? (
                             <div
                               style={{
-                                height:
-                                  "100%",
-                                display:
-                                  "flex",
-                                flexDirection:
-                                  "column",
-                                alignItems:
-                                  "center",
-                                justifyContent:
-                                  "center",
-                                textAlign:
-                                  "center",
-                                color:
-                                  "#94A3B8",
+                                color: "#94A3B8",
+                                fontSize: "13px",
                               }}
                             >
-                              <div
-                                style={{
-                                  fontSize:
-                                    "14px",
-                                  fontWeight:
-                                    "800",
-                                  color:
-                                    "#64748B",
-                                }}
-                              >
-                                Începe conversația
-                              </div>
-
-                              <div
-                                style={{
-                                  fontSize:
-                                    "12px",
-                                  marginTop:
-                                    "5px",
-                                }}
-                              >
-                                Trimite primul mesaj.
-                              </div>
+                              Nu există încă mesaje.
                             </div>
                           ) : (
                             <div
                               style={{
-                                display:
-                                  "flex",
-                                flexDirection:
-                                  "column",
-                                gap:
-                                  "10px",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "10px",
                               }}
                             >
-                              {messages.map(
-                                (message) => {
-                                  const mine =
-                                    message.sender_id ===
-                                    user?.id;
+                              {messages.map((message) => {
+                                const mine =
+                                  message.sender_id === user?.id;
 
-                                  return (
+                                return (
+                                  <div
+                                    key={message.id}
+                                    style={{
+                                      display: "flex",
+                                      justifyContent: mine
+                                        ? "flex-end"
+                                        : "flex-start",
+                                    }}
+                                  >
                                     <div
-                                      key={
-                                        message.id
-                                      }
                                       style={{
-                                        display:
-                                          "flex",
-                                        justifyContent:
-                                          mine
-                                            ? "flex-end"
-                                            : "flex-start",
+                                        maxWidth: "72%",
+                                        background: mine
+                                          ? "#172554"
+                                          : "#FFFFFF",
+                                        color: mine
+                                          ? "#FFFFFF"
+                                          : "#172554",
+                                        border: mine
+                                          ? "none"
+                                          : "1px solid #E2E8F0",
+                                        borderRadius: mine
+                                          ? "14px 14px 3px 14px"
+                                          : "14px 14px 14px 3px",
+                                        padding: "10px 13px",
+                                        fontSize: "13px",
+                                        lineHeight: "1.5",
+                                        whiteSpace: "pre-wrap",
+                                        overflowWrap: "break-word",
+                                        boxShadow: mine
+                                          ? "none"
+                                          : "0 2px 7px rgba(15, 23, 42, 0.04)",
                                       }}
                                     >
-                                      <div
-                                        style={{
-                                          maxWidth:
-                                            "72%",
-                                          background:
-                                            mine
-                                              ? "#172554"
-                                              : "#FFFFFF",
-                                          color:
-                                            mine
-                                              ? "#FFFFFF"
-                                              : "#172554",
-                                          border:
-                                            mine
-                                              ? "none"
-                                              : "1px solid #E2E8F0",
-                                          borderRadius:
-                                            mine
-                                              ? "15px 15px 4px 15px"
-                                              : "15px 15px 15px 4px",
-                                          padding:
-                                            "10px 13px 8px",
-                                          boxShadow:
-                                            mine
-                                              ? "none"
-                                              : "0 2px 7px rgba(15,23,42,0.04)",
-                                          wordBreak:
-                                            "break-word",
-                                        }}
-                                      >
-                                        <div
-                                          style={{
-                                            fontSize:
-                                              "13px",
-                                            lineHeight:
-                                              "1.5",
-                                            whiteSpace:
-                                              "pre-wrap",
-                                          }}
-                                        >
-                                          {
-                                            message.content
-                                          }
-                                        </div>
-
-                                        <div
-                                          style={{
-                                            marginTop:
-                                              "5px",
-                                            textAlign:
-                                              "right",
-                                            fontSize:
-                                              "9px",
-                                            color:
-                                              mine
-                                                ? "rgba(255,255,255,0.65)"
-                                                : "#94A3B8",
-                                          }}
-                                        >
-                                          {message.created_at
-                                            ? new Date(
-                                                message.created_at
-                                              ).toLocaleTimeString(
-                                                "ro-RO",
-                                                {
-                                                  hour:
-                                                    "2-digit",
-                                                  minute:
-                                                    "2-digit",
-                                                }
-                                              )
-                                            : ""}
-                                        </div>
-                                      </div>
+                                      {message.content}
                                     </div>
-                                  );
-                                }
-                              )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           )}
                         </div>
 
-                        {/* SCRIE MESAJ */}
-
                         <div
                           style={{
-                            padding: "15px",
-                            borderTop:
-                              "1px solid #E2E8F0",
-                            background:
-                              "#FFFFFF",
+                            borderTop: "1px solid #E2E8F0",
+                            padding: "14px",
+                            display: "flex",
+                            gap: "10px",
+                            background: "#FFFFFF",
                           }}
                         >
-                          <div
+                          <textarea
+                            value={messageText}
+                            onChange={(event) =>
+                              setMessageText(event.target.value)
+                            }
+                            onKeyDown={handleMessageKeyDown}
+                            placeholder="Scrie un mesaj..."
+                            rows={2}
                             style={{
-                              display:
-                                "flex",
-                              alignItems:
-                                "flex-end",
-                              gap: "10px",
+                              flex: 1,
+                              minWidth: 0,
+                              resize: "none",
+                              border: "1px solid #CBD5E1",
+                              borderRadius: "10px",
+                              padding: "10px 12px",
+                              outline: "none",
+                              fontFamily: "inherit",
+                              fontSize: "13px",
+                              lineHeight: "1.45",
+                              boxSizing: "border-box",
+                            }}
+                          />
+
+                          <button
+                            type="button"
+                            onClick={sendMessage}
+                            disabled={
+                              sendingMessage || !messageText.trim()
+                            }
+                            style={{
+                              alignSelf: "stretch",
+                              border: "none",
+                              borderRadius: "10px",
+                              padding: "0 18px",
+                              background:
+                                sendingMessage || !messageText.trim()
+                                  ? "#94A3B8"
+                                  : "#172554",
+                              color: "#FFFFFF",
+                              fontFamily: "inherit",
+                              fontSize: "12px",
+                              fontWeight: "800",
+                              cursor:
+                                sendingMessage || !messageText.trim()
+                                  ? "not-allowed"
+                                  : "pointer",
                             }}
                           >
-                            <textarea
-                              value={
-                                messageText
-                              }
-                              onChange={(
-                                event
-                              ) =>
-                                setMessageText(
-                                  event.target
-                                    .value
-                                )
-                              }
-                              onKeyDown={
-                                handleMessageKeyDown
-                              }
-                              placeholder="Scrie un mesaj..."
-                              maxLength={
-                                5000
-                              }
-                              rows={1}
-                              style={{
-                                flex: 1,
-                                minHeight:
-                                  "43px",
-                                maxHeight:
-                                  "110px",
-                                resize:
-                                  "vertical",
-                                border:
-                                  "1px solid #CBD5E1",
-                                borderRadius:
-                                  "11px",
-                                padding:
-                                  "11px 13px",
-                                boxSizing:
-                                  "border-box",
-                                outline:
-                                  "none",
-                                fontFamily:
-                                  "inherit",
-                                fontSize:
-                                  "13px",
-                                lineHeight:
-                                  "1.5",
-                                color:
-                                  "#0F172A",
-                              }}
-                            />
-
-                            <button
-                              type="button"
-                              onClick={
-                                sendMessage
-                              }
-                              disabled={
-                                sendingMessage ||
-                                !messageText.trim()
-                              }
-                              style={{
-                                height:
-                                  "43px",
-                                border:
-                                  "none",
-                                borderRadius:
-                                  "10px",
-                                padding:
-                                  "0 18px",
-                                background:
-                                  sendingMessage ||
-                                  !messageText.trim()
-                                    ? "#CBD5E1"
-                                    : "#172554",
-                                color:
-                                  "#FFFFFF",
-                                fontFamily:
-                                  "inherit",
-                                fontSize:
-                                  "12px",
-                                fontWeight:
-                                  "800",
-                                cursor:
-                                  sendingMessage ||
-                                  !messageText.trim()
-                                    ? "not-allowed"
-                                    : "pointer",
-                              }}
-                            >
-                              {sendingMessage
-                                ? "Se trimite..."
-                                : "Trimite"}
-                            </button>
-                          </div>
-
-                          <div
-                            style={{
-                              marginTop:
-                                "6px",
-                              color:
-                                "#94A3B8",
-                              fontSize:
-                                "9px",
-                            }}
-                          >
-                            Enter pentru trimitere ·
-                            Shift + Enter pentru rând
-                            nou
-                          </div>
+                            {sendingMessage ? "Se trimite..." : "Trimite"}
+                          </button>
                         </div>
                       </>
                     )}
@@ -2945,10 +2731,8 @@ export default function DashboardPage() {
               )}
             </>
           )}
-          {/* FAVORITE */}
 
-          {activeSection ===
-            "favorites" && (
+          {activeSection === "favorites" && (
             <>
               <div
                 style={{
@@ -2974,25 +2758,166 @@ export default function DashboardPage() {
                     fontSize: "15px",
                   }}
                 >
-                  Anunțurile pe care le-ai
-                  salvat pentru a reveni
-                  rapid la ele.
+                  Anunțurile pe care le-ai salvat pentru mai târziu.
                 </p>
               </div>
 
               {favorites.length === 0 ? (
                 <EmptyCard
                   title="Nu ai anunțuri favorite"
-                  text="Poți salva anunțurile care te interesează pentru a reveni rapid la ele."
+                  text="Salvează proprietățile care îți plac și le vei găsi aici."
                 />
               ) : (
-                <FavoritesList
-                  favorites={favorites}
-                  router={router}
-                  removeFavorite={
-                    removeFavorite
-                  }
-                />
+                <div
+                  style={{
+                    display: "grid",
+                    gap: "14px",
+                    maxWidth: "900px",
+                  }}
+                >
+                  {favorites.map((listing) => (
+                    <div
+                      key={listing.id}
+                      style={{
+                        background: "#FFFFFF",
+                        border: "1px solid #E2E8F0",
+                        borderRadius: "14px",
+                        padding: "16px",
+                        display: "grid",
+                        gridTemplateColumns: "110px minmax(0, 1fr) auto",
+                        gap: "16px",
+                        alignItems: "center",
+                        boxShadow:
+                          "0 5px 16px rgba(15, 23, 42, 0.04)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "110px",
+                          height: "78px",
+                          borderRadius: "10px",
+                          overflow: "hidden",
+                          background: "#F1F5F9",
+                        }}
+                      >
+                        {listing.image_url ? (
+                          <img
+                            src={listing.image_url}
+                            alt={listing.title || "Anunț"}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                              display: "block",
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: "#94A3B8",
+                              fontSize: "10px",
+                            }}
+                          >
+                            Fără poză
+                          </div>
+                        )}
+                      </div>
+
+                      <div
+                        style={{
+                          minWidth: 0,
+                        }}
+                      >
+                        <div
+                          style={{
+                            color: "#172554",
+                            fontSize: "15px",
+                            fontWeight: "800",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {listing.title}
+                        </div>
+
+                        <div
+                          style={{
+                            marginTop: "6px",
+                            color: "#64748B",
+                            fontSize: "12px",
+                          }}
+                        >
+                          {listing.city}
+
+                          {listing.address
+                            ? ` · ${listing.address}`
+                            : ""}
+                        </div>
+
+                        <div
+                          style={{
+                            marginTop: "7px",
+                            color: "#172554",
+                            fontSize: "14px",
+                            fontWeight: "900",
+                          }}
+                        >
+                          {listing.price_monthly} € / lună
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "8px",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() =>
+                            router.push(`/proprietate/${listing.id}`)
+                          }
+                          style={{
+                            border: "1px solid #CBD5E1",
+                            background: "#FFFFFF",
+                            borderRadius: "9px",
+                            padding: "9px 12px",
+                            color: "#172554",
+                            fontFamily: "inherit",
+                            fontSize: "11px",
+                            fontWeight: "800",
+                            cursor: "pointer",
+                          }}
+                        >
+                          Vezi anunțul
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => removeFavorite(listing)}
+                          style={{
+                            border: "none",
+                            background: "transparent",
+                            color: "#DC2626",
+                            fontFamily: "inherit",
+                            fontSize: "11px",
+                            fontWeight: "800",
+                            cursor: "pointer",
+                          }}
+                        >
+                          Elimină
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </>
           )}
@@ -3000,14 +2925,15 @@ export default function DashboardPage() {
           {error && (
             <div
               style={{
+                maxWidth: "900px",
                 marginTop: "22px",
                 background: "#FEF2F2",
-                border:
-                  "1px solid #FECACA",
+                border: "1px solid #FECACA",
                 color: "#B91C1C",
-                borderRadius: "11px",
-                padding: "13px 15px",
-                fontSize: "13px",
+                borderRadius: "10px",
+                padding: "12px 14px",
+                fontSize: "12px",
+                fontWeight: "700",
               }}
             >
               {error}
@@ -3018,72 +2944,42 @@ export default function DashboardPage() {
 
       <style>{`
         @media (max-width: 900px) {
-          .messages-layout {
-            grid-template-columns: 260px minmax(0, 1fr) !important;
-          }
-        }
-
-        @media (max-width: 800px) {
           .dashboard-layout {
             grid-template-columns: 1fr !important;
           }
 
           .dashboard-sidebar {
             border-right: none !important;
-            border-bottom: 1px solid #E2E8F0 !important;
+            border-bottom: 1px solid #E2E8F0;
           }
 
+          .stats-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+          }
+
+          .messages-layout {
+            grid-template-columns: 260px minmax(0, 1fr) !important;
+          }
+        }
+
+        @media (max-width: 650px) {
           .stats-grid {
             grid-template-columns: 1fr !important;
           }
 
-          .dashboard-content {
-            padding: 30px 20px 60px !important;
-          }
-
-          .dashboard-listing-card,
-          .favorite-card {
-            grid-template-columns: 110px minmax(0, 1fr) !important;
-          }
-
-          .dashboard-listing-image,
-          .favorite-image {
-            width: 110px !important;
-          }
-        }
-
-        @media (max-width: 700px) {
           .messages-layout {
-            height: auto !important;
             grid-template-columns: 1fr !important;
+            height: auto !important;
           }
 
           .conversation-list {
-            max-height: 250px !important;
             border-right: none !important;
-            border-bottom: 1px solid #E2E8F0 !important;
+            border-bottom: 1px solid #E2E8F0;
+            max-height: 280px;
           }
 
           .chat-panel {
-            height: 570px !important;
-          }
-        }
-
-        @media (max-width: 560px) {
-          .dashboard-listing-card,
-          .favorite-card {
-            grid-template-columns: 1fr !important;
-          }
-
-          .dashboard-listing-image,
-          .favorite-image {
-            width: 100% !important;
-            height: 190px !important;
-          }
-
-          .favorite-header,
-          .listing-header {
-            flex-direction: column !important;
+            min-height: 520px;
           }
         }
       `}</style>
@@ -3101,21 +2997,17 @@ function StatCard({ number, title }) {
       style={{
         background: "#FFFFFF",
         border: "1px solid #E2E8F0",
-        boxShadow:
-          "0 8px 24px rgba(15, 23, 42, 0.05)",
         borderRadius: "14px",
-        padding: "22px",
-        minHeight: "95px",
-        boxSizing: "border-box",
+        padding: "20px",
+        boxShadow: "0 5px 16px rgba(15, 23, 42, 0.04)",
       }}
     >
       <div
         style={{
-          fontSize: "30px",
-          lineHeight: "1",
-          fontWeight: "800",
-          letterSpacing: "-1px",
           color: "#172554",
+          fontSize: "27px",
+          lineHeight: 1,
+          fontWeight: "900",
         }}
       >
         {number}
@@ -3123,9 +3015,9 @@ function StatCard({ number, title }) {
 
       <div
         style={{
-          marginTop: "11px",
+          marginTop: "8px",
           color: "#64748B",
-          fontSize: "13px",
+          fontSize: "12px",
           fontWeight: "700",
         }}
       >
@@ -3136,7 +3028,10 @@ function StatCard({ number, title }) {
 }
 
 /*
-  ANUNȚURILE UTILIZATORULUI
+  LISTA ANUNȚURI
+
+  AICI ESTE BUTONUL NOU:
+  "Editează anunțul"
 */
 
 function ListingsList({
@@ -3147,59 +3042,56 @@ function ListingsList({
   setPhoneRequired,
   setActiveSection,
 }) {
-  const handleAddListing = () => {
-    if (!profilePhone?.trim()) {
-      setPhoneRequired(true);
-      setActiveSection("profile");
-
-      router.push(
-        "/dashboard?section=profile&required=phone"
-      );
-
-      return;
-    }
-
-    router.push("/adaugaproprietate");
-  };
-
   if (listings.length === 0) {
     return (
       <div
         style={{
+          maxWidth: "900px",
           background: "#FFFFFF",
-          border:
-            "1px solid #E2E8F0",
-          borderRadius: "16px",
-          padding: "45px 25px",
-          boxShadow:
-            "0 8px 24px rgba(15, 23, 42, 0.04)",
+          border: "1px solid #E2E8F0",
+          borderRadius: "14px",
+          padding: "35px",
+          textAlign: "center",
+          boxShadow: "0 5px 16px rgba(15, 23, 42, 0.04)",
         }}
       >
         <div
           style={{
+            color: "#172554",
             fontSize: "17px",
             fontWeight: "800",
-            color: "#172554",
           }}
         >
-          Nu ai publicat încă niciun
-          anunț
+          Nu ai publicat încă niciun anunț
         </div>
 
         <div
           style={{
+            marginTop: "7px",
             color: "#64748B",
             fontSize: "13px",
-            marginTop: "7px",
+            lineHeight: "1.5",
           }}
         >
-          Publică primul tău anunț pentru
-          a începe.
+          Adaugă prima proprietate pentru a începe.
         </div>
 
         <button
           type="button"
-          onClick={handleAddListing}
+          onClick={() => {
+            if (!profilePhone.trim()) {
+              setPhoneRequired(true);
+              setActiveSection("profile");
+
+              router.push(
+                "/dashboard?section=profile&required=phone"
+              );
+
+              return;
+            }
+
+            router.push("/adaugaproprietate");
+          }}
           style={{
             marginTop: "18px",
             border: "none",
@@ -3222,42 +3114,41 @@ function ListingsList({
   return (
     <div
       style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
+        display: "grid",
+        gap: "14px",
+        maxWidth: "900px",
       }}
     >
       {listings.map((listing) => (
         <div
           key={listing.id}
-          className="dashboard-listing-card"
           style={{
-            display: "grid",
-            gridTemplateColumns:
-              "150px minmax(0, 1fr)",
-            minHeight: "145px",
             background: "#FFFFFF",
-            border:
-              "1px solid #E2E8F0",
+            border: "1px solid #E2E8F0",
             borderRadius: "14px",
-            overflow: "hidden",
-            boxShadow:
-              "0 6px 18px rgba(15, 23, 42, 0.04)",
+            padding: "16px",
+            display: "grid",
+            gridTemplateColumns: "120px minmax(0, 1fr) auto",
+            gap: "17px",
+            alignItems: "center",
+            boxShadow: "0 5px 16px rgba(15, 23, 42, 0.04)",
           }}
         >
+          {/* IMAGINE */}
+
           <div
-            className="dashboard-listing-image"
             style={{
-              width: "150px",
-              minHeight: "145px",
-              background: "#F1F5F9",
+              width: "120px",
+              height: "84px",
+              borderRadius: "10px",
               overflow: "hidden",
+              background: "#F1F5F9",
             }}
           >
             {listing.image_url ? (
               <img
                 src={listing.image_url}
-                alt={listing.title}
+                alt={listing.title || "Anunț"}
                 style={{
                   width: "100%",
                   height: "100%",
@@ -3270,466 +3161,196 @@ function ListingsList({
                 style={{
                   width: "100%",
                   height: "100%",
-                  minHeight: "145px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   color: "#94A3B8",
-                  fontSize: "11px",
+                  fontSize: "10px",
                 }}
               >
-                Fără imagine
+                Fără poză
               </div>
             )}
           </div>
 
+          {/* DATE ANUNȚ */}
+
           <div
             style={{
-              padding: "18px 20px",
               minWidth: 0,
             }}
           >
             <div
-              className="listing-header"
-              style={{
-                display: "flex",
-                justifyContent:
-                  "space-between",
-                alignItems:
-                  "flex-start",
-                gap: "15px",
-              }}
-            >
-              <div
-                style={{
-                  minWidth: 0,
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: "16px",
-                      fontWeight: "800",
-                      color: "#172554",
-                    }}
-                  >
-                    {listing.title}
-                  </div>
-
-                  <span
-                    style={{
-                      display:
-                        "inline-flex",
-                      alignItems:
-                        "center",
-                      borderRadius:
-                        "999px",
-                      padding:
-                        "4px 8px",
-                      background:
-                        listing.active
-                          ? "#ECFDF5"
-                          : "#F1F5F9",
-                      color:
-                        listing.active
-                          ? "#047857"
-                          : "#64748B",
-                      fontSize:
-                        "9px",
-                      fontWeight:
-                        "800",
-                    }}
-                  >
-                    {listing.active
-                      ? "ACTIV"
-                      : "INACTIV"}
-                  </span>
-                </div>
-
-                <div
-                  style={{
-                    marginTop: "7px",
-                    color: "#64748B",
-                    fontSize: "12px",
-                  }}
-                >
-                  {listing.city}
-                  {listing.address
-                    ? ` · ${listing.address}`
-                    : ""}
-                </div>
-
-                <div
-                  style={{
-                    marginTop: "12px",
-                    display: "flex",
-                    gap: "14px",
-                    flexWrap: "wrap",
-                    color: "#475569",
-                    fontSize: "11px",
-                    fontWeight: "600",
-                  }}
-                >
-                  {listing.rooms ? (
-                    <span>
-                      {listing.rooms} camere
-                    </span>
-                  ) : null}
-
-                  {listing.surface_m2 ? (
-                    <span>
-                      {listing.surface_m2} m²
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  textAlign: "right",
-                  flexShrink: 0,
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "17px",
-                    fontWeight: "800",
-                    color: "#172554",
-                  }}
-                >
-                  {listing.price_monthly} €
-                </div>
-
-                <div
-                  style={{
-                    color: "#94A3B8",
-                    fontSize: "10px",
-                    marginTop: "2px",
-                  }}
-                >
-                  / lună
-                </div>
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                gap: "8px",
-                flexWrap: "wrap",
-                marginTop: "16px",
-              }}
-            >
-              <button
-                type="button"
-                onClick={() =>
-                  router.push(
-                    `/proprietate/${listing.id}`
-                  )
-                }
-                style={{
-                  border:
-                    "1px solid #DBEAFE",
-                  background: "#EFF6FF",
-                  color: "#2563EB",
-                  borderRadius: "8px",
-                  padding: "8px 11px",
-                  fontFamily: "inherit",
-                  fontSize: "10px",
-                  fontWeight: "800",
-                  cursor: "pointer",
-                }}
-              >
-                Vezi anunțul
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  toggleListing(listing)
-                }
-                style={{
-                  border:
-                    "1px solid #E2E8F0",
-                  background: "#FFFFFF",
-                  color: "#475569",
-                  borderRadius: "8px",
-                  padding: "8px 11px",
-                  fontFamily: "inherit",
-                  fontSize: "10px",
-                  fontWeight: "800",
-                  cursor: "pointer",
-                }}
-              >
-                {listing.active
-                  ? "Dezactivează"
-                  : "Activează"}
-              </button>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/*
-  FAVORITE
-*/
-
-function FavoritesList({
-  favorites,
-  router,
-  removeFavorite,
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
-      }}
-    >
-      {favorites.map((listing) => (
-        <div
-          key={listing.favoriteId}
-          className="favorite-card"
-          style={{
-            background: "#FFFFFF",
-            border:
-              "1px solid #E2E8F0",
-            boxShadow:
-              "0 8px 24px rgba(15, 23, 42, 0.04)",
-            borderRadius: "15px",
-            padding: "14px",
-            display: "grid",
-            gridTemplateColumns:
-              "135px minmax(0, 1fr)",
-            gap: "18px",
-            maxWidth: "850px",
-          }}
-        >
-          <div
-            className="favorite-image"
-            style={{
-              width: "135px",
-              height: "105px",
-              background: "#F8FAFC",
-              borderRadius: "10px",
-              overflow: "hidden",
-            }}
-          >
-            {listing.image_url ? (
-              <img
-                src={listing.image_url}
-                alt={listing.title}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  display: "block",
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent:
-                    "center",
-                  color: "#94A3B8",
-                  fontSize: "11px",
-                }}
-              >
-                Fără fotografie
-              </div>
-            )}
-          </div>
-
-          <div style={{ minWidth: 0 }}>
-            <div
-              className="favorite-header"
-              style={{
-                display: "flex",
-                justifyContent:
-                  "space-between",
-                alignItems:
-                  "flex-start",
-                gap: "15px",
-              }}
-            >
-              <div style={{ minWidth: 0 }}>
-                <h3
-                  style={{
-                    margin: 0,
-                    fontSize: "16px",
-                    fontWeight: "800",
-                    color: "#172554",
-                  }}
-                >
-                  {listing.title}
-                </h3>
-
-                <div
-                  style={{
-                    color: "#64748B",
-                    fontSize: "12px",
-                    marginTop: "5px",
-                  }}
-                >
-                  {listing.city}
-                  {listing.address
-                    ? ` · ${listing.address}`
-                    : ""}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  fontSize: "18px",
-                  fontWeight: "800",
-                  color: "#172554",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {Number(
-                  listing.price_monthly
-                ).toLocaleString(
-                  "ro-RO"
-                )}{" "}
-                €
-
-                <span
-                  style={{
-                    color: "#94A3B8",
-                    fontSize: "11px",
-                    fontWeight: "600",
-                  }}
-                >
-                  {" "}
-                  / lună
-                </span>
-              </div>
-            </div>
-
-            <div
               style={{
                 display: "flex",
                 alignItems: "center",
+                gap: "9px",
                 flexWrap: "wrap",
-                gap: "10px",
-                marginTop: "11px",
               }}
             >
+              <div
+                style={{
+                  color: "#172554",
+                  fontSize: "15px",
+                  fontWeight: "800",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {listing.title}
+              </div>
+
               <span
                 style={{
-                  background:
-                    listing.active
-                      ? "#DCFCE7"
-                      : "#F1F5F9",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  borderRadius: "999px",
+                  padding: "4px 8px",
+                  background: listing.active
+                    ? "#F0FDF4"
+                    : "#F8FAFC",
                   color: listing.active
                     ? "#15803D"
                     : "#64748B",
-                  borderRadius:
-                    "100px",
-                  padding: "5px 8px",
-                  fontSize: "10px",
-                  fontWeight: "800",
+                  border: listing.active
+                    ? "1px solid #BBF7D0"
+                    : "1px solid #E2E8F0",
+                  fontSize: "9px",
+                  fontWeight: "900",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.3px",
                 }}
               >
-                {listing.active
-                  ? "Activ"
-                  : "Inactiv"}
+                {listing.active ? "Activ" : "Inactiv"}
               </span>
-
-              {listing.rooms && (
-                <span
-                  style={{
-                    color: "#64748B",
-                    fontSize: "11px",
-                    fontWeight: "600",
-                  }}
-                >
-                  {listing.rooms} camere
-                </span>
-              )}
-
-              {listing.surface_m2 && (
-                <span
-                  style={{
-                    color: "#64748B",
-                    fontSize: "11px",
-                    fontWeight: "600",
-                  }}
-                >
-                  {listing.surface_m2} m²
-                </span>
-              )}
             </div>
 
             <div
               style={{
-                display: "flex",
-                gap: "8px",
-                flexWrap: "wrap",
-                marginTop: "14px",
+                marginTop: "6px",
+                color: "#64748B",
+                fontSize: "12px",
+                lineHeight: "1.4",
               }}
             >
-              <button
-                type="button"
-                onClick={() =>
-                  router.push(
-                    `/proprietate/${listing.id}`
-                  )
-                }
-                style={{
-                  border:
-                    "1px solid #DBEAFE",
-                  background: "#EFF6FF",
-                  color: "#2563EB",
-                  borderRadius: "8px",
-                  padding: "7px 10px",
-                  fontFamily: "inherit",
-                  fontSize: "10px",
-                  fontWeight: "800",
-                  cursor: "pointer",
-                }}
-              >
-                Vezi anunțul
-              </button>
+              {listing.city}
 
-              <button
-                type="button"
-                onClick={() =>
-                  removeFavorite(
-                    listing
-                  )
-                }
+              {listing.address ? ` · ${listing.address}` : ""}
+            </div>
+
+            <div
+              style={{
+                marginTop: "7px",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                flexWrap: "wrap",
+                color: "#64748B",
+                fontSize: "11px",
+              }}
+            >
+              <strong
                 style={{
-                  border:
-                    "1px solid #FECACA",
-                  background: "#FEF2F2",
-                  color: "#B91C1C",
-                  borderRadius: "8px",
-                  padding: "7px 10px",
-                  fontFamily: "inherit",
-                  fontSize: "10px",
-                  fontWeight: "800",
-                  cursor: "pointer",
+                  color: "#172554",
+                  fontSize: "14px",
                 }}
               >
-                Elimină din favorite
-              </button>
+                {listing.price_monthly} € / lună
+              </strong>
+
+              {listing.rooms != null && (
+                <span>
+                  {listing.rooms}{" "}
+                  {Number(listing.rooms) === 1 ? "cameră" : "camere"}
+                </span>
+              )}
+
+              {listing.surface_m2 != null && (
+                <span>{listing.surface_m2} m²</span>
+              )}
             </div>
+          </div>
+
+          {/* ACȚIUNI */}
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "stretch",
+              gap: "7px",
+              minWidth: "135px",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() =>
+                router.push(`/proprietate/${listing.id}`)
+              }
+              style={{
+                border: "1px solid #CBD5E1",
+                background: "#FFFFFF",
+                borderRadius: "9px",
+                padding: "9px 12px",
+                color: "#172554",
+                fontFamily: "inherit",
+                fontSize: "11px",
+                fontWeight: "800",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Vezi anunțul
+            </button>
+
+            {/* BUTONUL NOU */}
+
+            <button
+              type="button"
+              onClick={() =>
+                router.push(
+                  `/editeazaproprietate/${listing.id}`
+                )
+              }
+              style={{
+                border: "1px solid #BFDBFE",
+                background: "#EFF6FF",
+                borderRadius: "9px",
+                padding: "9px 12px",
+                color: "#1D4ED8",
+                fontFamily: "inherit",
+                fontSize: "11px",
+                fontWeight: "800",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Editează anunțul
+            </button>
+
+            <button
+              type="button"
+              onClick={() => toggleListing(listing)}
+              style={{
+                border: "none",
+                background: listing.active
+                  ? "#FFF7ED"
+                  : "#F0FDF4",
+                borderRadius: "9px",
+                padding: "9px 12px",
+                color: listing.active
+                  ? "#C2410C"
+                  : "#15803D",
+                fontFamily: "inherit",
+                fontSize: "11px",
+                fontWeight: "800",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {listing.active ? "Dezactivează" : "Activează"}
+            </button>
           </div>
         </div>
       ))}
@@ -3738,31 +3359,27 @@ function FavoritesList({
 }
 
 /*
-  EMPTY CARD
+  CARD GOL
 */
 
-function EmptyCard({
-  title,
-  text,
-}) {
+function EmptyCard({ title, text }) {
   return (
     <div
       style={{
         maxWidth: "850px",
         background: "#FFFFFF",
-        border:
-          "1px solid #E2E8F0",
-        borderRadius: "16px",
-        padding: "45px 25px",
-        boxShadow:
-          "0 8px 24px rgba(15, 23, 42, 0.04)",
+        border: "1px solid #E2E8F0",
+        borderRadius: "14px",
+        padding: "35px",
+        textAlign: "center",
+        boxShadow: "0 5px 16px rgba(15, 23, 42, 0.04)",
       }}
     >
       <div
         style={{
+          color: "#172554",
           fontSize: "17px",
           fontWeight: "800",
-          color: "#172554",
         }}
       >
         {title}
@@ -3770,10 +3387,10 @@ function EmptyCard({
 
       <div
         style={{
+          marginTop: "7px",
           color: "#64748B",
           fontSize: "13px",
-          marginTop: "7px",
-          lineHeight: "1.6",
+          lineHeight: "1.55",
         }}
       >
         {text}
