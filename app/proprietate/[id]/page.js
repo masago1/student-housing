@@ -137,6 +137,19 @@ export default async function PropertyPage({ params }) {
     }
   });
 
+  // Numărul de telefon salvat la publicarea anunțului
+  const ownerPhone = listing.owner_phone?.trim() || "";
+
+  // Număr mascat, de exemplu: 07•• ••• •••
+  const maskedPhone = ownerPhone
+    ? `${ownerPhone.slice(0, 2)}•• ••• •••`
+    : "";
+
+  // Pentru link-ul tel:
+  const phoneHref = ownerPhone
+    ? ownerPhone.replace(/[^\d+]/g, "")
+    : "";
+
   return (
     <main
       style={{
@@ -535,7 +548,8 @@ export default async function PropertyPage({ params }) {
               padding: "25px",
               position: "sticky",
               top: "25px",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
+              boxShadow:
+                "0 10px 30px rgba(0,0,0,0.05)",
             }}
           >
             <div
@@ -595,6 +609,87 @@ export default async function PropertyPage({ params }) {
             >
               Mesaj direct către proprietar
             </div>
+
+            {/* TELEFON PROPRIETAR */}
+            {ownerPhone && (
+              <div
+                style={{
+                  marginTop: "20px",
+                  paddingTop: "18px",
+                  borderTop: "1px solid #e5e7eb",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "12px",
+                    color: "#6b7280",
+                    fontWeight: "700",
+                    marginBottom: "9px",
+                  }}
+                >
+                  Telefon proprietar
+                </div>
+
+                <details
+                  style={{
+                    width: "100%",
+                  }}
+                >
+                  <summary
+                    style={{
+                      listStyle: "none",
+                      cursor: "pointer",
+                      width: "100%",
+                      boxSizing: "border-box",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "11px",
+                      padding: "13px 15px",
+                      background: "#ffffff",
+                      color: "#172554",
+                      fontSize: "14px",
+                      fontWeight: "800",
+                      textAlign: "center",
+                      userSelect: "none",
+                    }}
+                  >
+                    ☎ {maskedPhone} · Arată numărul
+                  </summary>
+
+                  <a
+                    href={`tel:${phoneHref}`}
+                    style={{
+                      marginTop: "10px",
+                      width: "100%",
+                      boxSizing: "border-box",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                      textDecoration: "none",
+                      borderRadius: "11px",
+                      padding: "13px 15px",
+                      background: "#172554",
+                      color: "#ffffff",
+                      fontSize: "15px",
+                      fontWeight: "800",
+                    }}
+                  >
+                    ☎ {ownerPhone}
+                  </a>
+                </details>
+
+                <div
+                  style={{
+                    textAlign: "center",
+                    marginTop: "9px",
+                    color: "#9ca3af",
+                    fontSize: "11px",
+                  }}
+                >
+                  Apasă pe număr pentru a suna proprietarul
+                </div>
+              </div>
+            )}
           </aside>
         </div>
       </section>
