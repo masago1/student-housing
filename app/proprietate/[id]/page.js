@@ -280,6 +280,8 @@ export default async function PropertyPage({ params }) {
                         alignItems: "start",
                     }}
                 >
+                    {/* COLOANA STÂNGA */}
+
                     <div style={{ minWidth: 0 }}>
                         {listing.city && (
                             <div
@@ -659,20 +661,128 @@ export default async function PropertyPage({ params }) {
                                 />
                             </div>
                         )}
+                    </div>
 
-                        {/* UNIVERSITĂȚI */}
+                    {/* COLOANA DREAPTA STICKY */}
+
+                    <div
+                        className="property-sticky-column"
+                        style={{
+                            position: "sticky",
+                            top: "25px",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "22px",
+                            alignSelf: "start",
+                        }}
+                    >
+                        {/* CARD CONTACT */}
+
+                        <aside
+                            style={{
+                                background: "#ffffff",
+                                border: "1px solid #e5e7eb",
+                                borderRadius: "18px",
+                                padding: "25px",
+                                boxShadow:
+                                    "0 12px 35px rgba(17,24,39,0.05)",
+                            }}
+                        >
+                            <div
+                                style={{
+                                    display: "flex",
+                                    alignItems: "baseline",
+                                    gap: "7px",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        color: "#111827",
+                                        fontSize: "31px",
+                                        fontWeight: "800",
+                                        letterSpacing: "-0.7px",
+                                    }}
+                                >
+                                    {formatMoney(listing.price_monthly)} €
+                                </div>
+
+                                <div
+                                    style={{
+                                        color: "#6b7280",
+                                        fontSize: "13px",
+                                        fontWeight: "600",
+                                    }}
+                                >
+                                    / lună
+                                </div>
+                            </div>
+
+                            {listing.available_from && (
+                                <div
+                                    style={{
+                                        marginTop: "17px",
+                                        color: "#6b7280",
+                                        fontSize: "13px",
+                                        lineHeight: "1.5",
+                                    }}
+                                >
+                                    Disponibil din{" "}
+                                    <strong
+                                        style={{
+                                            color: "#4b5563",
+                                        }}
+                                    >
+                                        {formatDate(listing.available_from)}
+                                    </strong>
+                                </div>
+                            )}
+
+                            {ownerName && (
+                                <div
+                                    style={{
+                                        marginTop: "22px",
+                                        paddingTop: "20px",
+                                        borderTop: "1px solid #e5e7eb",
+                                        marginBottom: "0px",
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            fontSize: "17px",
+                                            fontWeight: "800",
+                                            color: "#172554",
+                                            lineHeight: "1.3",
+                                        }}
+                                    >
+                                        {ownerName}
+                                    </div>
+                                </div>
+                            )}
+
+                            <MessageOwnerButton
+                                listingId={listing.id}
+                                ownerId={listing.user_id}
+                            />
+
+                            <PhoneRevealButton phone={ownerPhone} />
+                        </aside>
+
+                        {/* UNIVERSITĂȚI ÎN COLOANA DREAPTĂ */}
 
                         <div
                             style={{
-                                marginTop: "34px",
-                                paddingTop: "30px",
-                                borderTop: "1px solid #e5e7eb",
+                                background: "#ffffff",
+                                border: "1px solid #e5e7eb",
+                                borderRadius: "18px",
+                                padding: "22px",
+                                boxShadow:
+                                    "0 12px 35px rgba(17,24,39,0.04)",
                             }}
                         >
                             <h2
                                 style={{
                                     margin: "0 0 17px",
-                                    fontSize: "22px",
+                                    fontSize: "19px",
                                     fontWeight: "800",
                                     color: "#111827",
                                 }}
@@ -685,7 +795,7 @@ export default async function PropertyPage({ params }) {
                                     style={{
                                         margin: 0,
                                         color: "#6b7280",
-                                        fontSize: "15px",
+                                        fontSize: "14px",
                                         lineHeight: "1.6",
                                     }}
                                 >
@@ -696,7 +806,7 @@ export default async function PropertyPage({ params }) {
                                 <div
                                     style={{
                                         display: "grid",
-                                        gap: "12px",
+                                        gap: "10px",
                                     }}
                                 >
                                     {universities.map((university) => {
@@ -738,83 +848,101 @@ export default async function PropertyPage({ params }) {
                                             <div
                                                 key={university.id}
                                                 style={{
-                                                    background: "#ffffff",
                                                     border:
                                                         "1px solid #e5e7eb",
-                                                    borderRadius: "13px",
-                                                    padding: "16px 18px",
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    justifyContent:
-                                                        "space-between",
-                                                    gap: "20px",
+                                                    borderRadius: "12px",
+                                                    padding: "14px",
                                                 }}
                                             >
-                                                <div>
+                                                <div
+                                                    style={{
+                                                        display: "flex",
+                                                        alignItems:
+                                                            "flex-start",
+                                                        justifyContent:
+                                                            "space-between",
+                                                        gap: "12px",
+                                                    }}
+                                                >
                                                     <div
                                                         style={{
-                                                            fontSize: "15px",
-                                                            fontWeight: "800",
-                                                            color: "#111827",
+                                                            minWidth: 0,
                                                         }}
                                                     >
-                                                        {university.short_name ||
-                                                            university.name}
+                                                        <div
+                                                            style={{
+                                                                fontSize:
+                                                                    "14px",
+                                                                fontWeight:
+                                                                    "800",
+                                                                color:
+                                                                    "#111827",
+                                                            }}
+                                                        >
+                                                            {university.short_name ||
+                                                                university.name}
+                                                        </div>
+
+                                                        {university.short_name &&
+                                                            university.name && (
+                                                                <div
+                                                                    style={{
+                                                                        marginTop:
+                                                                            "4px",
+                                                                        color:
+                                                                            "#6b7280",
+                                                                        fontSize:
+                                                                            "12px",
+                                                                        lineHeight:
+                                                                            "1.4",
+                                                                    }}
+                                                                >
+                                                                    {
+                                                                        university.name
+                                                                    }
+                                                                </div>
+                                                            )}
                                                     </div>
 
-                                                    {university.short_name &&
-                                                        university.name && (
-                                                            <div
-                                                                style={{
-                                                                    marginTop:
-                                                                        "4px",
-                                                                    color:
-                                                                        "#6b7280",
-                                                                    fontSize:
-                                                                        "13px",
-                                                                    lineHeight:
-                                                                        "1.4",
-                                                                }}
-                                                            >
-                                                                {
-                                                                    university.name
-                                                                }
-                                                            </div>
-                                                        )}
+                                                    {(hasWalking ||
+                                                        hasDistance) && (
+                                                        <div
+                                                            style={{
+                                                                flexShrink: 0,
+                                                                textAlign:
+                                                                    "right",
+                                                                color:
+                                                                    "#4b5563",
+                                                                fontSize:
+                                                                    "12px",
+                                                                lineHeight:
+                                                                    "1.5",
+                                                            }}
+                                                        >
+                                                            {hasWalking && (
+                                                                <div
+                                                                    style={{
+                                                                        fontWeight:
+                                                                            "700",
+                                                                    }}
+                                                                >
+                                                                    {
+                                                                        university.walking_minutes
+                                                                    }{" "}
+                                                                    min pe jos
+                                                                </div>
+                                                            )}
+
+                                                            {hasDistance && (
+                                                                <div>
+                                                                    {
+                                                                        distanceText
+                                                                    }
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
-
-                                                {(hasWalking ||
-                                                    hasDistance) && (
-                                                    <div
-                                                        style={{
-                                                            flexShrink: 0,
-                                                            textAlign: "right",
-                                                            color: "#4b5563",
-                                                            fontSize: "13px",
-                                                            lineHeight: "1.5",
-                                                        }}
-                                                    >
-                                                        {hasWalking && (
-                                                            <div
-                                                                style={{
-                                                                    fontWeight:
-                                                                        "700",
-                                                                }}
-                                                            >
-                                                                {
-                                                                    university.walking_minutes
-                                                                }{" "}
-                                                                min pe jos
-                                                            </div>
-                                                        )}
-
-                                                        {hasDistance && (
-                                                            <div>
-                                                                {distanceText}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
                                             </div>
                                         );
                                     })}
@@ -822,99 +950,6 @@ export default async function PropertyPage({ params }) {
                             )}
                         </div>
                     </div>
-
-                    {/* CARD CONTACT */}
-
-                    <aside
-                        style={{
-                            background: "#ffffff",
-                            border: "1px solid #e5e7eb",
-                            borderRadius: "18px",
-                            padding: "25px",
-                            boxShadow:
-                                "0 12px 35px rgba(17,24,39,0.05)",
-                            position: "sticky",
-                            top: "25px",
-                        }}
-                    >
-                        <div
-                            style={{
-                                display: "flex",
-                                alignItems: "baseline",
-                                gap: "7px",
-                            }}
-                        >
-                            <div
-                                style={{
-                                    color: "#111827",
-                                    fontSize: "31px",
-                                    fontWeight: "800",
-                                    letterSpacing: "-0.7px",
-                                }}
-                            >
-                                {formatMoney(listing.price_monthly)} €
-                            </div>
-
-                            <div
-                                style={{
-                                    color: "#6b7280",
-                                    fontSize: "13px",
-                                    fontWeight: "600",
-                                }}
-                            >
-                                / lună
-                            </div>
-                        </div>
-
-                        {listing.available_from && (
-                            <div
-                                style={{
-                                    marginTop: "17px",
-                                    color: "#6b7280",
-                                    fontSize: "13px",
-                                    lineHeight: "1.5",
-                                }}
-                            >
-                                Disponibil din{" "}
-                                <strong
-                                    style={{
-                                        color: "#4b5563",
-                                    }}
-                                >
-                                    {formatDate(listing.available_from)}
-                                </strong>
-                            </div>
-                        )}
-
-                        {ownerName && (
-                            <div
-                                style={{
-                                    marginTop: "22px",
-                                    paddingTop: "20px",
-                                    borderTop: "1px solid #e5e7eb",
-                                    marginBottom: "0px",
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        fontSize: "17px",
-                                        fontWeight: "800",
-                                        color: "#172554",
-                                        lineHeight: "1.3",
-                                    }}
-                                >
-                                    {ownerName}
-                                </div>
-                            </div>
-                        )}
-
-                        <MessageOwnerButton
-                            listingId={listing.id}
-                            ownerId={listing.user_id}
-                        />
-
-                        <PhoneRevealButton phone={ownerPhone} />
-                    </aside>
                 </div>
             </section>
 
@@ -924,7 +959,7 @@ export default async function PropertyPage({ params }) {
                         grid-template-columns: 1fr !important;
                     }
 
-                    .property-content-grid aside {
+                    .property-sticky-column {
                         position: static !important;
                     }
                 }
