@@ -5,6 +5,12 @@ import { useParams } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import FavoriteButton from "../../components/FavoriteButton";
 
+export const dynamic = "force-dynamic";
+
+/* =========================
+   ORAȘ
+========================= */
+
 function normalizeCity(value = "") {
   return decodeURIComponent(value)
     .normalize("NFD")
@@ -22,31 +28,35 @@ function formatFallbackCityName(city = "") {
     );
 }
 
-/* AAAA-LL-ZZ -> ZZ/LL/AAAA */
+/* =========================
+   DATE
+========================= */
 
 function formatDate(date) {
   if (!date) return null;
 
-  const parsed = new Date(date);
+  try {
+    const parsed = new Date(date);
 
-  if (Number.isNaN(parsed.getTime())) {
+    if (Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+
+    const day = String(
+      parsed.getDate()
+    ).padStart(2, "0");
+
+    const month = String(
+      parsed.getMonth() + 1
+    ).padStart(2, "0");
+
+    const year = parsed.getFullYear();
+
+    return `${day}/${month}/${year}`;
+  } catch {
     return null;
   }
-
-  const day = String(
-    parsed.getDate()
-  ).padStart(2, "0");
-
-  const month = String(
-    parsed.getMonth() + 1
-  ).padStart(2, "0");
-
-  const year = parsed.getFullYear();
-
-  return `${day}/${month}/${year}`;
 }
-
-/* ZZ/LL/AAAA -> AAAA-LL-ZZ */
 
 function romanianDateToISO(value) {
   if (!value) return "";
@@ -64,58 +74,11 @@ function romanianDateToISO(value) {
   return `${year}-${month}-${day}`;
 }
 
-/* Verifică o dată reală */
+/* =========================
+   VALIDARE NUMERE
+========================= */
 
-function validRomanianDate(value) {
-  if (!value) return true;
-
-  if (
-    !/^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/.test(
-      value
-    )
-  ) {
-    return false;
-  }
-
-  const [
-    day,
-    month,
-    year,
-  ] = value.split("/").map(Number);
-
-  const date = new Date(
-    year,
-    month - 1,
-    day
-  );
-
-  return (
-    date.getFullYear() === year &&
-    date.getMonth() === month - 1 &&
-    date.getDate() === day
-  );
-}
-
-/*
-  Acceptăm DOAR:
-  1
-  20
-  200
-  2000
-
-  NU:
-  0
-  0200
-  -200
-  200.5
-  200,5
-  abc
-*/
-
-function validPositiveInteger(
-  value,
-  max
-) {
+function isValidInteger(value, max) {
   if (!value) return true;
 
   if (!/^[1-9]\d*$/.test(value)) {
@@ -136,9 +99,42 @@ function numberValue(value) {
 
   const number = Number(value);
 
-  return Number.isFinite(number)
-    ? number
-    : null;
+  if (!Number.isFinite(number)) {
+    return null;
+  }
+
+  return number;
+}
+
+/* =========================
+   VALIDARE DATĂ
+========================= */
+
+function isValidRomanianDate(value) {
+  if (!value) return true;
+
+  if (
+    !/^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/.test(
+      value
+    )
+  ) {
+    return false;
+  }
+
+  const [day, month, year] =
+    value.split("/").map(Number);
+
+  const date = new Date(
+    year,
+    month - 1,
+    day
+  );
+
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+  );
 }
 
 export default function CityListingsPage() {
@@ -152,16 +148,22 @@ export default function CityListingsPage() {
   const normalizedRequestedCity =
     normalizeCity(citySlug);
 
-  const [listings, setListings] =
-    useState([]);
+  /* =========================
+     ANUNȚURI
+  ========================= */
 
-  const [loading, setLoading] =
-    useState(true);
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
-  const [loadError, setLoadError] =
-    useState("");
+  /* =========================
+     FILTRE EDITATE
+     
+     Acestea se modifică atunci
+     când utilizatorul scrie.
 
-  /* FILTRE */
+     NU filtrează lista.
+  ========================= */
 
   const [minPrice, setMinPrice] =
     useState("");
@@ -199,82 +201,45 @@ export default function CityListingsPage() {
   const [sort, setSort] =
     useState("newest");
 
-  /*
-    Încărcăm filtrele existente din URL.
-  */
+  /* =========================
+     FILTRE APLICATE
 
-  useEffect(() => {
-    if (!window.location.search) {
-      setLoading(false);
-      return;
-    }
+     Acestea se schimbă DOAR
+     când apăsăm Aplică filtrele.
+  ========================= */
 
-    const searchParams =
-      new URLSearchParams(
-        window.location.search
-      );
+  const [appliedFilters, setAppliedFilters] =
+    useState({
+      minPrice: "",
+      maxPrice: "",
+      rooms: "",
+      bedrooms: "",
+      bathrooms: "",
+      minSurface: "",
+      maxSurface: "",
+      propertyType: "",
+      furnished: "",
+      listingType: "",
+      availableFrom: "",
+      sort: "newest",
+    });
 
-    setMinPrice(
-      searchParams.get("minPrice") || ""
-    );
+  /* =========================
+     ERORI
 
-    setMaxPrice(
-      searchParams.get("maxPrice") || ""
-    );
+     NU le arătăm în timp ce
+     utilizatorul scrie.
+  ========================= */
 
-    setRooms(
-      searchParams.get("rooms") || ""
-    );
+  const [showValidationErrors, setShowValidationErrors] =
+    useState(false);
 
-    setBedrooms(
-      searchParams.get("bedrooms") || ""
-    );
+  const [validationErrors, setValidationErrors] =
+    useState([]);
 
-    setBathrooms(
-      searchParams.get("bathrooms") || ""
-    );
-
-    setMinSurface(
-      searchParams.get("minSurface") || ""
-    );
-
-    setMaxSurface(
-      searchParams.get("maxSurface") || ""
-    );
-
-    setPropertyType(
-      searchParams.get("propertyType") || ""
-    );
-
-    setFurnished(
-      searchParams.get("furnished") || ""
-    );
-
-    setListingType(
-      searchParams.get("listingType") || ""
-    );
-
-    const isoDate =
-      searchParams.get("availableFrom") || "";
-
-    if (isoDate) {
-      setAvailableFrom(
-        isoDate
-          .split("-")
-          .reverse()
-          .join("/")
-      );
-    }
-
-    setSort(
-      searchParams.get("sort") ||
-        "newest"
-    );
-  }, []);
-
-  /*
-    LUĂM DOAR ANUNȚURILE ACTIVE.
-  */
+  /* =========================
+     ÎNCĂRCARE ANUNȚURI
+  ========================= */
 
   useEffect(() => {
     let cancelled = false;
@@ -339,22 +304,20 @@ export default function CityListingsPage() {
     };
   }, []);
 
-  /*
-    ORAȘUL
-  */
+  /* =========================
+     ANUNȚURI DIN ORAȘ
+  ========================= */
 
-  const cityListings =
-    useMemo(() => {
-      return listings.filter(
-        (listing) =>
-          normalizeCity(
-            listing.city
-          ) === normalizedRequestedCity
-      );
-    }, [
-      listings,
-      normalizedRequestedCity,
-    ]);
+  const cityListings = useMemo(() => {
+    return listings.filter(
+      (listing) =>
+        normalizeCity(listing.city) ===
+        normalizedRequestedCity
+    );
+  }, [
+    listings,
+    normalizedRequestedCity,
+  ]);
 
   const cityName =
     cityListings.length > 0
@@ -363,396 +326,153 @@ export default function CityListingsPage() {
           citySlug
         );
 
-  /*
-    VALIDĂRI
-  */
+  /* =========================
+     VALIDARE
+     
+     ATENȚIE:
+     Se execută DOAR când
+     apăsăm Aplică filtrele.
+  ========================= */
 
-  const validationErrors =
-    useMemo(() => {
-      const errors = [];
+  function validateFilters() {
+    const errors = [];
 
-      if (
-        minPrice &&
-        !validPositiveInteger(
-          minPrice,
-          100000
-        )
-      ) {
-        errors.push(
-          "Prețul minim introdus nu este o valoare corespunzătoare."
-        );
-      }
+    /* PREȚ MINIM */
 
-      if (
-        maxPrice &&
-        !validPositiveInteger(
-          maxPrice,
-          100000
-        )
-      ) {
-        errors.push(
-          "Prețul maxim introdus nu este o valoare corespunzătoare."
-        );
-      }
+    if (
+      minPrice &&
+      !isValidInteger(
+        minPrice,
+        100000
+      )
+    ) {
+      errors.push(
+        "Prețul minim introdus nu este o valoare corespunzătoare."
+      );
+    }
 
-      if (
-        minSurface &&
-        !validPositiveInteger(
-          minSurface,
-          10000
-        )
-      ) {
-        errors.push(
-          "Suprafața minimă introdusă nu este o valoare corespunzătoare."
-        );
-      }
+    /* PREȚ MAXIM */
 
-      if (
-        maxSurface &&
-        !validPositiveInteger(
-          maxSurface,
-          10000
-        )
-      ) {
-        errors.push(
-          "Suprafața maximă introdusă nu este o valoare corespunzătoare."
-        );
-      }
+    if (
+      maxPrice &&
+      !isValidInteger(
+        maxPrice,
+        100000
+      )
+    ) {
+      errors.push(
+        "Prețul maxim introdus nu este o valoare corespunzătoare."
+      );
+    }
 
-      if (
-        availableFrom &&
-        !validRomanianDate(
-          availableFrom
-        )
-      ) {
-        errors.push(
-          "Data disponibilității trebuie introdusă în formatul ZZ/LL/AAAA."
-        );
-      }
+    /* SUPRAFAȚĂ MINIMĂ */
 
-      const minimumPrice =
-        numberValue(minPrice);
+    if (
+      minSurface &&
+      !isValidInteger(
+        minSurface,
+        10000
+      )
+    ) {
+      errors.push(
+        "Suprafața minimă introdusă nu este o valoare corespunzătoare."
+      );
+    }
 
-      const maximumPrice =
-        numberValue(maxPrice);
+    /* SUPRAFAȚĂ MAXIMĂ */
 
-      const minimumSurface =
-        numberValue(minSurface);
+    if (
+      maxSurface &&
+      !isValidInteger(
+        maxSurface,
+        10000
+      )
+    ) {
+      errors.push(
+        "Suprafața maximă introdusă nu este o valoare corespunzătoare."
+      );
+    }
 
-      const maximumSurface =
-        numberValue(maxSurface);
+    /* DATA */
 
-      if (
-        minimumPrice !== null &&
-        maximumPrice !== null &&
-        minimumPrice >
-          maximumPrice
-      ) {
-        errors.push(
-          "Prețul minim nu poate fi mai mare decât prețul maxim."
-        );
-      }
+    if (
+      availableFrom &&
+      !isValidRomanianDate(
+        availableFrom
+      )
+    ) {
+      errors.push(
+        "Data disponibilității trebuie introdusă în formatul ZZ/LL/AAAA."
+      );
+    }
 
-      if (
-        minimumSurface !== null &&
-        maximumSurface !== null &&
-        minimumSurface >
-          maximumSurface
-      ) {
-        errors.push(
-          "Suprafața minimă nu poate fi mai mare decât suprafața maximă."
-        );
-      }
+    const minimumPrice =
+      numberValue(minPrice);
 
-      return errors;
-    }, [
-      minPrice,
-      maxPrice,
-      minSurface,
-      maxSurface,
-      availableFrom,
-    ]);
+    const maximumPrice =
+      numberValue(maxPrice);
 
-  /*
-    REZULTATE FILTRATE
-  */
+    const minimumSurface =
+      numberValue(minSurface);
 
-  const filteredListings =
-    useMemo(() => {
-      if (
-        validationErrors.length > 0
-      ) {
-        return cityListings;
-      }
+    const maximumSurface =
+      numberValue(maxSurface);
 
-      let result = [
-        ...cityListings,
-      ];
+    /* PREȚ MIN > MAX */
 
-      const minimumPrice =
-        numberValue(minPrice);
+    if (
+      minimumPrice !== null &&
+      maximumPrice !== null &&
+      minimumPrice > maximumPrice
+    ) {
+      errors.push(
+        "Prețul minim nu poate fi mai mare decât prețul maxim."
+      );
+    }
 
-      const maximumPrice =
-        numberValue(maxPrice);
+    /* SUPRAFAȚĂ MIN > MAX */
 
-      const minimumSurface =
-        numberValue(minSurface);
+    if (
+      minimumSurface !== null &&
+      maximumSurface !== null &&
+      minimumSurface > maximumSurface
+    ) {
+      errors.push(
+        "Suprafața minimă nu poate fi mai mare decât suprafața maximă."
+      );
+    }
 
-      const maximumSurface =
-        numberValue(maxSurface);
+    return errors;
+  }
 
-      /*
-        PREȚ
-      */
+  /* =========================
+     APLICĂ FILTRELE
+  ========================= */
 
-      if (minimumPrice !== null) {
-        result = result.filter(
-          (listing) =>
-            Number(
-              listing.price_monthly
-            ) >= minimumPrice
-        );
-      }
+  function handleSubmit(event) {
+    event.preventDefault();
 
-      if (maximumPrice !== null) {
-        result = result.filter(
-          (listing) =>
-            Number(
-              listing.price_monthly
-            ) <= maximumPrice
-        );
-      }
+    const errors =
+      validateFilters();
 
-      /*
-        CAMERE
-      */
+    setShowValidationErrors(true);
+    setValidationErrors(errors);
 
-      if (rooms) {
-        const selectedRooms =
-          Number(rooms);
+    /*
+      Dacă există eroare:
+      NU schimbăm filtrele aplicate.
+    */
 
-        if (selectedRooms === 5) {
-          result = result.filter(
-            (listing) =>
-              Number(
-                listing.rooms
-              ) >= 5
-          );
-        } else {
-          result = result.filter(
-            (listing) =>
-              Number(
-                listing.rooms
-              ) === selectedRooms
-          );
-        }
-      }
+    if (errors.length > 0) {
+      return;
+    }
 
-      /*
-        DORMITOARE
-      */
+    /*
+      Abia aici mutăm valorile
+      editate în appliedFilters.
+    */
 
-      if (bedrooms) {
-        const selectedBedrooms =
-          Number(bedrooms);
-
-        if (
-          selectedBedrooms === 4
-        ) {
-          result = result.filter(
-            (listing) =>
-              Number(
-                listing.bedrooms
-              ) >= 4
-          );
-        } else {
-          result = result.filter(
-            (listing) =>
-              Number(
-                listing.bedrooms
-              ) === selectedBedrooms
-          );
-        }
-      }
-
-      /*
-        BĂI
-      */
-
-      if (bathrooms) {
-        const selectedBathrooms =
-          Number(bathrooms);
-
-        if (
-          selectedBathrooms === 3
-        ) {
-          result = result.filter(
-            (listing) =>
-              Number(
-                listing.bathrooms
-              ) >= 3
-          );
-        } else {
-          result = result.filter(
-            (listing) =>
-              Number(
-                listing.bathrooms
-              ) === selectedBathrooms
-          );
-        }
-      }
-
-      /*
-        SUPRAFAȚĂ
-      */
-
-      if (
-        minimumSurface !== null
-      ) {
-        result = result.filter(
-          (listing) =>
-            Number(
-              listing.surface_m2
-            ) >= minimumSurface
-        );
-      }
-
-      if (
-        maximumSurface !== null
-      ) {
-        result = result.filter(
-          (listing) =>
-            Number(
-              listing.surface_m2
-            ) <= maximumSurface
-        );
-      }
-
-      /*
-        TIP PROPRIETATE
-      */
-
-      if (propertyType) {
-        result = result.filter(
-          (listing) =>
-            listing.property_type ===
-            propertyType
-        );
-      }
-
-      /*
-        MOBILAT
-      */
-
-      if (furnished === "yes") {
-        result = result.filter(
-          (listing) =>
-            listing.furnished === true
-        );
-      }
-
-      if (furnished === "no") {
-        result = result.filter(
-          (listing) =>
-            listing.furnished === false
-        );
-      }
-
-      /*
-        TIP ANUNȚ
-      */
-
-      if (listingType) {
-        result = result.filter(
-          (listing) =>
-            listing.listing_type ===
-            listingType
-        );
-      }
-
-      /*
-        DISPONIBIL DE LA
-      */
-
-      if (availableFrom) {
-        const isoDate =
-          romanianDateToISO(
-            availableFrom
-          );
-
-        if (isoDate) {
-          result = result.filter(
-            (listing) =>
-              listing.available_from &&
-              listing.available_from <=
-                isoDate
-          );
-        }
-      }
-
-      /*
-        SORTARE
-      */
-
-      if (
-        sort === "price_asc"
-      ) {
-        result.sort(
-          (a, b) =>
-            Number(
-              a.price_monthly
-            ) -
-            Number(
-              b.price_monthly
-            )
-        );
-      }
-
-      if (
-        sort === "price_desc"
-      ) {
-        result.sort(
-          (a, b) =>
-            Number(
-              b.price_monthly
-            ) -
-            Number(
-              a.price_monthly
-            )
-        );
-      }
-
-      if (
-        sort === "surface_desc"
-      ) {
-        result.sort(
-          (a, b) =>
-            Number(
-              b.surface_m2 || 0
-            ) -
-            Number(
-              a.surface_m2 || 0
-            )
-        );
-      }
-
-      if (
-        sort === "newest"
-      ) {
-        result.sort(
-          (a, b) =>
-            new Date(
-              b.created_at
-            ) -
-            new Date(
-              a.created_at
-            )
-        );
-      }
-
-      return result;
-    }, [
-      cityListings,
+    setAppliedFilters({
       minPrice,
       maxPrice,
       rooms,
@@ -765,17 +485,182 @@ export default function CityListingsPage() {
       listingType,
       availableFrom,
       sort,
-      validationErrors,
-    ]);
+    });
 
-  /*
-    INPUT NUMERIC
+    /*
+      Păstrăm filtrele în URL.
+    */
 
-    Aici eliminăm IMEDIAT:
-    . , - litere spații
+    const searchParams =
+      new URLSearchParams();
 
-    și nu permitem 0 la început.
-  */
+    if (minPrice) {
+      searchParams.set(
+        "minPrice",
+        minPrice
+      );
+    }
+
+    if (maxPrice) {
+      searchParams.set(
+        "maxPrice",
+        maxPrice
+      );
+    }
+
+    if (rooms) {
+      searchParams.set(
+        "rooms",
+        rooms
+      );
+    }
+
+    if (bedrooms) {
+      searchParams.set(
+        "bedrooms",
+        bedrooms
+      );
+    }
+
+    if (bathrooms) {
+      searchParams.set(
+        "bathrooms",
+        bathrooms
+      );
+    }
+
+    if (minSurface) {
+      searchParams.set(
+        "minSurface",
+        minSurface
+      );
+    }
+
+    if (maxSurface) {
+      searchParams.set(
+        "maxSurface",
+        maxSurface
+      );
+    }
+
+    if (propertyType) {
+      searchParams.set(
+        "propertyType",
+        propertyType
+      );
+    }
+
+    if (furnished) {
+      searchParams.set(
+        "furnished",
+        furnished
+      );
+    }
+
+    if (listingType) {
+      searchParams.set(
+        "listingType",
+        listingType
+      );
+    }
+
+    if (availableFrom) {
+      searchParams.set(
+        "availableFrom",
+        romanianDateToISO(
+          availableFrom
+        )
+      );
+    }
+
+    if (sort) {
+      searchParams.set(
+        "sort",
+        sort
+      );
+    }
+
+    const query =
+      searchParams.toString();
+
+    const newUrl =
+      `/chirii/${citySlug}` +
+      (query
+        ? `?${query}`
+        : "");
+
+    window.history.pushState(
+      {},
+      "",
+      newUrl
+    );
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }
+
+  /* =========================
+     RESETARE
+  ========================= */
+
+  function resetFilters() {
+    setMinPrice("");
+    setMaxPrice("");
+    setRooms("");
+    setBedrooms("");
+    setBathrooms("");
+    setMinSurface("");
+    setMaxSurface("");
+    setPropertyType("");
+    setFurnished("");
+    setListingType("");
+    setAvailableFrom("");
+    setSort("newest");
+
+    setAppliedFilters({
+      minPrice: "",
+      maxPrice: "",
+      rooms: "",
+      bedrooms: "",
+      bathrooms: "",
+      minSurface: "",
+      maxSurface: "",
+      propertyType: "",
+      furnished: "",
+      listingType: "",
+      availableFrom: "",
+      sort: "newest",
+    });
+
+    setValidationErrors([]);
+    setShowValidationErrors(false);
+
+    window.history.pushState(
+      {},
+      "",
+      `/chirii/${citySlug}`
+    );
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }
+
+  /* =========================
+     INPUT NUMERIC
+
+     Acceptă DOAR cifre.
+
+     0200 -> 200
+     . -> nimic
+     , -> nimic
+     - -> nimic
+     200.5 -> 2005
+     litere -> eliminate
+  ========================= */
 
   function handleIntegerChange(
     value,
@@ -787,6 +672,10 @@ export default function CityListingsPage() {
         ""
       );
 
+    /*
+      Nu permitem zero la început.
+    */
+
     cleaned =
       cleaned.replace(
         /^0+/,
@@ -796,26 +685,13 @@ export default function CityListingsPage() {
     setter(cleaned);
   }
 
-  /*
-    DATA
-
-    Permitem doar cifre și /
-  */
+  /* =========================
+     DATA ZZ/LL/AAAA
+  ========================= */
 
   function handleDateChange(value) {
-    let cleaned =
-      String(value).replace(
-        /[^0-9/]/g,
-        ""
-      );
-
-    /*
-      Nu permitem mai mult de 8 cifre
-      plus cele două /
-    */
-
     const digits =
-      cleaned.replace(
+      String(value).replace(
         /\D/g,
         ""
       );
@@ -823,11 +699,6 @@ export default function CityListingsPage() {
     if (digits.length > 8) {
       return;
     }
-
-    /*
-      Construim automat:
-      ZZ/LL/AAAA
-    */
 
     let formatted = "";
 
@@ -849,172 +720,334 @@ export default function CityListingsPage() {
         digits.slice(4, 8);
     }
 
-    setAvailableFrom(
-      formatted
-    );
+    setAvailableFrom(formatted);
   }
 
-  /*
-    SUBMIT
+  /* =========================
+     SORTARE + FILTRARE
 
-    Păstrăm filtrele în URL.
-  */
+     FOLOSIM DOAR
+     appliedFilters.
 
-  function handleSubmit(event) {
-    event.preventDefault();
+     Deci editarea casetelor
+     NU afectează lista.
+  ========================= */
 
-    const params =
-      new URLSearchParams();
+  const filteredListings =
+    useMemo(() => {
+      let result = [
+        ...cityListings,
+      ];
 
-    if (minPrice)
-      params.set(
-        "minPrice",
-        minPrice
-      );
-
-    if (maxPrice)
-      params.set(
-        "maxPrice",
-        maxPrice
-      );
-
-    if (rooms)
-      params.set(
-        "rooms",
-        rooms
-      );
-
-    if (bedrooms)
-      params.set(
-        "bedrooms",
-        bedrooms
-      );
-
-    if (bathrooms)
-      params.set(
-        "bathrooms",
-        bathrooms
-      );
-
-    if (minSurface)
-      params.set(
-        "minSurface",
-        minSurface
-      );
-
-    if (maxSurface)
-      params.set(
-        "maxSurface",
-        maxSurface
-      );
-
-    if (propertyType)
-      params.set(
-        "propertyType",
-        propertyType
-      );
-
-    if (furnished)
-      params.set(
-        "furnished",
-        furnished
-      );
-
-    if (listingType)
-      params.set(
-        "listingType",
-        listingType
-      );
-
-    if (availableFrom) {
-      const isoDate =
-        romanianDateToISO(
-          availableFrom
+      const minimumPrice =
+        numberValue(
+          appliedFilters.minPrice
         );
 
-      if (isoDate) {
-        params.set(
-          "availableFrom",
-          isoDate
+      const maximumPrice =
+        numberValue(
+          appliedFilters.maxPrice
+        );
+
+      const minimumSurface =
+        numberValue(
+          appliedFilters.minSurface
+        );
+
+      const maximumSurface =
+        numberValue(
+          appliedFilters.maxSurface
+        );
+
+      /* PREȚ MINIM */
+
+      if (
+        minimumPrice !== null
+      ) {
+        result = result.filter(
+          (listing) =>
+            Number(
+              listing.price_monthly
+            ) >= minimumPrice
         );
       }
-    }
 
-    if (sort)
-      params.set(
-        "sort",
-        sort
-      );
+      /* PREȚ MAXIM */
 
-    const query =
-      params.toString();
+      if (
+        maximumPrice !== null
+      ) {
+        result = result.filter(
+          (listing) =>
+            Number(
+              listing.price_monthly
+            ) <= maximumPrice
+        );
+      }
 
-    const url =
-      `/chirii/${citySlug}` +
-      (query
-        ? `?${query}`
-        : "");
+      /* CAMERE */
 
-    window.history.pushState(
-      {},
-      "",
-      url
-    );
+      if (appliedFilters.rooms) {
+        const selectedRooms =
+          Number(
+            appliedFilters.rooms
+          );
 
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  }
+        if (selectedRooms === 5) {
+          result = result.filter(
+            (listing) =>
+              Number(
+                listing.rooms
+              ) >= 5
+          );
+        } else {
+          result = result.filter(
+            (listing) =>
+              Number(
+                listing.rooms
+              ) === selectedRooms
+          );
+        }
+      }
 
-  /*
-    RESET
-  */
+      /* DORMITOARE */
 
-  function resetFilters() {
-    setMinPrice("");
-    setMaxPrice("");
-    setRooms("");
-    setBedrooms("");
-    setBathrooms("");
-    setMinSurface("");
-    setMaxSurface("");
-    setPropertyType("");
-    setFurnished("");
-    setListingType("");
-    setAvailableFrom("");
-    setSort("newest");
+      if (
+        appliedFilters.bedrooms
+      ) {
+        const selectedBedrooms =
+          Number(
+            appliedFilters.bedrooms
+          );
 
-    window.history.pushState(
-      {},
-      "",
-      `/chirii/${citySlug}`
-    );
+        if (selectedBedrooms === 4) {
+          result = result.filter(
+            (listing) =>
+              Number(
+                listing.bedrooms
+              ) >= 4
+          );
+        } else {
+          result = result.filter(
+            (listing) =>
+              Number(
+                listing.bedrooms
+              ) ===
+              selectedBedrooms
+          );
+        }
+      }
 
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  }
+      /* BĂI */
 
-  const hasFilters =
+      if (
+        appliedFilters.bathrooms
+      ) {
+        const selectedBathrooms =
+          Number(
+            appliedFilters.bathrooms
+          );
+
+        if (selectedBathrooms === 3) {
+          result = result.filter(
+            (listing) =>
+              Number(
+                listing.bathrooms
+              ) >= 3
+          );
+        } else {
+          result = result.filter(
+            (listing) =>
+              Number(
+                listing.bathrooms
+              ) ===
+              selectedBathrooms
+          );
+        }
+      }
+
+      /* SUPRAFAȚĂ MIN */
+
+      if (
+        minimumSurface !== null
+      ) {
+        result = result.filter(
+          (listing) =>
+            Number(
+              listing.surface_m2
+            ) >= minimumSurface
+        );
+      }
+
+      /* SUPRAFAȚĂ MAX */
+
+      if (
+        maximumSurface !== null
+      ) {
+        result = result.filter(
+          (listing) =>
+            Number(
+              listing.surface_m2
+            ) <= maximumSurface
+        );
+      }
+
+      /* TIP PROPRIETATE */
+
+      if (
+        appliedFilters.propertyType
+      ) {
+        result = result.filter(
+          (listing) =>
+            listing.property_type ===
+            appliedFilters.propertyType
+        );
+      }
+
+      /* MOBILAT */
+
+      if (
+        appliedFilters.furnished ===
+        "yes"
+      ) {
+        result = result.filter(
+          (listing) =>
+            listing.furnished === true
+        );
+      }
+
+      if (
+        appliedFilters.furnished ===
+        "no"
+      ) {
+        result = result.filter(
+          (listing) =>
+            listing.furnished === false
+        );
+      }
+
+      /* TIP ANUNȚ */
+
+      if (
+        appliedFilters.listingType
+      ) {
+        result = result.filter(
+          (listing) =>
+            listing.listing_type ===
+            appliedFilters.listingType
+        );
+      }
+
+      /* DISPONIBIL DE LA */
+
+      if (
+        appliedFilters.availableFrom
+      ) {
+        const isoDate =
+          romanianDateToISO(
+            appliedFilters.availableFrom
+          );
+
+        if (isoDate) {
+          result = result.filter(
+            (listing) =>
+              listing.available_from &&
+              listing.available_from <=
+                isoDate
+          );
+        }
+      }
+
+      /* SORTARE */
+
+      if (
+        appliedFilters.sort ===
+        "price_asc"
+      ) {
+        result.sort(
+          (a, b) =>
+            Number(
+              a.price_monthly
+            ) -
+            Number(
+              b.price_monthly
+            )
+        );
+      }
+
+      if (
+        appliedFilters.sort ===
+        "price_desc"
+      ) {
+        result.sort(
+          (a, b) =>
+            Number(
+              b.price_monthly
+            ) -
+            Number(
+              a.price_monthly
+            )
+        );
+      }
+
+      if (
+        appliedFilters.sort ===
+        "surface_desc"
+      ) {
+        result.sort(
+          (a, b) =>
+            Number(
+              b.surface_m2 || 0
+            ) -
+            Number(
+              a.surface_m2 || 0
+            )
+        );
+      }
+
+      if (
+        appliedFilters.sort ===
+        "newest"
+      ) {
+        result.sort(
+          (a, b) =>
+            new Date(
+              b.created_at
+            ) -
+            new Date(
+              a.created_at
+            )
+        );
+      }
+
+      return result;
+    }, [
+      cityListings,
+      appliedFilters,
+    ]);
+
+  /* =========================
+     FILTRE APLICATE?
+  ========================= */
+
+  const hasAppliedFilters =
     Boolean(
-      minPrice ||
-        maxPrice ||
-        rooms ||
-        bedrooms ||
-        bathrooms ||
-        minSurface ||
-        maxSurface ||
-        propertyType ||
-        furnished ||
-        listingType ||
-        availableFrom
+      appliedFilters.minPrice ||
+        appliedFilters.maxPrice ||
+        appliedFilters.rooms ||
+        appliedFilters.bedrooms ||
+        appliedFilters.bathrooms ||
+        appliedFilters.minSurface ||
+        appliedFilters.maxSurface ||
+        appliedFilters.propertyType ||
+        appliedFilters.furnished ||
+        appliedFilters.listingType ||
+        appliedFilters.availableFrom
     );
 
-  /*
-    URL DE REVENIRE
-  */
+  /* =========================
+     URL ANUNȚ
+  ========================= */
 
   function getPropertyUrl(id) {
     const currentUrl =
@@ -1029,56 +1062,47 @@ export default function CityListingsPage() {
     );
   }
 
+  /* =========================
+     RENDER
+  ========================= */
+
   return (
     <main
       style={{
-        minHeight:
-          "100vh",
-        background:
-          "#F4F7FB",
-        color:
-          "#0F172A",
+        minHeight: "100vh",
+        background: "#F4F7FB",
+        color: "#0F172A",
       }}
     >
       {/* HEADER */}
 
       <header
         style={{
-          height:
-            "72px",
-          background:
-            "#FFFFFF",
+          height: "72px",
+          background: "#FFFFFF",
           borderBottom:
             "1px solid #E2E8F0",
-          display:
-            "flex",
-          alignItems:
-            "center",
+          display: "flex",
+          alignItems: "center",
           justifyContent:
             "space-between",
-          padding:
-            "0 6%",
-          boxSizing:
-            "border-box",
+          padding: "0 6%",
+          boxSizing: "border-box",
         }}
       >
         <a
           href="/"
           style={{
-            textDecoration:
-              "none",
-            fontSize:
-              "25px",
-            fontWeight:
-              "800",
+            textDecoration: "none",
+            fontSize: "25px",
+            fontWeight: "800",
             letterSpacing:
               "-1px",
           }}
         >
           <span
             style={{
-              color:
-                "#172554",
+              color: "#172554",
             }}
           >
             Student
@@ -1086,8 +1110,7 @@ export default function CityListingsPage() {
 
           <span
             style={{
-              color:
-                "#3B82F6",
+              color: "#3B82F6",
             }}
           >
             Housing
@@ -1097,14 +1120,10 @@ export default function CityListingsPage() {
         <a
           href="/"
           style={{
-            color:
-              "#64748B",
-            textDecoration:
-              "none",
-            fontSize:
-              "13px",
-            fontWeight:
-              "700",
+            color: "#64748B",
+            textDecoration: "none",
+            fontSize: "13px",
+            fontWeight: "700",
           }}
         >
           Înapoi la căutare
@@ -1115,10 +1134,8 @@ export default function CityListingsPage() {
 
       <section
         style={{
-          maxWidth:
-            "1080px",
-          margin:
-            "0 auto",
+          maxWidth: "1080px",
+          margin: "0 auto",
           padding:
             "42px 22px 80px",
           boxSizing:
@@ -1201,9 +1218,7 @@ export default function CityListingsPage() {
         {/* FILTRE */}
 
         <form
-          onSubmit={
-            handleSubmit
-          }
+          onSubmit={handleSubmit}
           style={{
             background:
               "#FFFFFF",
@@ -1262,7 +1277,7 @@ export default function CityListingsPage() {
               </div>
             </div>
 
-            {hasFilters && (
+            {hasAppliedFilters && (
               <button
                 type="button"
                 onClick={
@@ -1305,9 +1320,7 @@ export default function CityListingsPage() {
           >
             <div>
               <label
-                style={
-                  labelStyle
-                }
+                style={labelStyle}
               >
                 Preț minim
               </label>
@@ -1315,28 +1328,21 @@ export default function CityListingsPage() {
               <input
                 type="text"
                 inputMode="numeric"
-                pattern="[1-9][0-9]*"
+                value={minPrice}
                 placeholder="De la €"
-                value={
-                  minPrice
-                }
                 onChange={(event) =>
                   handleIntegerChange(
                     event.target.value,
                     setMinPrice
                   )
                 }
-                style={
-                  inputStyle
-                }
+                style={inputStyle}
               />
             </div>
 
             <div>
               <label
-                style={
-                  labelStyle
-                }
+                style={labelStyle}
               >
                 Preț maxim
               </label>
@@ -1344,65 +1350,49 @@ export default function CityListingsPage() {
               <input
                 type="text"
                 inputMode="numeric"
-                pattern="[1-9][0-9]*"
+                value={maxPrice}
                 placeholder="Până la €"
-                value={
-                  maxPrice
-                }
                 onChange={(event) =>
                   handleIntegerChange(
                     event.target.value,
                     setMaxPrice
                   )
                 }
-                style={
-                  inputStyle
-                }
+                style={inputStyle}
               />
             </div>
 
             <div>
               <label
-                style={
-                  labelStyle
-                }
+                style={labelStyle}
               >
                 Camere
               </label>
 
               <select
-                value={
-                  rooms
-                }
+                value={rooms}
                 onChange={(event) =>
                   setRooms(
                     event.target.value
                   )
                 }
-                style={
-                  inputStyle
-                }
+                style={inputStyle}
               >
                 <option value="">
                   Oricare
                 </option>
-
                 <option value="1">
                   1 cameră
                 </option>
-
                 <option value="2">
                   2 camere
                 </option>
-
                 <option value="3">
                   3 camere
                 </option>
-
                 <option value="4">
                   4 camere
                 </option>
-
                 <option value="5">
                   5+ camere
                 </option>
@@ -1411,9 +1401,7 @@ export default function CityListingsPage() {
 
             <div>
               <label
-                style={
-                  labelStyle
-                }
+                style={labelStyle}
               >
                 Tip proprietate
               </label>
@@ -1427,28 +1415,22 @@ export default function CityListingsPage() {
                     event.target.value
                   )
                 }
-                style={
-                  inputStyle
-                }
+                style={inputStyle}
               >
                 <option value="">
                   Oricare
                 </option>
-
-                <option value="Apartament">
+                <option value="apartment">
                   Apartament
                 </option>
-
-                <option value="Garsonieră">
+                <option value="studio">
                   Garsonieră
                 </option>
-
-                <option value="Casă">
-                  Casă
-                </option>
-
-                <option value="Cameră">
+                <option value="room">
                   Cameră
+                </option>
+                <option value="house">
+                  Casă
                 </option>
               </select>
             </div>
@@ -1471,42 +1453,32 @@ export default function CityListingsPage() {
           >
             <div>
               <label
-                style={
-                  labelStyle
-                }
+                style={labelStyle}
               >
                 Dormitoare
               </label>
 
               <select
-                value={
-                  bedrooms
-                }
+                value={bedrooms}
                 onChange={(event) =>
                   setBedrooms(
                     event.target.value
                   )
                 }
-                style={
-                  inputStyle
-                }
+                style={inputStyle}
               >
                 <option value="">
                   Oricare
                 </option>
-
                 <option value="1">
                   1 dormitor
                 </option>
-
                 <option value="2">
                   2 dormitoare
                 </option>
-
                 <option value="3">
                   3 dormitoare
                 </option>
-
                 <option value="4">
                   4+ dormitoare
                 </option>
@@ -1515,38 +1487,29 @@ export default function CityListingsPage() {
 
             <div>
               <label
-                style={
-                  labelStyle
-                }
+                style={labelStyle}
               >
                 Băi
               </label>
 
               <select
-                value={
-                  bathrooms
-                }
+                value={bathrooms}
                 onChange={(event) =>
                   setBathrooms(
                     event.target.value
                   )
                 }
-                style={
-                  inputStyle
-                }
+                style={inputStyle}
               >
                 <option value="">
                   Oricare
                 </option>
-
                 <option value="1">
                   1 baie
                 </option>
-
                 <option value="2">
                   2 băi
                 </option>
-
                 <option value="3">
                   3+ băi
                 </option>
@@ -1555,9 +1518,7 @@ export default function CityListingsPage() {
 
             <div>
               <label
-                style={
-                  labelStyle
-                }
+                style={labelStyle}
               >
                 Suprafață minimă
               </label>
@@ -1565,28 +1526,21 @@ export default function CityListingsPage() {
               <input
                 type="text"
                 inputMode="numeric"
-                pattern="[1-9][0-9]*"
+                value={minSurface}
                 placeholder="De la m²"
-                value={
-                  minSurface
-                }
                 onChange={(event) =>
                   handleIntegerChange(
                     event.target.value,
                     setMinSurface
                   )
                 }
-                style={
-                  inputStyle
-                }
+                style={inputStyle}
               />
             </div>
 
             <div>
               <label
-                style={
-                  labelStyle
-                }
+                style={labelStyle}
               >
                 Suprafață maximă
               </label>
@@ -1594,20 +1548,15 @@ export default function CityListingsPage() {
               <input
                 type="text"
                 inputMode="numeric"
-                pattern="[1-9][0-9]*"
+                value={maxSurface}
                 placeholder="Până la m²"
-                value={
-                  maxSurface
-                }
                 onChange={(event) =>
                   handleIntegerChange(
                     event.target.value,
                     setMaxSurface
                   )
                 }
-                style={
-                  inputStyle
-                }
+                style={inputStyle}
               />
             </div>
           </div>
@@ -1629,34 +1578,26 @@ export default function CityListingsPage() {
           >
             <div>
               <label
-                style={
-                  labelStyle
-                }
+                style={labelStyle}
               >
                 Mobilat
               </label>
 
               <select
-                value={
-                  furnished
-                }
+                value={furnished}
                 onChange={(event) =>
                   setFurnished(
                     event.target.value
                   )
                 }
-                style={
-                  inputStyle
-                }
+                style={inputStyle}
               >
                 <option value="">
                   Oricare
                 </option>
-
                 <option value="yes">
                   Da
                 </option>
-
                 <option value="no">
                   Nu
                 </option>
@@ -1665,34 +1606,26 @@ export default function CityListingsPage() {
 
             <div>
               <label
-                style={
-                  labelStyle
-                }
+                style={labelStyle}
               >
                 Tip anunț
               </label>
 
               <select
-                value={
-                  listingType
-                }
+                value={listingType}
                 onChange={(event) =>
                   setListingType(
                     event.target.value
                   )
                 }
-                style={
-                  inputStyle
-                }
+                style={inputStyle}
               >
                 <option value="">
                   Oricare
                 </option>
-
                 <option value="rent">
                   Închiriere
                 </option>
-
                 <option value="room">
                   Cameră
                 </option>
@@ -1701,9 +1634,7 @@ export default function CityListingsPage() {
 
             <div>
               <label
-                style={
-                  labelStyle
-                }
+                style={labelStyle}
               >
                 Disponibil de la
               </label>
@@ -1711,43 +1642,33 @@ export default function CityListingsPage() {
               <input
                 type="text"
                 inputMode="numeric"
-                placeholder="ZZ/LL/AAAA"
-                value={
-                  availableFrom
-                }
+                value={availableFrom}
                 onChange={(event) =>
                   handleDateChange(
                     event.target.value
                   )
                 }
+                placeholder="ZZ/LL/AAAA"
                 maxLength={10}
-                style={
-                  inputStyle
-                }
+                style={inputStyle}
               />
             </div>
 
             <div>
               <label
-                style={
-                  labelStyle
-                }
+                style={labelStyle}
               >
                 Sortare
               </label>
 
               <select
-                value={
-                  sort
-                }
+                value={sort}
                 onChange={(event) =>
                   setSort(
                     event.target.value
                   )
                 }
-                style={
-                  inputStyle
-                }
+                style={inputStyle}
               >
                 <option value="newest">
                   Cele mai noi
@@ -1808,50 +1729,56 @@ export default function CityListingsPage() {
           </div>
         </form>
 
-        {/* ERORI */}
+        {/* =========================
+            ERORI
 
-        {validationErrors.length >
-          0 && (
-          <div
-            style={{
-              background:
-                "#FEF2F2",
-              border:
-                "1px solid #FECACA",
-              color:
-                "#B91C1C",
-              borderRadius:
-                "10px",
-              padding:
-                "12px 14px",
-              marginBottom:
-                "14px",
-              fontSize:
-                "12px",
-              fontWeight:
-                "700",
-              lineHeight:
-                "1.6",
-            }}
-          >
-            {validationErrors.map(
-              (
-                error,
-                index
-              ) => (
-                <div
-                  key={
-                    index
-                  }
-                >
-                  {error}
-                </div>
-              )
-            )}
-          </div>
-        )}
+            Apar DOAR după
+            Aplică filtrele.
+        ========================= */}
 
-        {/* REZULTATE */}
+        {showValidationErrors &&
+          validationErrors.length >
+            0 && (
+            <div
+              style={{
+                background:
+                  "#FEF2F2",
+                border:
+                  "1px solid #FECACA",
+                color:
+                  "#B91C1C",
+                borderRadius:
+                  "10px",
+                padding:
+                  "12px 14px",
+                marginBottom:
+                  "14px",
+                fontSize:
+                  "12px",
+                fontWeight:
+                  "700",
+                lineHeight:
+                  "1.6",
+              }}
+            >
+              {validationErrors.map(
+                (
+                  error,
+                  index
+                ) => (
+                  <div
+                    key={index}
+                  >
+                    {error}
+                  </div>
+                )
+              )}
+            </div>
+          )}
+
+        {/* =========================
+            REZULTATE
+        ========================= */}
 
         <div
           style={{
@@ -1903,13 +1830,13 @@ export default function CityListingsPage() {
                 "600",
             }}
           >
-            {hasFilters
+            {hasAppliedFilters
               ? "Filtre aplicate"
               : "Cele mai noi"}
           </div>
         </div>
 
-        {/* EROARE ÎNCĂRCARE */}
+        {/* LOAD ERROR */}
 
         {loadError && (
           <div
@@ -1936,13 +1863,15 @@ export default function CityListingsPage() {
           </div>
         )}
 
-        {/* FĂRĂ REZULTATE */}
+        {/* =========================
+            FĂRĂ REZULTATE
+        ========================= */}
 
         {!loading &&
           !loadError &&
-          filteredListings.length ===
-            0 &&
           validationErrors.length ===
+            0 &&
+          filteredListings.length ===
             0 && (
             <div
               style={{
@@ -1968,7 +1897,7 @@ export default function CityListingsPage() {
                     "800",
                 }}
               >
-                {hasFilters
+                {hasAppliedFilters
                   ? "Nu există anunțuri care corespund filtrelor"
                   : `Momentan nu există chirii în ${cityName}`}
               </div>
@@ -1985,43 +1914,16 @@ export default function CityListingsPage() {
                     "1.6",
                 }}
               >
-                {hasFilters
+                {hasAppliedFilters
                   ? "Încearcă să modifici sau să elimini câteva filtre."
                   : "Încearcă din nou mai târziu sau caută într-un alt oraș."}
               </p>
-
-              {hasFilters && (
-                <button
-                  type="button"
-                  onClick={
-                    resetFilters
-                  }
-                  style={{
-                    border:
-                      "none",
-                    background:
-                      "transparent",
-                    color:
-                      "#2563EB",
-                    marginTop:
-                      "16px",
-                    fontFamily:
-                      "inherit",
-                    fontSize:
-                      "12px",
-                    fontWeight:
-                      "800",
-                    cursor:
-                      "pointer",
-                  }}
-                >
-                  Resetează filtrele
-                </button>
-              )}
             </div>
           )}
 
-        {/* LISTA ANUNȚURI */}
+        {/* =========================
+            LISTĂ
+        ========================= */}
 
         {!loading &&
           validationErrors.length ===
@@ -2065,8 +1967,6 @@ export default function CityListingsPage() {
                           "14px",
                         overflow:
                           "hidden",
-                        color:
-                          "inherit",
                         display:
                           "flex",
                         minHeight:
@@ -2077,7 +1977,7 @@ export default function CityListingsPage() {
                           "box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease",
                       }}
                     >
-                      {/* FOTOGRAFIE */}
+                      {/* FOTO */}
 
                       <div
                         className="listing-image"
@@ -2136,8 +2036,7 @@ export default function CityListingsPage() {
                                 "700",
                             }}
                           >
-                            Fără
-                            fotografie
+                            Fără fotografie
                           </div>
                         )}
 
@@ -2148,12 +2047,12 @@ export default function CityListingsPage() {
                         />
                       </div>
 
-                      {/* LINK ANUNȚ */}
+                      {/* CONȚINUT */}
 
                       <a
-                        href={getPropertyUrl(
-                          listing.id
-                        )}
+                        href={`/proprietate/${listing.id}?from=${encodeURIComponent(
+                          `/chirii/${citySlug}${window.location.search}`
+                        )}`}
                         className="listing-main-link"
                         style={{
                           flex:
@@ -2229,16 +2128,14 @@ export default function CityListingsPage() {
                                   "nowrap",
                               }}
                             >
-                              {
-                                listing.city
-                              }
+                              {listing.city}
 
                               {listing.address
                                 ? ` · ${listing.address}`
                                 : ""}
                             </div>
 
-                            {/* DETALII */}
+                            {/* CARACTERISTICI */}
 
                             <div
                               style={{
@@ -2373,8 +2270,7 @@ export default function CityListingsPage() {
                                     "600",
                                 }}
                               >
-                                Disponibil
-                                din{" "}
+                                Disponibil din{" "}
                                 {
                                   availableDate
                                 }
@@ -2392,8 +2288,7 @@ export default function CityListingsPage() {
                                     "600",
                                 }}
                               >
-                                Publicat
-                                la{" "}
+                                Publicat la{" "}
                                 {
                                   createdDate
                                 }
@@ -2495,6 +2390,10 @@ export default function CityListingsPage() {
           )}
       </section>
 
+      {/* =========================
+          RESPONSIVE
+      ========================= */}
+
       <style>{`
         .listing-card:hover {
           border-color: #BFDBFE !important;
@@ -2565,57 +2464,38 @@ export default function CityListingsPage() {
   );
 }
 
+/* =========================
+   STILURI
+========================= */
+
 const labelStyle = {
-  display:
-    "block",
-  color:
-    "#475569",
-  fontSize:
-    "10px",
-  fontWeight:
-    "800",
-  marginBottom:
-    "5px",
+  display: "block",
+  color: "#475569",
+  fontSize: "10px",
+  fontWeight: "800",
+  marginBottom: "5px",
 };
 
 const inputStyle = {
-  width:
-    "100%",
-  height:
-    "42px",
-  border:
-    "1px solid #CBD5E1",
-  borderRadius:
-    "9px",
-  background:
-    "#FFFFFF",
-  color:
-    "#172554",
-  padding:
-    "0 11px",
-  boxSizing:
-    "border-box",
-  fontFamily:
-    "inherit",
-  fontSize:
-    "12px",
-  outline:
-    "none",
+  width: "100%",
+  height: "42px",
+  border: "1px solid #CBD5E1",
+  borderRadius: "9px",
+  background: "#FFFFFF",
+  color: "#172554",
+  padding: "0 11px",
+  boxSizing: "border-box",
+  fontFamily: "inherit",
+  fontSize: "12px",
+  outline: "none",
 };
 
 const detailBadge = {
-  background:
-    "#F8FAFC",
-  border:
-    "1px solid #E2E8F0",
-  color:
-    "#475569",
-  borderRadius:
-    "7px",
-  padding:
-    "5px 8px",
-  fontSize:
-    "10px",
-  fontWeight:
-    "700",
+  background: "#F8FAFC",
+  border: "1px solid #E2E8F0",
+  color: "#475569",
+  borderRadius: "7px",
+  padding: "5px 8px",
+  fontSize: "10px",
+  fontWeight: "700",
 };
