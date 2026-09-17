@@ -24,6 +24,11 @@ export default function DashboardPage() {
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [conversationDetails, setConversationDetails] = useState({});
 
+  const [profileName, setProfileName] = useState("");
+  const [profilePhone, setProfilePhone] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSuccess, setProfileSuccess] = useState("");
+
   /*
     ÎNCĂRCARE DASHBOARD
   */
@@ -45,6 +50,24 @@ export default function DashboardPage() {
 
       setUser(user);
 
+      const { data: profileData, error: profileError } =
+        await supabase
+          .from("profiles")
+          .select("name, phone")
+          .eq("id", user.id)
+          .maybeSingle();
+
+      if (profileError) {
+        console.error("Eroare profil:", profileError);
+      } else {
+        setProfileName(
+          profileData?.name ||
+            user.user_metadata?.name ||
+            ""
+        );
+        setProfilePhone(profileData?.phone || "");
+      }
+
       const { data, error: listingsError } = await supabase
         .from("listings")
         .select(`
@@ -64,41 +87,55 @@ export default function DashboardPage() {
 
       if (listingsError) {
         console.error(listingsError);
-        setError("Anunțurile nu au putut fi încărcate.");
+        setError(
+          "Anunțurile nu au putut fi încărcate."
+        );
       } else {
         setListings(data || []);
       }
 
-      const { data: favoriteRows, error: favoritesError } =
-        await supabase
-          .from("favorites")
-          .select(`
+      const {
+        data: favoriteRows,
+        error: favoritesError,
+      } = await supabase
+        .from("favorites")
+        .select(`
+          id,
+          listing_id,
+          created_at,
+          listings (
             id,
-            listing_id,
-            created_at,
-            listings (
-              id,
-              title,
-              city,
-              address,
-              price_monthly,
-              rooms,
-              surface_m2,
-              image_url,
-              active,
-              created_at
-            )
-          `)
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
+            title,
+            city,
+            address,
+            price_monthly,
+            rooms,
+            surface_m2,
+            image_url,
+            active,
+            created_at
+          )
+        `)
+        .eq("user_id", user.id)
+        .order("created_at", {
+          ascending: false,
+        });
 
       if (favoritesError) {
-        console.error("Eroare favorite:", favoritesError);
-        setError("Favoritele nu au putut fi încărcate.");
+        console.error(
+          "Eroare favorite:",
+          favoritesError
+        );
+
+        setError(
+          "Favoritele nu au putut fi încărcate."
+        );
       } else {
         setFavorites(
           (favoriteRows || [])
-            .filter((favorite) => favorite.listings)
+            .filter(
+              (favorite) => favorite.listings
+            )
             .map((favorite) => ({
               favoriteId: favorite.id,
               ...favorite.listings,
@@ -113,11 +150,13 @@ export default function DashboardPage() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session?.user) {
-        router.replace("/login");
+    } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!session?.user) {
+          router.replace("/login");
+        }
       }
-    });
+    );
 
     return () => {
       subscription.unsubscribe();
@@ -131,10 +170,15 @@ export default function DashboardPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(
+      window.location.search
+    );
 
-    const sectionFromUrl = params.get("section");
-    const conversationFromUrl = params.get("conversation");
+    const sectionFromUrl =
+      params.get("section");
+
+    const conversationFromUrl =
+      params.get("conversation");
 
     if (sectionFromUrl === "messages") {
       setActiveSection("messages");
@@ -148,8 +192,15 @@ export default function DashboardPage() {
       setActiveSection("listings");
     }
 
+    if (sectionFromUrl === "profile") {
+      setActiveSection("profile");
+    }
+
     if (conversationFromUrl) {
-      setSelectedConversationId(conversationFromUrl);
+      setSelectedConversationId(
+        conversationFromUrl
+      );
+
       setActiveSection("messages");
     }
   }, []);
@@ -163,7 +214,9 @@ export default function DashboardPage() {
   ) => {
     if (!user?.id) return;
 
-    const conversationIds = (conversationRows || []).map(
+    const conversationIds = (
+      conversationRows || []
+    ).map(
       (conversation) => conversation.id
     );
 
@@ -172,217 +225,321 @@ export default function DashboardPage() {
       return;
     }
 
-    const { count, error: unreadError } = await supabase
+    const {
+      count,
+      error: unreadError,
+    } = await supabase
       .from("messages")
       .select("id", {
         count: "exact",
         head: true,
       })
-      .in("conversation_id", conversationIds)
+      .in(
+        "conversation_id",
+        conversationIds
+      )
       .neq("sender_id", user.id)
       .is("read_at", null);
 
     if (unreadError) {
-      console.error("Eroare mesaje necitite:", unreadError);
-      return;
-    }
-
-    setUnreadMessagesCount(count || 0);
-  };
-
-  const markConversationAsRead = async (conversationId) => {
-    if (!user?.id || !conversationId) return;
-
-    const readAt = new Date().toISOString();
-
-    const { error: readError } = await supabase
-      .from("messages")
-      .update({
-        read_at: readAt,
-      })
-      .eq("conversation_id", conversationId)
-      .neq("sender_id", user.id)
-      .is("read_at", null);
-
-    if (readError) {
       console.error(
-        "Eroare marcare mesaje ca citite:",
-        readError
+        "Eroare mesaje necitite:",
+        unreadError
       );
+
       return;
     }
 
-    setMessages((current) =>
-      current.map((message) =>
-        message.conversation_id === conversationId &&
-        message.sender_id !== user.id &&
-        !message.read_at
-          ? {
-              ...message,
-              read_at: readAt,
-            }
-          : message
-      )
+    setUnreadMessagesCount(
+      count || 0
     );
-
-    await Promise.all([
-      loadUnreadMessagesCount(),
-      loadConversationDetails(conversations),
-    ]);
   };
 
-  /*
-    DETALII CONVERSAȚII:
-    numele celuilalt utilizator + ultimul mesaj + necitite
-  */
+  const markConversationAsRead =
+    async (conversationId) => {
+      if (
+        !user?.id ||
+        !conversationId
+      ) {
+        return;
+      }
 
-  const loadConversationDetails = async (conversationRows) => {
-    if (!user?.id || !conversationRows?.length) {
-      setConversationDetails({});
-      return;
-    }
+      const readAt =
+        new Date().toISOString();
 
-    const otherUserIds = [
-      ...new Set(
-        conversationRows
-          .map((conversation) =>
-            conversation.owner_id === user.id
-              ? conversation.tenant_id
-              : conversation.owner_id
-          )
-          .filter(Boolean)
-      ),
-    ];
-
-    const conversationIds = conversationRows.map(
-      (conversation) => conversation.id
-    );
-
-    const [
-      { data: profileRows, error: profilesError },
-      { data: messageRows, error: detailsMessagesError },
-    ] = await Promise.all([
-      otherUserIds.length
-        ? supabase
-            .from("profiles")
-            .select("id, name")
-            .in("id", otherUserIds)
-        : Promise.resolve({ data: [], error: null }),
-
-      supabase
+      const {
+        error: readError,
+      } = await supabase
         .from("messages")
-        .select(`
-          id,
-          conversation_id,
-          sender_id,
-          content,
-          created_at,
-          read_at
-        `)
-        .in("conversation_id", conversationIds)
-        .order("created_at", { ascending: false }),
-    ]);
+        .update({
+          read_at: readAt,
+        })
+        .eq(
+          "conversation_id",
+          conversationId
+        )
+        .neq(
+          "sender_id",
+          user.id
+        )
+        .is("read_at", null);
 
-    if (profilesError) {
-      console.error(
-        "Eroare încărcare nume utilizatori:",
-        profilesError
-      );
-    }
+      if (readError) {
+        console.error(
+          "Eroare marcare mesaje ca citite:",
+          readError
+        );
 
-    if (detailsMessagesError) {
-      console.error(
-        "Eroare încărcare detalii conversații:",
-        detailsMessagesError
-      );
-    }
+        return;
+      }
 
-    const profilesById = {};
-
-    (profileRows || []).forEach((profile) => {
-      profilesById[profile.id] = profile.name;
-    });
-
-    const details = {};
-
-    conversationRows.forEach((conversation) => {
-      const otherUserId =
-        conversation.owner_id === user.id
-          ? conversation.tenant_id
-          : conversation.owner_id;
-
-      const conversationMessages = (messageRows || []).filter(
-        (message) =>
-          message.conversation_id === conversation.id
-      );
-
-      const lastMessage = conversationMessages[0] || null;
-
-      const unreadCount = conversationMessages.filter(
-        (message) =>
+      setMessages((current) =>
+        current.map((message) =>
+          message.conversation_id ===
+            conversationId &&
           message.sender_id !== user.id &&
           !message.read_at
-      ).length;
+            ? {
+                ...message,
+                read_at: readAt,
+              }
+            : message
+        )
+      );
 
-      details[conversation.id] = {
-        otherUserId,
-        otherUserName:
-          profilesById[otherUserId] || "Utilizator",
-        lastMessage,
-        unreadCount,
-      };
-    });
+      await Promise.all([
+        loadUnreadMessagesCount(),
+        loadConversationDetails(
+          conversations
+        ),
+      ]);
+    };
 
-    setConversationDetails(details);
-  };
+  /*
+    DETALII CONVERSAȚII
+  */
+
+  const loadConversationDetails =
+    async (conversationRows) => {
+      if (
+        !user?.id ||
+        !conversationRows?.length
+      ) {
+        setConversationDetails({});
+        return;
+      }
+
+      const otherUserIds = [
+        ...new Set(
+          conversationRows
+            .map((conversation) =>
+              conversation.owner_id ===
+              user.id
+                ? conversation.tenant_id
+                : conversation.owner_id
+            )
+            .filter(Boolean)
+        ),
+      ];
+
+      const conversationIds =
+        conversationRows.map(
+          (conversation) =>
+            conversation.id
+        );
+
+      const [
+        {
+          data: profileRows,
+          error: profilesError,
+        },
+        {
+          data: messageRows,
+          error: detailsMessagesError,
+        },
+      ] = await Promise.all([
+        otherUserIds.length
+          ? supabase
+              .from("profiles")
+              .select("id, name")
+              .in(
+                "id",
+                otherUserIds
+              )
+          : Promise.resolve({
+              data: [],
+              error: null,
+            }),
+
+        supabase
+          .from("messages")
+          .select(`
+            id,
+            conversation_id,
+            sender_id,
+            content,
+            created_at,
+            read_at
+          `)
+          .in(
+            "conversation_id",
+            conversationIds
+          )
+          .order(
+            "created_at",
+            {
+              ascending: false,
+            }
+          ),
+      ]);
+
+      if (profilesError) {
+        console.error(
+          "Eroare încărcare nume utilizatori:",
+          profilesError
+        );
+      }
+
+      if (detailsMessagesError) {
+        console.error(
+          "Eroare încărcare detalii conversații:",
+          detailsMessagesError
+        );
+      }
+
+      const profilesById = {};
+
+      (profileRows || []).forEach(
+        (profile) => {
+          profilesById[
+            profile.id
+          ] = profile.name;
+        }
+      );
+
+      const details = {};
+
+      conversationRows.forEach(
+        (conversation) => {
+          const otherUserId =
+            conversation.owner_id ===
+            user.id
+              ? conversation.tenant_id
+              : conversation.owner_id;
+
+          const conversationMessages =
+            (messageRows || []).filter(
+              (message) =>
+                message.conversation_id ===
+                conversation.id
+            );
+
+          const lastMessage =
+            conversationMessages[0] ||
+            null;
+
+          const unreadCount =
+            conversationMessages.filter(
+              (message) =>
+                message.sender_id !==
+                  user.id &&
+                !message.read_at
+            ).length;
+
+          details[
+            conversation.id
+          ] = {
+            otherUserId,
+
+            otherUserName:
+              profilesById[
+                otherUserId
+              ] || "Utilizator",
+
+            lastMessage,
+            unreadCount,
+          };
+        }
+      );
+
+      setConversationDetails(
+        details
+      );
+    };
 
   /*
     CONVERSAȚII
   */
 
-  const loadConversations = async () => {
-    if (!user?.id) return;
+  const loadConversations =
+    async () => {
+      if (!user?.id) return;
 
-    const { data, error: conversationsError } = await supabase
-      .from("conversations")
-      .select(`
-        id,
-        listing_id,
-        tenant_id,
-        owner_id,
-        created_at,
-        updated_at,
-        listings (
+      const {
+        data,
+        error:
+          conversationsError,
+      } = await supabase
+        .from("conversations")
+        .select(`
           id,
-          title,
-          city,
-          address,
-          price_monthly,
-          image_url,
-          user_id
+          listing_id,
+          tenant_id,
+          owner_id,
+          created_at,
+          updated_at,
+          listings (
+            id,
+            title,
+            city,
+            address,
+            price_monthly,
+            image_url,
+            user_id
+          )
+        `)
+        .or(
+          `tenant_id.eq.${user.id},owner_id.eq.${user.id}`
         )
-      `)
-      .or(`tenant_id.eq.${user.id},owner_id.eq.${user.id}`)
-      .order("updated_at", { ascending: false });
+        .order(
+          "updated_at",
+          {
+            ascending: false,
+          }
+        );
 
-    if (conversationsError) {
-      console.error(
-        "Eroare conversații:",
+      if (
         conversationsError
+      ) {
+        console.error(
+          "Eroare conversații:",
+          conversationsError
+        );
+
+        setError(
+          "Conversațiile nu au putut fi încărcate."
+        );
+
+        return;
+      }
+
+      const conversationRows =
+        data || [];
+
+      setConversations(
+        conversationRows
       );
-      setError("Conversațiile nu au putut fi încărcate.");
-      return;
-    }
 
-    const conversationRows = data || [];
+      await Promise.all([
+        loadUnreadMessagesCount(
+          conversationRows
+        ),
 
-    setConversations(conversationRows);
-
-    await Promise.all([
-      loadUnreadMessagesCount(conversationRows),
-      loadConversationDetails(conversationRows),
-    ]);
-  };
+        loadConversationDetails(
+          conversationRows
+        ),
+      ]);
+    };
 
   useEffect(() => {
     if (!user?.id) return;
@@ -392,11 +549,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (
-      activeSection === "messages" &&
+      activeSection ===
+        "messages" &&
       !selectedConversationId &&
       conversations.length > 0
     ) {
-      setSelectedConversationId(conversations[0].id);
+      setSelectedConversationId(
+        conversations[0].id
+      );
     }
   }, [
     activeSection,
@@ -408,7 +568,9 @@ export default function DashboardPage() {
     MESAJE
   */
 
-  const loadMessages = async (conversationId) => {
+  const loadMessages = async (
+    conversationId
+  ) => {
     if (!conversationId) {
       setMessages([]);
       return;
@@ -416,7 +578,10 @@ export default function DashboardPage() {
 
     setMessagesLoading(true);
 
-    const { data, error: messagesError } = await supabase
+    const {
+      data,
+      error: messagesError,
+    } = await supabase
       .from("messages")
       .select(`
         id,
@@ -426,32 +591,53 @@ export default function DashboardPage() {
         created_at,
         read_at
       `)
-      .eq("conversation_id", conversationId)
+      .eq(
+        "conversation_id",
+        conversationId
+      )
       .order("created_at", {
         ascending: true,
       });
 
     if (messagesError) {
-      console.error("Eroare mesaje:", messagesError);
-      setError("Mesajele nu au putut fi încărcate.");
-      setMessagesLoading(false);
+      console.error(
+        "Eroare mesaje:",
+        messagesError
+      );
+
+      setError(
+        "Mesajele nu au putut fi încărcate."
+      );
+
+      setMessagesLoading(
+        false
+      );
+
       return;
     }
 
     setMessages(data || []);
     setMessagesLoading(false);
 
-    await markConversationAsRead(conversationId);
+    await markConversationAsRead(
+      conversationId
+    );
   };
 
   useEffect(() => {
-    if (!selectedConversationId) {
+    if (
+      !selectedConversationId
+    ) {
       setMessages([]);
       return;
     }
 
-    loadMessages(selectedConversationId);
-  }, [selectedConversationId]);
+    loadMessages(
+      selectedConversationId
+    );
+  }, [
+    selectedConversationId,
+  ]);
 
   /*
     REALTIME
@@ -461,7 +647,9 @@ export default function DashboardPage() {
     if (!user?.id) return;
 
     const channel = supabase
-      .channel(`messages-user-${user.id}`)
+      .channel(
+        `messages-user-${user.id}`
+      )
       .on(
         "postgres_changes",
         {
@@ -470,12 +658,15 @@ export default function DashboardPage() {
           table: "messages",
         },
         async (payload) => {
-          const newMessage = payload.new;
+          const newMessage =
+            payload.new;
 
-          const belongsToUser = conversations.some(
-            (conversation) =>
-              conversation.id === newMessage.conversation_id
-          );
+          const belongsToUser =
+            conversations.some(
+              (conversation) =>
+                conversation.id ===
+                newMessage.conversation_id
+            );
 
           if (!belongsToUser) {
             await loadConversations();
@@ -486,22 +677,32 @@ export default function DashboardPage() {
             newMessage.conversation_id ===
             selectedConversationId
           ) {
-            setMessages((current) => {
-              const exists = current.some(
-                (message) => message.id === newMessage.id
-              );
+            setMessages(
+              (current) => {
+                const exists =
+                  current.some(
+                    (message) =>
+                      message.id ===
+                      newMessage.id
+                  );
 
-              if (exists) {
-                return current;
+                if (exists) {
+                  return current;
+                }
+
+                return [
+                  ...current,
+                  newMessage,
+                ];
               }
-
-              return [...current, newMessage];
-            });
+            );
           }
 
           if (
-            newMessage.sender_id !== user.id &&
-            activeSection === "messages" &&
+            newMessage.sender_id !==
+              user.id &&
+            activeSection ===
+              "messages" &&
             newMessage.conversation_id ===
               selectedConversationId
           ) {
@@ -518,7 +719,9 @@ export default function DashboardPage() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(
+        channel
+      );
     };
   }, [
     user?.id,
@@ -531,226 +734,444 @@ export default function DashboardPage() {
     TRIMITE MESAJ
   */
 
-  const sendMessage = async () => {
-    if (!user?.id || !selectedConversationId) {
-      return;
-    }
-
-    const cleanMessage = messageText.trim();
-
-    if (!cleanMessage) return;
-
-    setSendingMessage(true);
-    setError("");
-
-    const {
-      data: insertedMessage,
-      error: sendError,
-    } = await supabase
-      .from("messages")
-      .insert({
-        conversation_id: selectedConversationId,
-        sender_id: user.id,
-        content: cleanMessage,
-      })
-      .select(`
-        id,
-        conversation_id,
-        sender_id,
-        content,
-        created_at,
-        read_at
-      `)
-      .single();
-
-    if (sendError) {
-      console.error(
-        "Eroare trimitere mesaj:",
-        sendError
-      );
-      setError("Mesajul nu a putut fi trimis.");
-      setSendingMessage(false);
-      return;
-    }
-
-    setMessages((current) => {
-      const exists = current.some(
-        (message) => message.id === insertedMessage.id
-      );
-
-      if (exists) return current;
-
-      return [...current, insertedMessage];
-    });
-
-    setMessageText("");
-
-    const { error: conversationUpdateError } =
-      await supabase
-        .from("conversations")
-        .update({
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", selectedConversationId);
-
-    if (conversationUpdateError) {
-      console.error(
-        "Eroare actualizare conversație:",
-        conversationUpdateError
-      );
-    }
-
-    await loadConversations();
-
-    setSendingMessage(false);
-  };
-
-  const handleMessageKeyDown = (event) => {
-    if (
-      event.key === "Enter" &&
-      !event.shiftKey
-    ) {
-      event.preventDefault();
-
-      if (!sendingMessage) {
-        sendMessage();
+  const sendMessage =
+    async () => {
+      if (
+        !user?.id ||
+        !selectedConversationId
+      ) {
+        return;
       }
-    }
-  };
 
-  const openConversation = (conversationId) => {
-    setSelectedConversationId(conversationId);
-    setActiveSection("messages");
+      const cleanMessage =
+        messageText.trim();
 
-    router.replace(
-      `/dashboard?section=messages&conversation=${conversationId}`
-    );
-  };
+      if (!cleanMessage) return;
+
+      setSendingMessage(true);
+      setError("");
+
+      const {
+        data:
+          insertedMessage,
+        error: sendError,
+      } = await supabase
+        .from("messages")
+        .insert({
+          conversation_id:
+            selectedConversationId,
+
+          sender_id:
+            user.id,
+
+          content:
+            cleanMessage,
+        })
+        .select(`
+          id,
+          conversation_id,
+          sender_id,
+          content,
+          created_at,
+          read_at
+        `)
+        .single();
+
+      if (sendError) {
+        console.error(
+          "Eroare trimitere mesaj:",
+          sendError
+        );
+
+        setError(
+          "Mesajul nu a putut fi trimis."
+        );
+
+        setSendingMessage(
+          false
+        );
+
+        return;
+      }
+
+      setMessages(
+        (current) => {
+          const exists =
+            current.some(
+              (message) =>
+                message.id ===
+                insertedMessage.id
+            );
+
+          if (exists) {
+            return current;
+          }
+
+          return [
+            ...current,
+            insertedMessage,
+          ];
+        }
+      );
+
+      setMessageText("");
+
+      const {
+        error:
+          conversationUpdateError,
+      } = await supabase
+        .from(
+          "conversations"
+        )
+        .update({
+          updated_at:
+            new Date().toISOString(),
+        })
+        .eq(
+          "id",
+          selectedConversationId
+        );
+
+      if (
+        conversationUpdateError
+      ) {
+        console.error(
+          "Eroare actualizare conversație:",
+          conversationUpdateError
+        );
+      }
+
+      await loadConversations();
+
+      setSendingMessage(false);
+    };
+
+  const handleMessageKeyDown =
+    (event) => {
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey
+      ) {
+        event.preventDefault();
+
+        if (
+          !sendingMessage
+        ) {
+          sendMessage();
+        }
+      }
+    };
+
+  const openConversation =
+    (conversationId) => {
+      setSelectedConversationId(
+        conversationId
+      );
+
+      setActiveSection(
+        "messages"
+      );
+
+      router.replace(
+        `/dashboard?section=messages&conversation=${conversationId}`
+      );
+    };
 
   const selectedConversation =
     conversations.find(
       (conversation) =>
-        conversation.id === selectedConversationId
+        conversation.id ===
+        selectedConversationId
     ) || null;
+
+  /*
+    PROFIL
+  */
+
+  const saveProfile =
+    async () => {
+      if (!user?.id) return;
+
+      const cleanName =
+        profileName.trim();
+
+      const cleanPhone =
+        profilePhone.trim();
+
+      setProfileSuccess("");
+      setError("");
+
+      if (!cleanName) {
+        setError(
+          "Introdu numele."
+        );
+
+        return;
+      }
+
+      if (
+        cleanPhone &&
+        cleanPhone.length < 7
+      ) {
+        setError(
+          "Numărul de telefon nu este valid."
+        );
+
+        return;
+      }
+
+      setProfileSaving(true);
+
+      const {
+        error: profileError,
+      } = await supabase
+        .from("profiles")
+        .upsert(
+          {
+            id: user.id,
+            name: cleanName,
+            phone:
+              cleanPhone || null,
+          },
+          {
+            onConflict: "id",
+          }
+        );
+
+      if (profileError) {
+        console.error(
+          "Eroare salvare profil:",
+          profileError
+        );
+
+        setError(
+          "Profilul nu a putut fi salvat."
+        );
+
+        setProfileSaving(
+          false
+        );
+
+        return;
+      }
+
+      const {
+        error:
+          metadataError,
+      } =
+        await supabase.auth.updateUser({
+          data: {
+            name: cleanName,
+          },
+        });
+
+      if (metadataError) {
+        console.error(
+          "Eroare actualizare metadata:",
+          metadataError
+        );
+      }
+
+      setUser(
+        (current) =>
+          current
+            ? {
+                ...current,
+
+                user_metadata: {
+                  ...(current.user_metadata ||
+                    {}),
+
+                  name:
+                    cleanName,
+                },
+              }
+            : current
+      );
+
+      setProfileName(
+        cleanName
+      );
+
+      setProfilePhone(
+        cleanPhone
+      );
+
+      setProfileSuccess(
+        "Profilul a fost actualizat."
+      );
+
+      setProfileSaving(
+        false
+      );
+
+      await loadConversationDetails(
+        conversations
+      );
+    };
 
   /*
     LOGOUT
   */
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout =
+    async () => {
+      await supabase.auth.signOut();
 
-    router.push("/");
-    router.refresh();
-  };
+      router.push("/");
+      router.refresh();
+    };
 
   /*
     ACTIVEAZĂ / DEZACTIVEAZĂ ANUNȚ
   */
 
-  const toggleListing = async (listing) => {
-    setError("");
+  const toggleListing =
+    async (listing) => {
+      setError("");
 
-    const newStatus = !listing.active;
+      const newStatus =
+        !listing.active;
 
-    const { error } = await supabase
-      .from("listings")
-      .update({
-        active: newStatus,
-      })
-      .eq("id", listing.id)
-      .eq("user_id", user.id);
+      const { error } =
+        await supabase
+          .from("listings")
+          .update({
+            active: newStatus,
+          })
+          .eq(
+            "id",
+            listing.id
+          )
+          .eq(
+            "user_id",
+            user.id
+          );
 
-    if (error) {
-      console.error(error);
-      setError(
-        "Statusul anunțului nu a putut fi modificat."
+      if (error) {
+        console.error(error);
+
+        setError(
+          "Statusul anunțului nu a putut fi modificat."
+        );
+
+        return;
+      }
+
+      setListings(
+        (current) =>
+          current.map(
+            (item) =>
+              item.id ===
+              listing.id
+                ? {
+                    ...item,
+                    active:
+                      newStatus,
+                  }
+                : item
+          )
       );
-      return;
-    }
 
-    setListings((current) =>
-      current.map((item) =>
-        item.id === listing.id
-          ? {
-              ...item,
-              active: newStatus,
-            }
-          : item
-      )
-    );
-
-    setFavorites((current) =>
-      current.map((item) =>
-        item.id === listing.id
-          ? {
-              ...item,
-              active: newStatus,
-            }
-          : item
-      )
-    );
-  };
+      setFavorites(
+        (current) =>
+          current.map(
+            (item) =>
+              item.id ===
+              listing.id
+                ? {
+                    ...item,
+                    active:
+                      newStatus,
+                  }
+                : item
+          )
+      );
+    };
 
   /*
     ELIMINĂ FAVORIT
   */
 
-  const removeFavorite = async (listing) => {
-    if (!user) return;
+  const removeFavorite =
+    async (listing) => {
+      if (!user) return;
 
-    setError("");
+      setError("");
 
-    const { error: deleteError } = await supabase
-      .from("favorites")
-      .delete()
-      .eq("user_id", user.id)
-      .eq("listing_id", listing.id);
+      const {
+        error: deleteError,
+      } = await supabase
+        .from("favorites")
+        .delete()
+        .eq(
+          "user_id",
+          user.id
+        )
+        .eq(
+          "listing_id",
+          listing.id
+        );
 
-    if (deleteError) {
-      console.error(
-        "Eroare ștergere favorit:",
-        deleteError
+      if (deleteError) {
+        console.error(
+          "Eroare ștergere favorit:",
+          deleteError
+        );
+
+        setError(
+          "Anunțul nu a putut fi eliminat din favorite."
+        );
+
+        return;
+      }
+
+      setFavorites(
+        (current) =>
+          current.filter(
+            (item) =>
+              item.id !==
+              listing.id
+          )
       );
+    };
 
-      setError(
-        "Anunțul nu a putut fi eliminat din favorite."
-      );
+  const activeListings =
+    listings.filter(
+      (listing) =>
+        listing.active
+    ).length;
 
-      return;
-    }
+  const menuItemStyle =
+    (section) => ({
+      width: "100%",
+      border: "none",
+      borderRadius: "9px",
+      padding: "13px 14px",
+      textAlign: "left",
+      fontFamily: "inherit",
+      fontSize: "14px",
 
-    setFavorites((current) =>
-      current.filter(
-        (item) => item.id !== listing.id
-      )
-    );
-  };
+      fontWeight:
+        activeSection ===
+        section
+          ? "800"
+          : "600",
 
-  const activeListings = listings.filter(
-    (listing) => listing.active
-  ).length;
+      cursor: "pointer",
 
-  const menuItemStyle = (section) => ({
-    width: "100%",
-    border: "none",
-    borderRadius: "9px",
-    padding: "13px 14px",
-    textAlign: "left",
-    fontFamily: "inherit",
-    fontSize: "14px",
-    fontWeight:
-      activeSection === section ? "800" : "600",
-    cursor: "pointer",
-    background:
-      activeSection === section
-        ? "#EFF6FF"
-        : "transparent",
-    color:
-      activeSection === section
-        ? "#172554"
-        : "#64748B",
-  });
+      background:
+        activeSection ===
+        section
+          ? "#EFF6FF"
+          : "transparent",
+
+      color:
+        activeSection ===
+        section
+          ? "#172554"
+          : "#64748B",
+    });
 
   if (loading) {
     return (
@@ -785,10 +1206,12 @@ export default function DashboardPage() {
         style={{
           height: "72px",
           background: "#FFFFFF",
-          borderBottom: "1px solid #E2E8F0",
+          borderBottom:
+            "1px solid #E2E8F0",
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent:
+            "space-between",
           padding: "0 5%",
           boxSizing: "border-box",
         }}
@@ -802,10 +1225,19 @@ export default function DashboardPage() {
             letterSpacing: "-1px",
           }}
         >
-          <span style={{ color: "#172554" }}>
+          <span
+            style={{
+              color: "#172554",
+            }}
+          >
             Student
           </span>
-          <span style={{ color: "#3B82F6" }}>
+
+          <span
+            style={{
+              color: "#3B82F6",
+            }}
+          >
             Housing
           </span>
         </a>
@@ -831,7 +1263,8 @@ export default function DashboardPage() {
             type="button"
             onClick={handleLogout}
             style={{
-              border: "1px solid #E2E8F0",
+              border:
+                "1px solid #E2E8F0",
               background: "#FFFFFF",
               borderRadius: "9px",
               padding: "9px 14px",
@@ -850,7 +1283,8 @@ export default function DashboardPage() {
       <div
         className="dashboard-layout"
         style={{
-          minHeight: "calc(100vh - 73px)",
+          minHeight:
+            "calc(100vh - 73px)",
           display: "grid",
           gridTemplateColumns:
             "250px minmax(0, 1fr)",
@@ -862,7 +1296,8 @@ export default function DashboardPage() {
           className="dashboard-sidebar"
           style={{
             background: "#FFFFFF",
-            borderRight: "1px solid #E2E8F0",
+            borderRight:
+              "1px solid #E2E8F0",
             padding: "32px 20px",
             boxSizing: "border-box",
           }}
@@ -890,10 +1325,17 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => {
-                setActiveSection("dashboard");
-                router.replace("/dashboard");
+                setActiveSection(
+                  "dashboard"
+                );
+
+                router.replace(
+                  "/dashboard"
+                );
               }}
-              style={menuItemStyle("dashboard")}
+              style={menuItemStyle(
+                "dashboard"
+              )}
             >
               Panou principal
             </button>
@@ -901,12 +1343,35 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => {
-                setActiveSection("listings");
+                setActiveSection(
+                  "profile"
+                );
+
+                router.replace(
+                  "/dashboard?section=profile"
+                );
+              }}
+              style={menuItemStyle(
+                "profile"
+              )}
+            >
+              Profilul meu
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveSection(
+                  "listings"
+                );
+
                 router.replace(
                   "/dashboard?section=listings"
                 );
               }}
-              style={menuItemStyle("listings")}
+              style={menuItemStyle(
+                "listings"
+              )}
             >
               Anunțurile tale
             </button>
@@ -914,14 +1379,18 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => {
-                setActiveSection("messages");
+                setActiveSection(
+                  "messages"
+                );
 
                 if (
                   !selectedConversationId &&
-                  conversations.length > 0
+                  conversations.length >
+                    0
                 ) {
                   openConversation(
-                    conversations[0].id
+                    conversations[0]
+                      .id
                   );
                 } else if (
                   selectedConversationId
@@ -935,10 +1404,13 @@ export default function DashboardPage() {
                   );
                 }
               }}
-              style={menuItemStyle("messages")}
+              style={menuItemStyle(
+                "messages"
+              )}
             >
               Mesaje
-              {unreadMessagesCount > 0
+              {unreadMessagesCount >
+              0
                 ? ` (${unreadMessagesCount})`
                 : ""}
             </button>
@@ -946,12 +1418,17 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => {
-                setActiveSection("favorites");
+                setActiveSection(
+                  "favorites"
+                );
+
                 router.replace(
                   "/dashboard?section=favorites"
                 );
               }}
-              style={menuItemStyle("favorites")}
+              style={menuItemStyle(
+                "favorites"
+              )}
             >
               Favorite
               {favorites.length > 0
@@ -964,13 +1441,16 @@ export default function DashboardPage() {
             style={{
               marginTop: "25px",
               paddingTop: "22px",
-              borderTop: "1px solid #EFF6FF",
+              borderTop:
+                "1px solid #EFF6FF",
             }}
           >
             <button
               type="button"
               onClick={() =>
-                router.push("/adaugaproprietate")
+                router.push(
+                  "/adaugaproprietate"
+                )
               }
               style={{
                 width: "100%",
@@ -999,11 +1479,13 @@ export default function DashboardPage() {
             minWidth: 0,
           }}
         >
-          {activeSection === "dashboard" && (
+          {activeSection ===
+            "dashboard" && (
             <>
               <div
                 style={{
-                  marginBottom: "32px",
+                  marginBottom:
+                    "32px",
                 }}
               >
                 <h1
@@ -1011,7 +1493,8 @@ export default function DashboardPage() {
                     margin: 0,
                     fontSize: "34px",
                     fontWeight: "800",
-                    letterSpacing: "-1px",
+                    letterSpacing:
+                      "-1px",
                     color: "#172554",
                   }}
                 >
@@ -1020,13 +1503,15 @@ export default function DashboardPage() {
 
                 <p
                   style={{
-                    margin: "9px 0 0",
+                    margin:
+                      "9px 0 0",
                     color: "#64748B",
                     fontSize: "15px",
                   }}
                 >
-                  Administrează anunțurile și mesajele
-                  tale.
+                  Administrează
+                  anunțurile și
+                  mesajele tale.
                 </p>
               </div>
 
@@ -1037,21 +1522,28 @@ export default function DashboardPage() {
                   gridTemplateColumns:
                     "repeat(3, minmax(160px, 230px))",
                   gap: "16px",
-                  marginBottom: "42px",
+                  marginBottom:
+                    "42px",
                 }}
               >
                 <StatCard
-                  number={listings.length}
+                  number={
+                    listings.length
+                  }
                   title="Anunțuri"
                 />
 
                 <StatCard
-                  number={unreadMessagesCount}
+                  number={
+                    unreadMessagesCount
+                  }
                   title="Mesaje"
                 />
 
                 <StatCard
-                  number={activeListings}
+                  number={
+                    activeListings
+                  }
                   title="Active"
                 />
               </div>
@@ -1059,9 +1551,12 @@ export default function DashboardPage() {
               <div
                 style={{
                   display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "16px",
+                  justifyContent:
+                    "space-between",
+                  alignItems:
+                    "center",
+                  marginBottom:
+                    "16px",
                 }}
               >
                 <h2
@@ -1075,23 +1570,32 @@ export default function DashboardPage() {
                   Anunțurile tale
                 </h2>
 
-                {listings.length > 3 && (
+                {listings.length >
+                  3 && (
                   <button
                     type="button"
                     onClick={() => {
-                      setActiveSection("listings");
+                      setActiveSection(
+                        "listings"
+                      );
+
                       router.replace(
                         "/dashboard?section=listings"
                       );
                     }}
                     style={{
                       border: "none",
-                      background: "transparent",
+                      background:
+                        "transparent",
                       color: "#3B82F6",
-                      fontFamily: "inherit",
-                      fontSize: "13px",
-                      fontWeight: "700",
-                      cursor: "pointer",
+                      fontFamily:
+                        "inherit",
+                      fontSize:
+                        "13px",
+                      fontWeight:
+                        "700",
+                      cursor:
+                        "pointer",
                     }}
                   >
                     Vezi toate
@@ -1100,21 +1604,30 @@ export default function DashboardPage() {
               </div>
 
               <ListingsList
-                listings={listings.slice(0, 3)}
+                listings={listings.slice(
+                  0,
+                  3
+                )}
                 router={router}
-                toggleListing={toggleListing}
+                toggleListing={
+                  toggleListing
+                }
               />
             </>
           )}
 
-          {activeSection === "listings" && (
+          {activeSection ===
+            "listings" && (
             <>
               <div
                 style={{
                   display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-end",
-                  marginBottom: "30px",
+                  justifyContent:
+                    "space-between",
+                  alignItems:
+                    "flex-end",
+                  marginBottom:
+                    "30px",
                   gap: "20px",
                 }}
               >
@@ -1122,10 +1635,14 @@ export default function DashboardPage() {
                   <h1
                     style={{
                       margin: 0,
-                      fontSize: "34px",
-                      fontWeight: "800",
-                      letterSpacing: "-1px",
-                      color: "#172554",
+                      fontSize:
+                        "34px",
+                      fontWeight:
+                        "800",
+                      letterSpacing:
+                        "-1px",
+                      color:
+                        "#172554",
                     }}
                   >
                     Anunțurile tale
@@ -1133,13 +1650,17 @@ export default function DashboardPage() {
 
                   <p
                     style={{
-                      margin: "9px 0 0",
-                      color: "#64748B",
-                      fontSize: "15px",
+                      margin:
+                        "9px 0 0",
+                      color:
+                        "#64748B",
+                      fontSize:
+                        "15px",
                     }}
                   >
-                    Vezi și administrează toate anunțurile
-                    publicate.
+                    Vezi și
+                    administrează toate
+                    anunțurile publicate.
                   </p>
                 </div>
 
@@ -1152,14 +1673,21 @@ export default function DashboardPage() {
                   }
                   style={{
                     border: "none",
-                    borderRadius: "10px",
-                    padding: "12px 17px",
-                    background: "#172554",
+                    borderRadius:
+                      "10px",
+                    padding:
+                      "12px 17px",
+                    background:
+                      "#172554",
                     color: "#FFFFFF",
-                    fontFamily: "inherit",
-                    fontSize: "13px",
-                    fontWeight: "800",
-                    cursor: "pointer",
+                    fontFamily:
+                      "inherit",
+                    fontSize:
+                      "13px",
+                    fontWeight:
+                      "800",
+                    cursor:
+                      "pointer",
                     boxShadow:
                       "0 6px 16px rgba(23, 37, 84, 0.16)",
                   }}
@@ -1171,16 +1699,20 @@ export default function DashboardPage() {
               <ListingsList
                 listings={listings}
                 router={router}
-                toggleListing={toggleListing}
+                toggleListing={
+                  toggleListing
+                }
               />
             </>
           )}
 
-          {activeSection === "messages" && (
+          {activeSection ===
+            "profile" && (
             <>
               <div
                 style={{
-                  marginBottom: "28px",
+                  marginBottom:
+                    "28px",
                 }}
               >
                 <h1
@@ -1188,7 +1720,318 @@ export default function DashboardPage() {
                     margin: 0,
                     fontSize: "34px",
                     fontWeight: "800",
-                    letterSpacing: "-1px",
+                    letterSpacing:
+                      "-1px",
+                    color: "#172554",
+                  }}
+                >
+                  Profilul meu
+                </h1>
+
+                <p
+                  style={{
+                    margin:
+                      "9px 0 0",
+                    color: "#64748B",
+                    fontSize: "15px",
+                  }}
+                >
+                  Administrează datele
+                  contului tău
+                  StudentHousing.
+                </p>
+              </div>
+
+              <div
+                style={{
+                  maxWidth: "620px",
+                  background:
+                    "#FFFFFF",
+                  border:
+                    "1px solid #E2E8F0",
+                  borderRadius:
+                    "16px",
+                  padding: "28px",
+                  boxShadow:
+                    "0 8px 24px rgba(15, 23, 42, 0.05)",
+                }}
+              >
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom:
+                      "20px",
+                  }}
+                >
+                  <span
+                    style={{
+                      display:
+                        "block",
+                      marginBottom:
+                        "7px",
+                      fontSize:
+                        "12px",
+                      fontWeight:
+                        "800",
+                      color:
+                        "#334155",
+                    }}
+                  >
+                    Nume
+                  </span>
+
+                  <input
+                    type="text"
+                    value={
+                      profileName
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setProfileName(
+                        event.target
+                          .value
+                      )
+                    }
+                    placeholder="Numele tău"
+                    style={{
+                      width: "100%",
+                      height: "46px",
+                      border:
+                        "1px solid #CBD5E1",
+                      borderRadius:
+                        "10px",
+                      padding:
+                        "0 13px",
+                      boxSizing:
+                        "border-box",
+                      outline: "none",
+                      fontFamily:
+                        "inherit",
+                      fontSize:
+                        "14px",
+                      color:
+                        "#0F172A",
+                    }}
+                  />
+                </label>
+
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom:
+                      "20px",
+                  }}
+                >
+                  <span
+                    style={{
+                      display:
+                        "block",
+                      marginBottom:
+                        "7px",
+                      fontSize:
+                        "12px",
+                      fontWeight:
+                        "800",
+                      color:
+                        "#334155",
+                    }}
+                  >
+                    Email
+                  </span>
+
+                  <input
+                    type="email"
+                    value={
+                      user?.email || ""
+                    }
+                    readOnly
+                    style={{
+                      width: "100%",
+                      height: "46px",
+                      border:
+                        "1px solid #E2E8F0",
+                      borderRadius:
+                        "10px",
+                      padding:
+                        "0 13px",
+                      boxSizing:
+                        "border-box",
+                      outline: "none",
+                      fontFamily:
+                        "inherit",
+                      fontSize:
+                        "14px",
+                      color:
+                        "#64748B",
+                      background:
+                        "#F8FAFC",
+                    }}
+                  />
+                </label>
+
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom:
+                      "22px",
+                  }}
+                >
+                  <span
+                    style={{
+                      display:
+                        "block",
+                      marginBottom:
+                        "7px",
+                      fontSize:
+                        "12px",
+                      fontWeight:
+                        "800",
+                      color:
+                        "#334155",
+                    }}
+                  >
+                    Număr de telefon
+                  </span>
+
+                  <input
+                    type="tel"
+                    value={
+                      profilePhone
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setProfilePhone(
+                        event.target
+                          .value
+                      )
+                    }
+                    placeholder="Ex: 07xx xxx xxx"
+                    style={{
+                      width: "100%",
+                      height: "46px",
+                      border:
+                        "1px solid #CBD5E1",
+                      borderRadius:
+                        "10px",
+                      padding:
+                        "0 13px",
+                      boxSizing:
+                        "border-box",
+                      outline: "none",
+                      fontFamily:
+                        "inherit",
+                      fontSize:
+                        "14px",
+                      color:
+                        "#0F172A",
+                    }}
+                  />
+
+                  <span
+                    style={{
+                      display:
+                        "block",
+                      marginTop:
+                        "7px",
+                      color:
+                        "#94A3B8",
+                      fontSize:
+                        "11px",
+                    }}
+                  >
+                    Telefonul va fi
+                    folosit ulterior
+                    pentru contactul
+                    direct între
+                    proprietar și
+                    persoanele
+                    interesate.
+                  </span>
+                </label>
+
+                {profileSuccess && (
+                  <div
+                    style={{
+                      marginBottom:
+                        "16px",
+                      background:
+                        "#F0FDF4",
+                      border:
+                        "1px solid #BBF7D0",
+                      color:
+                        "#15803D",
+                      borderRadius:
+                        "10px",
+                      padding:
+                        "11px 13px",
+                      fontSize:
+                        "12px",
+                      fontWeight:
+                        "700",
+                    }}
+                  >
+                    {profileSuccess}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={
+                    saveProfile
+                  }
+                  disabled={
+                    profileSaving
+                  }
+                  style={{
+                    border: "none",
+                    borderRadius:
+                      "10px",
+                    padding:
+                      "12px 18px",
+                    background:
+                      profileSaving
+                        ? "#94A3B8"
+                        : "#172554",
+                    color:
+                      "#FFFFFF",
+                    fontFamily:
+                      "inherit",
+                    fontSize:
+                      "13px",
+                    fontWeight:
+                      "800",
+                    cursor:
+                      profileSaving
+                        ? "not-allowed"
+                        : "pointer",
+                  }}
+                >
+                  {profileSaving
+                    ? "Se salvează..."
+                    : "Salvează modificările"}
+                </button>
+              </div>
+            </>
+          )}
+
+          {activeSection ===
+            "messages" && (
+            <>
+              <div
+                style={{
+                  marginBottom:
+                    "28px",
+                }}
+              >
+                <h1
+                  style={{
+                    margin: 0,
+                    fontSize: "34px",
+                    fontWeight: "800",
+                    letterSpacing:
+                      "-1px",
                     color: "#172554",
                   }}
                 >
@@ -1197,17 +2040,21 @@ export default function DashboardPage() {
 
                 <p
                   style={{
-                    margin: "9px 0 0",
+                    margin:
+                      "9px 0 0",
                     color: "#64748B",
                     fontSize: "15px",
                   }}
                 >
-                  Discută direct cu proprietarii sau cu
-                  persoanele interesate de anunțurile tale.
+                  Discută direct cu
+                  proprietarii sau cu
+                  persoanele interesate
+                  de anunțurile tale.
                 </p>
               </div>
 
-              {conversations.length === 0 ? (
+              {conversations.length ===
+              0 ? (
                 <EmptyCard
                   title="Nu ai conversații"
                   text="Când contactezi un proprietar sau cineva te contactează pentru un anunț, conversația va apărea aici."
@@ -1217,15 +2064,20 @@ export default function DashboardPage() {
                   className="messages-layout"
                   style={{
                     width: "100%",
-                    maxWidth: "1050px",
+                    maxWidth:
+                      "1050px",
                     height: "650px",
                     display: "grid",
                     gridTemplateColumns:
                       "320px minmax(0, 1fr)",
-                    background: "#FFFFFF",
-                    border: "1px solid #E2E8F0",
-                    borderRadius: "16px",
-                    overflow: "hidden",
+                    background:
+                      "#FFFFFF",
+                    border:
+                      "1px solid #E2E8F0",
+                    borderRadius:
+                      "16px",
+                    overflow:
+                      "hidden",
                     boxShadow:
                       "0 8px 24px rgba(15, 23, 42, 0.05)",
                   }}
@@ -1235,25 +2087,32 @@ export default function DashboardPage() {
                     style={{
                       borderRight:
                         "1px solid #E2E8F0",
-                      overflowY: "auto",
+                      overflowY:
+                        "auto",
                       minWidth: 0,
                     }}
                   >
                     <div
                       style={{
-                        padding: "18px 18px 14px",
+                        padding:
+                          "18px 18px 14px",
                         borderBottom:
                           "1px solid #E2E8F0",
-                        fontSize: "13px",
-                        fontWeight: "800",
-                        color: "#172554",
+                        fontSize:
+                          "13px",
+                        fontWeight:
+                          "800",
+                        color:
+                          "#172554",
                       }}
                     >
                       Conversații
                     </div>
 
                     {conversations.map(
-                      (conversation) => {
+                      (
+                        conversation
+                      ) => {
                         const listing =
                           conversation.listings;
 
@@ -1263,14 +2122,16 @@ export default function DashboardPage() {
 
                         const details =
                           conversationDetails[
-                            conversation.id
+                            conversation
+                              .id
                           ] || {};
 
                         const lastMessage =
                           details.lastMessage;
 
                         const unreadCount =
-                          details.unreadCount || 0;
+                          details.unreadCount ||
+                          0;
 
                         const hasUnread =
                           unreadCount > 0;
@@ -1281,7 +2142,9 @@ export default function DashboardPage() {
 
                         return (
                           <button
-                            key={conversation.id}
+                            key={
+                              conversation.id
+                            }
                             type="button"
                             onClick={() =>
                               openConversation(
@@ -1289,60 +2152,87 @@ export default function DashboardPage() {
                               )
                             }
                             style={{
-                              width: "100%",
-                              border: "none",
+                              width:
+                                "100%",
+                              border:
+                                "none",
                               borderBottom:
                                 "1px solid #F1F5F9",
-                              background: selected
-                                ? "#EFF6FF"
-                                : hasUnread
-                                ? "#F8FBFF"
-                                : "#FFFFFF",
-                              padding: "15px",
-                              cursor: "pointer",
-                              display: "grid",
+                              background:
+                                selected
+                                  ? "#EFF6FF"
+                                  : hasUnread
+                                  ? "#F8FBFF"
+                                  : "#FFFFFF",
+                              padding:
+                                "15px",
+                              cursor:
+                                "pointer",
+                              display:
+                                "grid",
                               gridTemplateColumns:
                                 "58px minmax(0, 1fr)",
-                              gap: "12px",
-                              textAlign: "left",
-                              fontFamily: "inherit",
+                              gap:
+                                "12px",
+                              textAlign:
+                                "left",
+                              fontFamily:
+                                "inherit",
                             }}
                           >
                             <div
                               style={{
-                                width: "58px",
-                                height: "58px",
-                                borderRadius: "10px",
-                                overflow: "hidden",
-                                background: "#F1F5F9",
+                                width:
+                                  "58px",
+                                height:
+                                  "58px",
+                                borderRadius:
+                                  "10px",
+                                overflow:
+                                  "hidden",
+                                background:
+                                  "#F1F5F9",
                               }}
                             >
                               {listing?.image_url ? (
                                 <img
-                                  src={listing.image_url}
+                                  src={
+                                    listing.image_url
+                                  }
                                   alt={
                                     listing?.title ||
                                     "Anunț"
                                   }
                                   style={{
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "cover",
-                                    display: "block",
+                                    width:
+                                      "100%",
+                                    height:
+                                      "100%",
+                                    objectFit:
+                                      "cover",
+                                    display:
+                                      "block",
                                   }}
                                 />
                               ) : (
                                 <div
                                   style={{
-                                    width: "100%",
-                                    height: "100%",
-                                    display: "flex",
-                                    alignItems: "center",
+                                    width:
+                                      "100%",
+                                    height:
+                                      "100%",
+                                    display:
+                                      "flex",
+                                    alignItems:
+                                      "center",
                                     justifyContent:
                                       "center",
-                                    color: "#94A3B8",
-                                    fontSize: "9px",
-                                    textAlign: "center",
+                                    color:
+                                      "#94A3B8",
+                                    fontSize:
+                                      "9px",
+                                    textAlign:
+                                      "center",
                                   }}
                                 >
                                   Fără poză
@@ -1352,30 +2242,40 @@ export default function DashboardPage() {
 
                             <div
                               style={{
-                                minWidth: 0,
+                                minWidth:
+                                  0,
                               }}
                             >
                               <div
                                 style={{
-                                  display: "flex",
-                                  alignItems: "center",
+                                  display:
+                                    "flex",
+                                  alignItems:
+                                    "center",
                                   justifyContent:
                                     "space-between",
-                                  gap: "8px",
+                                  gap:
+                                    "8px",
                                 }}
                               >
                                 <div
                                   style={{
-                                    minWidth: 0,
-                                    fontSize: "13px",
-                                    fontWeight: hasUnread
-                                      ? "900"
-                                      : "800",
-                                    color: "#172554",
-                                    overflow: "hidden",
+                                    minWidth:
+                                      0,
+                                    fontSize:
+                                      "13px",
+                                    fontWeight:
+                                      hasUnread
+                                        ? "900"
+                                        : "800",
+                                    color:
+                                      "#172554",
+                                    overflow:
+                                      "hidden",
                                     textOverflow:
                                       "ellipsis",
-                                    whiteSpace: "nowrap",
+                                    whiteSpace:
+                                      "nowrap",
                                   }}
                                 >
                                   {otherUserName}
@@ -1384,25 +2284,32 @@ export default function DashboardPage() {
                                 {hasUnread && (
                                   <span
                                     style={{
-                                      minWidth: "20px",
-                                      height: "20px",
-                                      padding: "0 6px",
+                                      minWidth:
+                                        "20px",
+                                      height:
+                                        "20px",
+                                      padding:
+                                        "0 6px",
                                       borderRadius:
                                         "999px",
                                       background:
                                         "#2563EB",
-                                      color: "#FFFFFF",
+                                      color:
+                                        "#FFFFFF",
                                       display:
                                         "inline-flex",
                                       alignItems:
                                         "center",
                                       justifyContent:
                                         "center",
-                                      fontSize: "10px",
-                                      fontWeight: "900",
+                                      fontSize:
+                                        "10px",
+                                      fontWeight:
+                                        "900",
                                       boxSizing:
                                         "border-box",
-                                      flexShrink: 0,
+                                      flexShrink:
+                                        0,
                                     }}
                                   >
                                     {unreadCount}
@@ -1412,18 +2319,24 @@ export default function DashboardPage() {
 
                               <div
                                 style={{
-                                  marginTop: "5px",
-                                  color: hasUnread
-                                    ? "#334155"
-                                    : "#64748B",
-                                  fontSize: "11px",
-                                  fontWeight: hasUnread
-                                    ? "800"
-                                    : "600",
-                                  overflow: "hidden",
+                                  marginTop:
+                                    "5px",
+                                  color:
+                                    hasUnread
+                                      ? "#334155"
+                                      : "#64748B",
+                                  fontSize:
+                                    "11px",
+                                  fontWeight:
+                                    hasUnread
+                                      ? "800"
+                                      : "600",
+                                  overflow:
+                                    "hidden",
                                   textOverflow:
                                     "ellipsis",
-                                  whiteSpace: "nowrap",
+                                  whiteSpace:
+                                    "nowrap",
                                 }}
                               >
                                 {lastMessage?.content ||
@@ -1432,13 +2345,18 @@ export default function DashboardPage() {
 
                               <div
                                 style={{
-                                  marginTop: "5px",
-                                  color: "#94A3B8",
-                                  fontSize: "10px",
-                                  overflow: "hidden",
+                                  marginTop:
+                                    "5px",
+                                  color:
+                                    "#94A3B8",
+                                  fontSize:
+                                    "10px",
+                                  overflow:
+                                    "hidden",
                                   textOverflow:
                                     "ellipsis",
-                                  whiteSpace: "nowrap",
+                                  whiteSpace:
+                                    "nowrap",
                                 }}
                               >
                                 {listing?.title ||
@@ -1451,7 +2369,8 @@ export default function DashboardPage() {
                                       "ro-RO",
                                       {
                                         day: "2-digit",
-                                        month: "2-digit",
+                                        month:
+                                          "2-digit",
                                       }
                                     )}`
                                   : ""}
@@ -1509,14 +2428,14 @@ export default function DashboardPage() {
                                 fontWeight: "800",
                                 color: "#172554",
                                 overflow: "hidden",
-                                textOverflow: "ellipsis",
+                                textOverflow:
+                                  "ellipsis",
                                 whiteSpace: "nowrap",
                               }}
                             >
-                              {conversationDetails[
-                                selectedConversation.id
-                              ]?.otherUserName ||
-                                "Utilizator"}
+                              {selectedConversation
+                                .listings?.title ||
+                                "Anunț indisponibil"}
                             </div>
 
                             <div
@@ -1525,13 +2444,15 @@ export default function DashboardPage() {
                                 color: "#64748B",
                                 fontSize: "11px",
                                 overflow: "hidden",
-                                textOverflow: "ellipsis",
+                                textOverflow:
+                                  "ellipsis",
                                 whiteSpace: "nowrap",
                               }}
                             >
-                              {selectedConversation
-                                .listings?.title ||
-                                "Anunț indisponibil"}
+                              {conversationDetails[
+                                selectedConversation.id
+                              ]?.otherUserName ||
+                                "Utilizator"}
 
                               {selectedConversation
                                 .listings?.city
@@ -1551,15 +2472,23 @@ export default function DashboardPage() {
                               style={{
                                 border:
                                   "1px solid #DBEAFE",
-                                background: "#EFF6FF",
+                                background:
+                                  "#EFF6FF",
                                 color: "#2563EB",
-                                borderRadius: "9px",
-                                padding: "9px 12px",
-                                fontFamily: "inherit",
-                                fontSize: "11px",
-                                fontWeight: "800",
-                                cursor: "pointer",
-                                whiteSpace: "nowrap",
+                                borderRadius:
+                                  "9px",
+                                padding:
+                                  "9px 12px",
+                                fontFamily:
+                                  "inherit",
+                                fontSize:
+                                  "11px",
+                                fontWeight:
+                                  "800",
+                                cursor:
+                                  "pointer",
+                                whiteSpace:
+                                  "nowrap",
                               }}
                             >
                               Vezi anunțul
@@ -1590,12 +2519,14 @@ export default function DashboardPage() {
                             >
                               Se încarcă mesajele...
                             </div>
-                          ) : messages.length === 0 ? (
+                          ) : messages.length ===
+                            0 ? (
                             <div
                               style={{
                                 height: "100%",
                                 display: "flex",
-                                flexDirection: "column",
+                                flexDirection:
+                                  "column",
                                 alignItems: "center",
                                 justifyContent:
                                   "center",
@@ -1626,87 +2557,103 @@ export default function DashboardPage() {
                             <div
                               style={{
                                 display: "flex",
-                                flexDirection: "column",
+                                flexDirection:
+                                  "column",
                                 gap: "10px",
                               }}
                             >
-                              {messages.map((message) => {
-                                const mine =
-                                  message.sender_id ===
-                                  user?.id;
+                              {messages.map(
+                                (message) => {
+                                  const mine =
+                                    message.sender_id ===
+                                    user?.id;
 
-                                return (
-                                  <div
-                                    key={message.id}
-                                    style={{
-                                      display: "flex",
-                                      justifyContent: mine
-                                        ? "flex-end"
-                                        : "flex-start",
-                                    }}
-                                  >
+                                  return (
                                     <div
+                                      key={message.id}
                                       style={{
-                                        maxWidth: "72%",
-                                        background: mine
-                                          ? "#172554"
-                                          : "#FFFFFF",
-                                        color: mine
-                                          ? "#FFFFFF"
-                                          : "#172554",
-                                        border: mine
-                                          ? "none"
-                                          : "1px solid #E2E8F0",
-                                        borderRadius: mine
-                                          ? "15px 15px 4px 15px"
-                                          : "15px 15px 15px 4px",
-                                        padding:
-                                          "10px 13px 8px",
-                                        boxShadow: mine
-                                          ? "none"
-                                          : "0 2px 7px rgba(15,23,42,0.04)",
-                                        wordBreak:
-                                          "break-word",
+                                        display:
+                                          "flex",
+                                        justifyContent:
+                                          mine
+                                            ? "flex-end"
+                                            : "flex-start",
                                       }}
                                     >
                                       <div
                                         style={{
-                                          fontSize: "13px",
-                                          lineHeight: "1.5",
-                                          whiteSpace:
-                                            "pre-wrap",
-                                        }}
-                                      >
-                                        {message.content}
-                                      </div>
-
-                                      <div
-                                        style={{
-                                          marginTop: "5px",
-                                          textAlign: "right",
-                                          fontSize: "9px",
+                                          maxWidth:
+                                            "72%",
+                                          background:
+                                            mine
+                                              ? "#172554"
+                                              : "#FFFFFF",
                                           color: mine
-                                            ? "rgba(255,255,255,0.65)"
-                                            : "#94A3B8",
+                                            ? "#FFFFFF"
+                                            : "#172554",
+                                          border: mine
+                                            ? "none"
+                                            : "1px solid #E2E8F0",
+                                          borderRadius:
+                                            mine
+                                              ? "15px 15px 4px 15px"
+                                              : "15px 15px 15px 4px",
+                                          padding:
+                                            "10px 13px 8px",
+                                          boxShadow:
+                                            mine
+                                              ? "none"
+                                              : "0 2px 7px rgba(15,23,42,0.04)",
+                                          wordBreak:
+                                            "break-word",
                                         }}
                                       >
-                                        {message.created_at
-                                          ? new Date(
-                                              message.created_at
-                                            ).toLocaleTimeString(
-                                              "ro-RO",
-                                              {
-                                                hour: "2-digit",
-                                                minute:
-                                                  "2-digit",
-                                              }
-                                            )
-                                          : ""}
+                                        <div
+                                          style={{
+                                            fontSize:
+                                              "13px",
+                                            lineHeight:
+                                              "1.5",
+                                            whiteSpace:
+                                              "pre-wrap",
+                                          }}
+                                        >
+                                          {
+                                            message.content
+                                          }
+                                        </div>
+
+                                        <div
+                                          style={{
+                                            marginTop:
+                                              "5px",
+                                            textAlign:
+                                              "right",
+                                            fontSize:
+                                              "9px",
+                                            color: mine
+                                              ? "rgba(255,255,255,0.65)"
+                                              : "#94A3B8",
+                                          }}
+                                        >
+                                          {message.created_at
+                                            ? new Date(
+                                                message.created_at
+                                              ).toLocaleTimeString(
+                                                "ro-RO",
+                                                {
+                                                  hour: "2-digit",
+                                                  minute:
+                                                    "2-digit",
+                                                }
+                                              )
+                                            : ""}
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                );
-                              })}
+                                  );
+                                }
+                              )}
                             </div>
                           )}
                         </div>
@@ -1724,7 +2671,8 @@ export default function DashboardPage() {
                           <div
                             style={{
                               display: "flex",
-                              alignItems: "flex-end",
+                              alignItems:
+                                "flex-end",
                               gap: "10px",
                             }}
                           >
@@ -1748,12 +2696,15 @@ export default function DashboardPage() {
                                 resize: "vertical",
                                 border:
                                   "1px solid #CBD5E1",
-                                borderRadius: "11px",
-                                padding: "11px 13px",
+                                borderRadius:
+                                  "11px",
+                                padding:
+                                  "11px 13px",
                                 boxSizing:
                                   "border-box",
                                 outline: "none",
-                                fontFamily: "inherit",
+                                fontFamily:
+                                  "inherit",
                                 fontSize: "13px",
                                 lineHeight: "1.5",
                                 color: "#0F172A",
@@ -1770,17 +2721,21 @@ export default function DashboardPage() {
                               style={{
                                 height: "43px",
                                 border: "none",
-                                borderRadius: "10px",
-                                padding: "0 18px",
+                                borderRadius:
+                                  "10px",
+                                padding:
+                                  "0 18px",
                                 background:
                                   sendingMessage ||
                                   !messageText.trim()
                                     ? "#CBD5E1"
                                     : "#172554",
                                 color: "#FFFFFF",
-                                fontFamily: "inherit",
+                                fontFamily:
+                                  "inherit",
                                 fontSize: "12px",
-                                fontWeight: "800",
+                                fontWeight:
+                                  "800",
                                 cursor:
                                   sendingMessage ||
                                   !messageText.trim()
@@ -1801,8 +2756,9 @@ export default function DashboardPage() {
                               fontSize: "9px",
                             }}
                           >
-                            Enter pentru trimitere · Shift +
-                            Enter pentru rând nou
+                            Enter pentru trimitere ·
+                            Shift + Enter pentru rând
+                            nou
                           </div>
                         </div>
                       </>
@@ -1815,9 +2771,14 @@ export default function DashboardPage() {
 
           {/* FAVORITE */}
 
-          {activeSection === "favorites" && (
+          {activeSection ===
+            "favorites" && (
             <>
-              <div style={{ marginBottom: "28px" }}>
+              <div
+                style={{
+                  marginBottom: "28px",
+                }}
+              >
                 <h1
                   style={{
                     margin: 0,
@@ -1837,8 +2798,9 @@ export default function DashboardPage() {
                     fontSize: "15px",
                   }}
                 >
-                  Anunțurile pe care le-ai salvat pentru a
-                  reveni rapid la ele.
+                  Anunțurile pe care le-ai
+                  salvat pentru a reveni
+                  rapid la ele.
                 </p>
               </div>
 
@@ -1851,7 +2813,9 @@ export default function DashboardPage() {
                 <FavoritesList
                   favorites={favorites}
                   router={router}
-                  removeFavorite={removeFavorite}
+                  removeFavorite={
+                    removeFavorite
+                  }
                 />
               )}
             </>
@@ -1862,7 +2826,8 @@ export default function DashboardPage() {
               style={{
                 marginTop: "22px",
                 background: "#FEF2F2",
-                border: "1px solid #FECACA",
+                border:
+                  "1px solid #FECACA",
                 color: "#B91C1C",
                 borderRadius: "11px",
                 padding: "13px 15px",
@@ -2008,7 +2973,8 @@ function ListingsList({
       <div
         style={{
           background: "#FFFFFF",
-          border: "1px solid #E2E8F0",
+          border:
+            "1px solid #E2E8F0",
           borderRadius: "16px",
           padding: "45px 25px",
           boxShadow:
@@ -2022,7 +2988,8 @@ function ListingsList({
             color: "#172554",
           }}
         >
-          Nu ai publicat încă niciun anunț
+          Nu ai publicat încă niciun
+          anunț
         </div>
 
         <div
@@ -2032,8 +2999,8 @@ function ListingsList({
             marginTop: "7px",
           }}
         >
-          Primul tău anunț va apărea aici după
-          publicare.
+          Primul tău anunț va apărea aici
+          după publicare.
         </div>
       </div>
     );
@@ -2053,7 +3020,8 @@ function ListingsList({
           className="dashboard-listing-card"
           style={{
             background: "#FFFFFF",
-            border: "1px solid #E2E8F0",
+            border:
+              "1px solid #E2E8F0",
             boxShadow:
               "0 8px 24px rgba(15, 23, 42, 0.04)",
             borderRadius: "15px",
@@ -2093,7 +3061,8 @@ function ListingsList({
                   height: "100%",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
+                  justifyContent:
+                    "center",
                   color: "#94A3B8",
                   fontSize: "11px",
                 }}
@@ -2108,8 +3077,10 @@ function ListingsList({
               className="listing-header"
               style={{
                 display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
+                justifyContent:
+                  "space-between",
+                alignItems:
+                  "flex-start",
                 gap: "15px",
               }}
             >
@@ -2149,7 +3120,9 @@ function ListingsList({
               >
                 {Number(
                   listing.price_monthly
-                ).toLocaleString("ro-RO")}{" "}
+                ).toLocaleString(
+                  "ro-RO"
+                )}{" "}
                 €
 
                 <span
@@ -2176,40 +3149,43 @@ function ListingsList({
             >
               <span
                 style={{
-                  background: listing.active
-                    ? "#DCFCE7"
-                    : "#F1F5F9",
+                  background:
+                    listing.active
+                      ? "#DCFCE7"
+                      : "#F1F5F9",
                   color: listing.active
                     ? "#15803D"
                     : "#64748B",
-                  borderRadius: "100px",
+                  borderRadius:
+                    "100px",
                   padding: "5px 8px",
                   fontSize: "10px",
                   fontWeight: "800",
                 }}
               >
-                {listing.active ? "Activ" : "Inactiv"}
+                {listing.active
+                  ? "Activ"
+                  : "Inactiv"}
               </span>
 
-              {Number(listing.rooms) > 0 && (
+              {listing.rooms && (
                 <span
                   style={{
                     color: "#64748B",
                     fontSize: "11px",
+                    fontWeight: "600",
                   }}
                 >
-                  {listing.rooms}{" "}
-                  {Number(listing.rooms) === 1
-                    ? "cameră"
-                    : "camere"}
+                  {listing.rooms} camere
                 </span>
               )}
 
-              {Number(listing.surface_m2) > 0 && (
+              {listing.surface_m2 && (
                 <span
                   style={{
                     color: "#64748B",
                     fontSize: "11px",
+                    fontWeight: "600",
                   }}
                 >
                   {listing.surface_m2} m²
@@ -2220,9 +3196,8 @@ function ListingsList({
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
+                gap: "8px",
                 flexWrap: "wrap",
-                gap: "15px",
                 marginTop: "14px",
               }}
             >
@@ -2233,21 +3208,20 @@ function ListingsList({
                     `/proprietate/${listing.id}`
                   )
                 }
-                style={actionButton}
+                style={{
+                  border:
+                    "1px solid #DBEAFE",
+                  background: "#EFF6FF",
+                  color: "#2563EB",
+                  borderRadius: "8px",
+                  padding: "7px 10px",
+                  fontFamily: "inherit",
+                  fontSize: "10px",
+                  fontWeight: "800",
+                  cursor: "pointer",
+                }}
               >
-                Vezi
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  router.push(
-                    `/editeaza-proprietate/${listing.id}`
-                  )
-                }
-                style={actionButton}
-              >
-                Editează
+                Vezi anunțul
               </button>
 
               <button
@@ -2256,10 +3230,16 @@ function ListingsList({
                   toggleListing(listing)
                 }
                 style={{
-                  ...actionButton,
-                  color: listing.active
-                    ? "#D97706"
-                    : "#15803D",
+                  border:
+                    "1px solid #E2E8F0",
+                  background: "#FFFFFF",
+                  color: "#475569",
+                  borderRadius: "8px",
+                  padding: "7px 10px",
+                  fontFamily: "inherit",
+                  fontSize: "10px",
+                  fontWeight: "800",
+                  cursor: "pointer",
                 }}
               >
                 {listing.active
@@ -2293,11 +3273,12 @@ function FavoritesList({
     >
       {favorites.map((listing) => (
         <div
-          key={listing.id}
+          key={listing.favoriteId}
           className="favorite-card"
           style={{
             background: "#FFFFFF",
-            border: "1px solid #E2E8F0",
+            border:
+              "1px solid #E2E8F0",
             boxShadow:
               "0 8px 24px rgba(15, 23, 42, 0.04)",
             borderRadius: "15px",
@@ -2337,7 +3318,8 @@ function FavoritesList({
                   height: "100%",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
+                  justifyContent:
+                    "center",
                   color: "#94A3B8",
                   fontSize: "11px",
                 }}
@@ -2352,8 +3334,10 @@ function FavoritesList({
               className="favorite-header"
               style={{
                 display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
+                justifyContent:
+                  "space-between",
+                alignItems:
+                  "flex-start",
                 gap: "15px",
               }}
             >
@@ -2393,7 +3377,9 @@ function FavoritesList({
               >
                 {Number(
                   listing.price_monthly
-                ).toLocaleString("ro-RO")}{" "}
+                ).toLocaleString(
+                  "ro-RO"
+                )}{" "}
                 €
 
                 <span
@@ -2420,40 +3406,43 @@ function FavoritesList({
             >
               <span
                 style={{
-                  background: listing.active
-                    ? "#DCFCE7"
-                    : "#F1F5F9",
+                  background:
+                    listing.active
+                      ? "#DCFCE7"
+                      : "#F1F5F9",
                   color: listing.active
                     ? "#15803D"
                     : "#64748B",
-                  borderRadius: "100px",
+                  borderRadius:
+                    "100px",
                   padding: "5px 8px",
                   fontSize: "10px",
                   fontWeight: "800",
                 }}
               >
-                {listing.active ? "Activ" : "Inactiv"}
+                {listing.active
+                  ? "Activ"
+                  : "Inactiv"}
               </span>
 
-              {Number(listing.rooms) > 0 && (
+              {listing.rooms && (
                 <span
                   style={{
                     color: "#64748B",
                     fontSize: "11px",
+                    fontWeight: "600",
                   }}
                 >
-                  {listing.rooms}{" "}
-                  {Number(listing.rooms) === 1
-                    ? "cameră"
-                    : "camere"}
+                  {listing.rooms} camere
                 </span>
               )}
 
-              {Number(listing.surface_m2) > 0 && (
+              {listing.surface_m2 && (
                 <span
                   style={{
                     color: "#64748B",
                     fontSize: "11px",
+                    fontWeight: "600",
                   }}
                 >
                   {listing.surface_m2} m²
@@ -2464,9 +3453,8 @@ function FavoritesList({
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
+                gap: "8px",
                 flexWrap: "wrap",
-                gap: "15px",
                 marginTop: "14px",
               }}
             >
@@ -2477,7 +3465,18 @@ function FavoritesList({
                     `/proprietate/${listing.id}`
                   )
                 }
-                style={actionButton}
+                style={{
+                  border:
+                    "1px solid #DBEAFE",
+                  background: "#EFF6FF",
+                  color: "#2563EB",
+                  borderRadius: "8px",
+                  padding: "7px 10px",
+                  fontFamily: "inherit",
+                  fontSize: "10px",
+                  fontWeight: "800",
+                  cursor: "pointer",
+                }}
               >
                 Vezi anunțul
               </button>
@@ -2485,11 +3484,21 @@ function FavoritesList({
               <button
                 type="button"
                 onClick={() =>
-                  removeFavorite(listing)
+                  removeFavorite(
+                    listing
+                  )
                 }
                 style={{
-                  ...actionButton,
-                  color: "#DC2626",
+                  border:
+                    "1px solid #FECACA",
+                  background: "#FEF2F2",
+                  color: "#B91C1C",
+                  borderRadius: "8px",
+                  padding: "7px 10px",
+                  fontFamily: "inherit",
+                  fontSize: "10px",
+                  fontWeight: "800",
+                  cursor: "pointer",
                 }}
               >
                 Elimină din favorite
@@ -2506,13 +3515,17 @@ function FavoritesList({
   EMPTY CARD
 */
 
-function EmptyCard({ title, text }) {
+function EmptyCard({
+  title,
+  text,
+}) {
   return (
     <div
       style={{
         maxWidth: "850px",
         background: "#FFFFFF",
-        border: "1px solid #E2E8F0",
+        border:
+          "1px solid #E2E8F0",
         borderRadius: "16px",
         padding: "45px 25px",
         boxShadow:
@@ -2542,14 +3555,3 @@ function EmptyCard({ title, text }) {
     </div>
   );
 }
-
-const actionButton = {
-  border: "none",
-  background: "transparent",
-  padding: 0,
-  color: "#2563EB",
-  fontFamily: "inherit",
-  fontSize: "11px",
-  fontWeight: "800",
-  cursor: "pointer",
-};
