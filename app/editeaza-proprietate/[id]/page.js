@@ -2048,27 +2048,34 @@ export default function EditeazaProprietatePage() {
                 }
 
                 if (
-                    selectedUniversityIds.length >
-                    0
-                ) {
-                    const universityLinks =
-                        selectedUniversityIds.map(
-                            (
-                                universityId
-                            ) => ({
-                                listing_id:
-                                    listingId,
+    selectedUniversityIds.length >
+    0
+) {
+    const uniqueUniversityIds = [
+        ...new Set(
+            selectedUniversityIds.map(
+                (universityId) =>
+                    String(universityId)
+            )
+        ),
+    ];
 
-                                university_id:
-                                    universityId,
+    const universityLinks =
+        uniqueUniversityIds.map(
+            (universityId) => ({
+                listing_id:
+                    listingId,
 
-                                distance_meters:
-                                    null,
+                university_id:
+                    universityId,
 
-                                walking_minutes:
-                                    null,
-                            })
-                        );
+                distance_meters:
+                    null,
+
+                walking_minutes:
+                    null,
+            })
+        );
 
                     const {
                         error:
