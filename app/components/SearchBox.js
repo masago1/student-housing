@@ -22,15 +22,7 @@ const MONTH_NAMES = [
   "Decembrie",
 ];
 
-const WEEK_DAYS = [
-  "Lu",
-  "Ma",
-  "Mi",
-  "Jo",
-  "Vi",
-  "Sâ",
-  "Du",
-];
+const WEEK_DAYS = ["Lu", "Ma", "Mi", "Jo", "Vi", "Sâ", "Du"];
 
 function getTodayAtMidnight() {
   const now = new Date();
@@ -43,14 +35,8 @@ function getTodayAtMidnight() {
 }
 
 function getCalendarStartDate(year, month) {
-  const firstDay = new Date(
-    year,
-    month,
-    1
-  );
-
-  const mondayIndex =
-    (firstDay.getDay() + 6) % 7;
+  const firstDay = new Date(year, month, 1);
+  const mondayIndex = (firstDay.getDay() + 6) % 7;
 
   return new Date(
     year,
@@ -72,14 +58,8 @@ function isSameCalendarDay(a, b) {
 function dateToRomanian(date) {
   if (!date) return "";
 
-  const day = String(
-    date.getDate()
-  ).padStart(2, "0");
-
-  const month = String(
-    date.getMonth() + 1
-  ).padStart(2, "0");
-
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
   const year = date.getFullYear();
 
   return `${day}/${month}/${year}`;
@@ -89,16 +69,12 @@ function romanianToLocalDate(value) {
   if (!value) return null;
 
   if (
-    !/^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/.test(
-      value
-    )
+    !/^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/.test(value)
   ) {
     return null;
   }
 
-  const [day, month, year] = value
-    .split("/")
-    .map(Number);
+  const [day, month, year] = value.split("/").map(Number);
 
   const date = new Date(
     year,
@@ -118,21 +94,13 @@ function romanianToLocalDate(value) {
 }
 
 function romanianDateToISO(value) {
-  const date =
-    romanianToLocalDate(value);
+  const date = romanianToLocalDate(value);
 
   if (!date) return "";
 
-  const year =
-    date.getFullYear();
-
-  const month = String(
-    date.getMonth() + 1
-  ).padStart(2, "0");
-
-  const day = String(
-    date.getDate()
-  ).padStart(2, "0");
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 }
@@ -146,132 +114,91 @@ function DateCalendar({
   onChange,
   onClose,
 }) {
-  const today =
-    getTodayAtMidnight();
+  const today = getTodayAtMidnight();
+  const selectedDate = romanianToLocalDate(value);
+  const initialDate = selectedDate || today;
 
-  const selectedDate =
-    romanianToLocalDate(value);
+  const [viewYear, setViewYear] = useState(
+    initialDate.getFullYear()
+  );
 
-  const initialDate =
-    selectedDate || today;
+  const [viewMonth, setViewMonth] = useState(
+    initialDate.getMonth()
+  );
 
-  const [viewYear, setViewYear] =
-    useState(
-      initialDate.getFullYear()
-    );
+  const currentMonthStart = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    1
+  );
 
-  const [viewMonth, setViewMonth] =
-    useState(
-      initialDate.getMonth()
-    );
-
-  const currentMonthStart =
-    new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      1
-    );
-
-  const viewedMonthStart =
-    new Date(
-      viewYear,
-      viewMonth,
-      1
-    );
+  const viewedMonthStart = new Date(
+    viewYear,
+    viewMonth,
+    1
+  );
 
   const previousMonthDisabled =
-    viewedMonthStart.getTime() <=
-    currentMonthStart.getTime();
+    viewedMonthStart.getTime() <= currentMonthStart.getTime();
 
   function goPreviousMonth() {
-    if (previousMonthDisabled) {
-      return;
-    }
+    if (previousMonthDisabled) return;
 
-    const previous =
-      new Date(
-        viewYear,
-        viewMonth - 1,
-        1
-      );
-
-    setViewYear(
-      previous.getFullYear()
+    const previous = new Date(
+      viewYear,
+      viewMonth - 1,
+      1
     );
 
-    setViewMonth(
-      previous.getMonth()
-    );
+    setViewYear(previous.getFullYear());
+    setViewMonth(previous.getMonth());
   }
 
   function goNextMonth() {
-    const next =
-      new Date(
-        viewYear,
-        viewMonth + 1,
-        1
-      );
-
-    setViewYear(
-      next.getFullYear()
+    const next = new Date(
+      viewYear,
+      viewMonth + 1,
+      1
     );
 
-    setViewMonth(
-      next.getMonth()
-    );
+    setViewYear(next.getFullYear());
+    setViewMonth(next.getMonth());
   }
 
-  const calendarStart =
-    getCalendarStartDate(
-      viewYear,
-      viewMonth
-    );
+  const calendarStart = getCalendarStartDate(
+    viewYear,
+    viewMonth
+  );
 
   const calendarDays = [];
 
-  for (
-    let index = 0;
-    index < 42;
-    index++
-  ) {
-    const date =
-      new Date(
-        calendarStart.getFullYear(),
-        calendarStart.getMonth(),
-        calendarStart.getDate() +
-          index
-      );
+  for (let index = 0; index < 42; index++) {
+    const date = new Date(
+      calendarStart.getFullYear(),
+      calendarStart.getMonth(),
+      calendarStart.getDate() + index
+    );
 
     calendarDays.push(date);
   }
 
   function selectDate(date) {
-    const normalized =
-      new Date(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate()
-      );
+    const normalized = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    );
 
-    if (
-      normalized.getTime() <
-      today.getTime()
-    ) {
+    if (normalized.getTime() < today.getTime()) {
       return;
     }
 
-    onChange(
-      dateToRomanian(normalized)
-    );
-
+    onChange(dateToRomanian(normalized));
     onClose();
   }
 
   function selectToday() {
-    onChange(
-      dateToRomanian(today)
-    );
-
+    onChange(dateToRomanian(today));
     onClose();
   }
 
@@ -282,9 +209,7 @@ function DateCalendar({
 
   return (
     <div
-      onClick={(event) =>
-        event.stopPropagation()
-      }
+      onClick={(event) => event.stopPropagation()}
       style={{
         position: "absolute",
         top: "calc(100% + 7px)",
@@ -293,56 +218,46 @@ function DateCalendar({
         width: "292px",
         boxSizing: "border-box",
         background: "#FFFFFF",
-        border:
-          "1px solid #E2E8F0",
+        border: "1px solid #E2E8F0",
         borderRadius: "12px",
         padding: "13px",
-        boxShadow:
-          "0 14px 35px rgba(15, 23, 42, 0.14)",
+        boxShadow: "0 14px 35px rgba(15, 23, 42, 0.14)",
       }}
     >
+      {/* HEADER CALENDAR */}
+
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent:
-            "space-between",
+          justifyContent: "space-between",
           marginBottom: "12px",
         }}
       >
         <button
           type="button"
-          onClick={
-            goPreviousMonth
-          }
-          disabled={
-            previousMonthDisabled
-          }
+          onClick={goPreviousMonth}
+          disabled={previousMonthDisabled}
           aria-label="Luna precedentă"
           style={{
             width: "32px",
             height: "32px",
-            border:
-              "1px solid #E2E8F0",
+            border: "1px solid #E2E8F0",
             borderRadius: "8px",
-            background:
-              previousMonthDisabled
-                ? "#F8FAFC"
-                : "#FFFFFF",
-            color:
-              previousMonthDisabled
-                ? "#CBD5E1"
-                : "#172554",
-            cursor:
-              previousMonthDisabled
-                ? "not-allowed"
-                : "pointer",
+            background: previousMonthDisabled
+              ? "#F8FAFC"
+              : "#FFFFFF",
+            color: previousMonthDisabled
+              ? "#CBD5E1"
+              : "#172554",
+            cursor: previousMonthDisabled
+              ? "not-allowed"
+              : "pointer",
             fontSize: "18px",
             lineHeight: "1",
             display: "flex",
             alignItems: "center",
-            justifyContent:
-              "center",
+            justifyContent: "center",
           }}
         >
           ‹
@@ -355,8 +270,7 @@ function DateCalendar({
             fontWeight: "800",
           }}
         >
-          {MONTH_NAMES[viewMonth]}{" "}
-          {viewYear}
+          {MONTH_NAMES[viewMonth]} {viewYear}
         </div>
 
         <button
@@ -366,8 +280,7 @@ function DateCalendar({
           style={{
             width: "32px",
             height: "32px",
-            border:
-              "1px solid #E2E8F0",
+            border: "1px solid #E2E8F0",
             borderRadius: "8px",
             background: "#FFFFFF",
             color: "#172554",
@@ -376,150 +289,125 @@ function DateCalendar({
             lineHeight: "1",
             display: "flex",
             alignItems: "center",
-            justifyContent:
-              "center",
+            justifyContent: "center",
           }}
         >
           ›
         </button>
       </div>
 
+      {/* ZILE SĂPTĂMÂNĂ */}
+
       <div
         style={{
           display: "grid",
-          gridTemplateColumns:
-            "repeat(7, 1fr)",
+          gridTemplateColumns: "repeat(7, 1fr)",
           gap: "3px",
           marginBottom: "5px",
         }}
       >
-        {WEEK_DAYS.map(
-          (day) => (
-            <div
-              key={day}
-              style={{
-                textAlign:
-                  "center",
-                color: "#94A3B8",
-                fontSize: "9px",
-                fontWeight:
-                  "800",
-                padding: "4px 0",
-              }}
-            >
-              {day}
-            </div>
-          )
-        )}
+        {WEEK_DAYS.map((day) => (
+          <div
+            key={day}
+            style={{
+              textAlign: "center",
+              color: "#94A3B8",
+              fontSize: "9px",
+              fontWeight: "800",
+              padding: "4px 0",
+            }}
+          >
+            {day}
+          </div>
+        ))}
       </div>
+
+      {/* ZILE CALENDAR */}
 
       <div
         style={{
           display: "grid",
-          gridTemplateColumns:
-            "repeat(7, 1fr)",
+          gridTemplateColumns: "repeat(7, 1fr)",
           gap: "3px",
         }}
       >
-        {calendarDays.map(
-          (date, index) => {
-            const normalizedDate =
-              new Date(
-                date.getFullYear(),
-                date.getMonth(),
-                date.getDate()
-              );
+        {calendarDays.map((date, index) => {
+          const normalizedDate = new Date(
+            date.getFullYear(),
+            date.getMonth(),
+            date.getDate()
+          );
 
-            const isPast =
-              normalizedDate.getTime() <
-              today.getTime();
+          const isPast =
+            normalizedDate.getTime() < today.getTime();
 
-            const isCurrentMonth =
-              date.getMonth() ===
-                viewMonth &&
-              date.getFullYear() ===
-                viewYear;
+          const isCurrentMonth =
+            date.getMonth() === viewMonth &&
+            date.getFullYear() === viewYear;
 
-            const isSelected =
-              isSameCalendarDay(
-                date,
-                selectedDate
-              );
+          const isSelected = isSameCalendarDay(
+            date,
+            selectedDate
+          );
 
-            const isToday =
-              isSameCalendarDay(
-                date,
-                today
-              );
+          const isToday = isSameCalendarDay(
+            date,
+            today
+          );
 
-            return (
-              <button
-                key={index}
-                type="button"
-                disabled={isPast}
-                onClick={() =>
-                  selectDate(date)
-                }
-                style={{
-                  width: "100%",
-                  aspectRatio:
-                    "1 / 1",
-                  border:
-                    isSelected
-                      ? "1px solid #2563EB"
-                      : isToday
-                      ? "1px solid #93C5FD"
-                      : "1px solid transparent",
-                  borderRadius:
-                    "7px",
-                  background:
-                    isSelected
-                      ? "#2563EB"
-                      : "#FFFFFF",
-                  color:
-                    isSelected
-                      ? "#FFFFFF"
-                      : isPast
-                      ? "#CBD5E1"
-                      : !isCurrentMonth
-                      ? "#94A3B8"
-                      : "#334155",
-                  fontFamily:
-                    "inherit",
-                  fontSize: "10px",
-                  fontWeight:
-                    isSelected ||
-                    isToday
-                      ? "800"
-                      : "600",
-                  cursor: isPast
-                    ? "not-allowed"
-                    : "pointer",
-                  opacity:
-                    !isCurrentMonth &&
-                    !isSelected
-                      ? 0.65
-                      : 1,
-                }}
-              >
-                {date.getDate()}
-              </button>
-            );
-          }
-        )}
+          return (
+            <button
+              key={index}
+              type="button"
+              disabled={isPast}
+              onClick={() => selectDate(date)}
+              style={{
+                width: "100%",
+                aspectRatio: "1 / 1",
+                border: isSelected
+                  ? "1px solid #2563EB"
+                  : isToday
+                  ? "1px solid #93C5FD"
+                  : "1px solid transparent",
+                borderRadius: "7px",
+                background: isSelected
+                  ? "#2563EB"
+                  : "#FFFFFF",
+                color: isSelected
+                  ? "#FFFFFF"
+                  : isPast
+                  ? "#CBD5E1"
+                  : !isCurrentMonth
+                  ? "#94A3B8"
+                  : "#334155",
+                fontFamily: "inherit",
+                fontSize: "10px",
+                fontWeight:
+                  isSelected || isToday ? "800" : "600",
+                cursor: isPast
+                  ? "not-allowed"
+                  : "pointer",
+                opacity:
+                  !isCurrentMonth && !isSelected ? 0.65 : 1,
+              }}
+            >
+              {date.getDate()}
+            </button>
+          );
+        })}
       </div>
+
+      {/* ACȚIUNI CALENDAR */}
 
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent:
-            "space-between",
+          justifyContent: "space-between",
           gap: "8px",
           marginTop: "11px",
           paddingTop: "10px",
-          borderTop:
-            "1px solid #F1F5F9",
+          borderTop: "1px solid #F1F5F9",
         }}
       >
         <button
@@ -527,12 +415,10 @@ function DateCalendar({
           onClick={clearDate}
           style={{
             border: "none",
-            background:
-              "transparent",
+            background: "transparent",
             color: "#64748B",
             padding: "5px 2px",
-            fontFamily:
-              "inherit",
+            fontFamily: "inherit",
             fontSize: "10px",
             fontWeight: "800",
             cursor: "pointer",
@@ -545,14 +431,12 @@ function DateCalendar({
           type="button"
           onClick={selectToday}
           style={{
-            border:
-              "1px solid #BFDBFE",
+            border: "1px solid #BFDBFE",
             background: "#EFF6FF",
             color: "#2563EB",
             borderRadius: "7px",
             padding: "6px 9px",
-            fontFamily:
-              "inherit",
+            fontFamily: "inherit",
             fontSize: "10px",
             fontWeight: "800",
             cursor: "pointer",
@@ -577,402 +461,232 @@ export default function SearchBox({
   const router = useRouter();
 
   /* =========================
-     ORAȘ / ZONĂ / UNIVERSITATE
+     ORAȘ / CARTIER / UNIVERSITATE
   ========================= */
 
-  const [
-    cityQuery,
-    setCityQuery,
-  ] = useState("");
+  const [cityQuery, setCityQuery] = useState("");
+  const [selectedCity, setSelectedCity] = useState(null);
+  const [showCitySuggestions, setShowCitySuggestions] =
+    useState(false);
 
-  const [
-    selectedCity,
-    setSelectedCity,
-  ] = useState(null);
-
-  const [
-    showCitySuggestions,
-    setShowCitySuggestions,
-  ] = useState(false);
-
-  const [
-    neighborhoodQuery,
-    setNeighborhoodQuery,
-  ] = useState("");
-
-  const [
-    selectedNeighborhood,
-    setSelectedNeighborhood,
-  ] = useState(null);
-
+  const [neighborhoodQuery, setNeighborhoodQuery] =
+    useState("");
+  const [selectedNeighborhood, setSelectedNeighborhood] =
+    useState(null);
   const [
     showNeighborhoodSuggestions,
     setShowNeighborhoodSuggestions,
   ] = useState(false);
 
-  const [
-    universityQuery,
-    setUniversityQuery,
-  ] = useState("");
-
-  const [
-    selectedUniversity,
-    setSelectedUniversity,
-  ] = useState(null);
-
+  const [universityQuery, setUniversityQuery] = useState("");
+  const [selectedUniversity, setSelectedUniversity] =
+    useState(null);
   const [
     showUniversitySuggestions,
     setShowUniversitySuggestions,
   ] = useState(false);
 
   /* =========================
-     MAI MULTE FILTRE
+     FILTRE SUPLIMENTARE
   ========================= */
 
-  const [
-    showMoreFilters,
-    setShowMoreFilters,
-  ] = useState(false);
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
 
-  const [
-    minPrice,
-    setMinPrice,
-  ] = useState("");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
 
-  const [
-    maxPrice,
-    setMaxPrice,
-  ] = useState("");
+  const [rooms, setRooms] = useState("");
+  const [bedrooms, setBedrooms] = useState("");
+  const [bathrooms, setBathrooms] = useState("");
 
-  const [
-    rooms,
-    setRooms,
-  ] = useState("");
+  const [minSurface, setMinSurface] = useState("");
+  const [maxSurface, setMaxSurface] = useState("");
 
-  const [
-    bedrooms,
-    setBedrooms,
-  ] = useState("");
+  const [propertyType, setPropertyType] = useState("");
+  const [furnished, setFurnished] = useState("");
+  const [listingType, setListingType] = useState("");
 
-  const [
-    bathrooms,
-    setBathrooms,
-  ] = useState("");
+  const [availableFrom, setAvailableFrom] = useState("");
+  const [sort, setSort] = useState("newest");
 
-  const [
-    minSurface,
-    setMinSurface,
-  ] = useState("");
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
-  const [
-    maxSurface,
-    setMaxSurface,
-  ] = useState("");
-
-  const [
-    propertyType,
-    setPropertyType,
-  ] = useState("");
-
-  const [
-    furnished,
-    setFurnished,
-  ] = useState("");
-
-  const [
-    listingType,
-    setListingType,
-  ] = useState("");
-
-  const [
-    availableFrom,
-    setAvailableFrom,
-  ] = useState("");
-
-  const [
-    sort,
-    setSort,
-  ] = useState("newest");
-
-  const [
-    calendarOpen,
-    setCalendarOpen,
-  ] = useState(false);
-
-  const calendarWrapperRef =
-    useRef(null);
+  const calendarWrapperRef = useRef(null);
 
   /* =========================
      NORMALIZARE
   ========================= */
 
-  const normalizeText = (
-    text = ""
-  ) =>
+  const normalizeText = (text = "") =>
     text
       .normalize("NFD")
-      .replace(
-        /[\u0300-\u036f]/g,
-        ""
-      )
+      .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase()
       .trim();
 
-  const slugify = (
-    text = ""
-  ) =>
+  const slugify = (text = "") =>
     text
       .normalize("NFD")
-      .replace(
-        /[\u0300-\u036f]/g,
-        ""
-      )
+      .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase()
       .trim()
-      .replace(
-        /[^a-z0-9]+/g,
-        "-"
-      )
-      .replace(
-        /^-+|-+$/g,
-        ""
-      );
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
 
   /* =========================
      ORAȘE
   ========================= */
 
-  const sortedCities =
-    useMemo(() => {
-      return [...cities].sort(
-        (a, b) =>
-          (a.name || "")
-            .localeCompare(
-              b.name || "",
-              "ro"
-            )
-      );
-    }, [cities]);
+  const sortedCities = useMemo(() => {
+    return [...cities].sort((a, b) =>
+      (a.name || "").localeCompare(
+        b.name || "",
+        "ro"
+      )
+    );
+  }, [cities]);
 
-  const filteredCities =
-    useMemo(() => {
-      const query =
-        normalizeText(
-          cityQuery
-        );
+  const filteredCities = useMemo(() => {
+    const query = normalizeText(cityQuery);
 
-      if (
-        !query ||
-        selectedCity?.name ===
-          cityQuery
-      ) {
-        return sortedCities;
-      }
+    if (
+      !query ||
+      selectedCity?.name === cityQuery
+    ) {
+      return sortedCities;
+    }
 
-      return sortedCities.filter(
-        (city) =>
-          normalizeText(
-            city.name
-          ).includes(query)
-      );
-    }, [
-      cityQuery,
-      selectedCity,
-      sortedCities,
-    ]);
+    return sortedCities.filter((city) =>
+      normalizeText(city.name).includes(query)
+    );
+  }, [
+    cityQuery,
+    selectedCity,
+    sortedCities,
+  ]);
 
   /* =========================
      CARTIERE
   ========================= */
 
-  const neighborhoodsForCity =
-    useMemo(() => {
-      if (!selectedCity) {
-        return [];
-      }
+  const neighborhoodsForCity = useMemo(() => {
+    if (!selectedCity) return [];
 
-      return neighborhoods
-        .filter(
-          (neighborhood) =>
-            String(
-              neighborhood.city_id
-            ) ===
-            String(
-              selectedCity.id
-            )
+    return neighborhoods
+      .filter(
+        (neighborhood) =>
+          String(neighborhood.city_id) ===
+          String(selectedCity.id)
+      )
+      .sort((a, b) =>
+        (a.name || "").localeCompare(
+          b.name || "",
+          "ro"
         )
-        .sort((a, b) =>
-          (a.name || "")
-            .localeCompare(
-              b.name || "",
-              "ro"
-            )
-        );
-    }, [
-      neighborhoods,
-      selectedCity,
-    ]);
+      );
+  }, [
+    neighborhoods,
+    selectedCity,
+  ]);
 
-  const filteredNeighborhoods =
-    useMemo(() => {
-      const query =
-        normalizeText(
-          neighborhoodQuery
-        );
+  const filteredNeighborhoods = useMemo(() => {
+    const query = normalizeText(neighborhoodQuery);
 
-      if (!selectedCity) {
-        return [];
-      }
+    if (!selectedCity) return [];
 
-      if (
-        !query ||
-        selectedNeighborhood
-          ?.name ===
-          neighborhoodQuery
-      ) {
-        return neighborhoodsForCity;
-      }
+    if (
+      !query ||
+      selectedNeighborhood?.name === neighborhoodQuery
+    ) {
+      return neighborhoodsForCity;
+    }
 
-      return neighborhoodsForCity
-        .filter(
-          (neighborhood) =>
-            normalizeText(
-              neighborhood.name
-            ).includes(query)
-        );
-    }, [
-      neighborhoodQuery,
-      selectedCity,
-      selectedNeighborhood,
-      neighborhoodsForCity,
-    ]);
+    return neighborhoodsForCity.filter((neighborhood) =>
+      normalizeText(neighborhood.name).includes(query)
+    );
+  }, [
+    neighborhoodQuery,
+    selectedCity,
+    selectedNeighborhood,
+    neighborhoodsForCity,
+  ]);
 
   /* =========================
      UNIVERSITĂȚI
   ========================= */
 
-  const universitiesForCity =
-    useMemo(() => {
-      if (!selectedCity) {
-        return [];
-      }
+  const universitiesForCity = useMemo(() => {
+    if (!selectedCity) return [];
 
-      return universities.filter(
-        (university) =>
-          university.city ===
-          selectedCity.name
+    return universities.filter(
+      (university) =>
+        university.city === selectedCity.name
+    );
+  }, [
+    universities,
+    selectedCity,
+  ]);
+
+  const filteredUniversities = useMemo(() => {
+    const query = normalizeText(universityQuery);
+
+    if (!selectedCity) return [];
+
+    if (!query || selectedUniversity) {
+      return universitiesForCity;
+    }
+
+    return universitiesForCity.filter((university) => {
+      const searchableText = normalizeText(
+        `${university.short_name || ""} ${
+          university.name || ""
+        }`
       );
-    }, [
-      universities,
-      selectedCity,
-    ]);
 
-  const filteredUniversities =
-    useMemo(() => {
-      const query =
-        normalizeText(
-          universityQuery
-        );
-
-      if (!selectedCity) {
-        return [];
-      }
-
-      if (
-        !query ||
-        selectedUniversity
-      ) {
-        return universitiesForCity;
-      }
-
-      return universitiesForCity
-        .filter(
-          (university) => {
-            const searchableText =
-              normalizeText(
-                `${
-                  university.short_name ||
-                  ""
-                } ${
-                  university.name ||
-                  ""
-                }`
-              );
-
-            return searchableText
-              .includes(query);
-          }
-        );
-    }, [
-      universityQuery,
-      selectedCity,
-      selectedUniversity,
-      universitiesForCity,
-    ]);
+      return searchableText.includes(query);
+    });
+  }, [
+    universityQuery,
+    selectedCity,
+    selectedUniversity,
+    universitiesForCity,
+  ]);
 
   /* =========================
      SELECTARE ORAȘ
   ========================= */
 
-  const chooseCity = (
-    city
-  ) => {
+  const chooseCity = (city) => {
     setSelectedCity(city);
     setCityQuery(city.name);
 
-    setSelectedNeighborhood(
-      null
-    );
+    setSelectedNeighborhood(null);
     setNeighborhoodQuery("");
 
-    setSelectedUniversity(
-      null
-    );
+    setSelectedUniversity(null);
     setUniversityQuery("");
 
-    setShowCitySuggestions(
-      false
-    );
-
-    setShowNeighborhoodSuggestions(
-      false
-    );
-
-    setShowUniversitySuggestions(
-      false
-    );
+    setShowCitySuggestions(false);
+    setShowNeighborhoodSuggestions(false);
+    setShowUniversitySuggestions(false);
   };
 
   /* =========================
      SELECTARE CARTIER
   ========================= */
 
-  const chooseNeighborhood = (
-    neighborhood
-  ) => {
-    setSelectedNeighborhood(
-      neighborhood
-    );
-
-    setNeighborhoodQuery(
-      neighborhood.name
-    );
-
-    setShowNeighborhoodSuggestions(
-      false
-    );
+  const chooseNeighborhood = (neighborhood) => {
+    setSelectedNeighborhood(neighborhood);
+    setNeighborhoodQuery(neighborhood.name);
+    setShowNeighborhoodSuggestions(false);
   };
 
   /* =========================
      SELECTARE UNIVERSITATE
   ========================= */
 
-  const chooseUniversity = (
-    university
-  ) => {
-    setSelectedUniversity(
-      university
-    );
+  const chooseUniversity = (university) => {
+    setSelectedUniversity(university);
 
     setUniversityQuery(
       university.short_name
@@ -980,40 +694,26 @@ export default function SearchBox({
         : university.name
     );
 
-    setShowUniversitySuggestions(
-      false
-    );
+    setShowUniversitySuggestions(false);
   };
 
   /* =========================
      INPUT NUMERIC
   ========================= */
 
-  function handleIntegerChange(
-    value,
-    setter
-  ) {
-    let cleaned = String(
-      value
-    ).replace(/\D/g, "");
-
-    cleaned =
-      cleaned.replace(
-        /^0+/,
-        ""
-      );
+  function handleIntegerChange(value, setter) {
+    let cleaned = String(value).replace(/\D/g, "");
+    cleaned = cleaned.replace(/^0+/, "");
 
     setter(cleaned);
   }
 
   /* =========================
-     RESET FILTRE SUPLIMENTARE
+     RESET FILTRE
   ========================= */
 
   function resetMoreFilters() {
-    setSelectedNeighborhood(
-      null
-    );
+    setSelectedNeighborhood(null);
     setNeighborhoodQuery("");
 
     setMinPrice("");
@@ -1032,26 +732,20 @@ export default function SearchBox({
   }
 
   /* =========================
-     CĂUTARE + QUERY PARAMS
+     CĂUTARE
   ========================= */
 
   const handleSearch = () => {
-    if (!selectedCity) {
-      return;
-    }
+    if (!selectedCity) return;
 
     const citySlug =
       selectedCity.slug ||
-      slugify(
-        selectedCity.name
-      );
+      slugify(selectedCity.name);
 
     const searchParams =
       new URLSearchParams();
 
-    if (
-      selectedNeighborhood?.slug
-    ) {
+    if (selectedNeighborhood?.slug) {
       searchParams.set(
         "zona",
         selectedNeighborhood.slug
@@ -1161,8 +855,7 @@ export default function SearchBox({
     if (selectedUniversity) {
       const universitySlug =
         slugify(
-          selectedUniversity
-            .short_name ||
+          selectedUniversity.short_name ||
             selectedUniversity.name
         );
 
@@ -1185,8 +878,7 @@ export default function SearchBox({
     width: "100%",
     height: "54px",
     boxSizing: "border-box",
-    border:
-      "1px solid #E2E8F0",
+    border: "1px solid #E2E8F0",
     borderRadius: "12px",
     padding: "0 15px",
     fontSize: "14px",
@@ -1211,11 +903,9 @@ export default function SearchBox({
     left: 0,
     right: 0,
     background: "#FFFFFF",
-    border:
-      "1px solid #E2E8F0",
+    border: "1px solid #E2E8F0",
     borderRadius: "12px",
-    boxShadow:
-      "0 12px 30px rgba(15, 23, 42, 0.12)",
+    boxShadow: "0 12px 30px rgba(15, 23, 42, 0.12)",
     zIndex: 9999,
     overflow: "hidden",
   };
@@ -1224,10 +914,8 @@ export default function SearchBox({
     maxHeight: "280px",
     overflowY: "auto",
     overflowX: "hidden",
-    overscrollBehavior:
-      "contain",
-    WebkitOverflowScrolling:
-      "touch",
+    overscrollBehavior: "contain",
+    WebkitOverflowScrolling: "touch",
     scrollbarGutter: "stable",
   };
 
@@ -1236,8 +924,7 @@ export default function SearchBox({
     minHeight: "44px",
     display: "block",
     border: "none",
-    borderBottom:
-      "1px solid #F1F5F9",
+    borderBottom: "1px solid #F1F5F9",
     padding: "12px 15px",
     textAlign: "left",
     fontFamily: "inherit",
@@ -1248,7 +935,7 @@ export default function SearchBox({
     boxSizing: "border-box",
   };
 
-  /* CONTINUĂ CU PARTEA 2/2 */
+  /* CONTINUĂ DIRECT CU 2/2 */
   return (
     <div
       style={{
@@ -1259,10 +946,8 @@ export default function SearchBox({
         borderRadius: "18px",
         padding: "12px",
         boxSizing: "border-box",
-        boxShadow:
-          "0 15px 45px rgba(15, 23, 42, 0.10)",
-        border:
-          "1px solid #E2E8F0",
+        boxShadow: "0 15px 45px rgba(15, 23, 42, 0.10)",
+        border: "1px solid #E2E8F0",
         position: "relative",
         textAlign: "left",
       }}
@@ -1274,8 +959,7 @@ export default function SearchBox({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns:
-            "210px 1fr 180px 120px",
+          gridTemplateColumns: "210px 1fr 180px 120px",
           gap: "12px",
           alignItems: "center",
         }}
@@ -1294,121 +978,71 @@ export default function SearchBox({
             placeholder="Alege orașul"
             autoComplete="off"
             onFocus={() => {
-              setShowCitySuggestions(
-                true
-              );
-
-              setShowNeighborhoodSuggestions(
-                false
-              );
-
-              setShowUniversitySuggestions(
-                false
-              );
+              setShowCitySuggestions(true);
+              setShowNeighborhoodSuggestions(false);
+              setShowUniversitySuggestions(false);
             }}
             onClick={() => {
-              setShowCitySuggestions(
-                true
-              );
-
-              setShowNeighborhoodSuggestions(
-                false
-              );
-
-              setShowUniversitySuggestions(
-                false
-              );
+              setShowCitySuggestions(true);
+              setShowNeighborhoodSuggestions(false);
+              setShowUniversitySuggestions(false);
             }}
             onChange={(event) => {
-              const value =
-                event.target.value;
+              const value = event.target.value;
 
               setCityQuery(value);
               setSelectedCity(null);
 
-              setSelectedNeighborhood(
-                null
-              );
+              setSelectedNeighborhood(null);
               setNeighborhoodQuery("");
 
-              setSelectedUniversity(
-                null
-              );
+              setSelectedUniversity(null);
               setUniversityQuery("");
 
-              setShowCitySuggestions(
-                true
-              );
-
-              setShowNeighborhoodSuggestions(
-                false
-              );
-
-              setShowUniversitySuggestions(
-                false
-              );
+              setShowCitySuggestions(true);
+              setShowNeighborhoodSuggestions(false);
+              setShowUniversitySuggestions(false);
             }}
             style={inputStyle}
           />
 
           {showCitySuggestions && (
-            <div
-              style={dropdownStyle}
-            >
-              <div
-                style={
-                  dropdownScrollStyle
-                }
-              >
-                {filteredCities.length >
-                0 ? (
-                  filteredCities.map(
-                    (city) => (
-                      <button
-                        key={city.id}
-                        type="button"
-                        onMouseDown={(
-                          event
-                        ) =>
-                          event.preventDefault()
-                        }
-                        onClick={() =>
-                          chooseCity(
-                            city
-                          )
-                        }
-                        style={{
-                          ...optionStyle,
-                          background:
-                            selectedCity?.id ===
-                            city.id
-                              ? "#EFF6FF"
-                              : "#FFFFFF",
-                          color:
-                            selectedCity?.id ===
-                            city.id
-                              ? "#2563EB"
-                              : "#0F172A",
-                          fontWeight:
-                            selectedCity?.id ===
-                            city.id
-                              ? "800"
-                              : "600",
-                        }}
-                      >
-                        {city.name}
-                      </button>
-                    )
-                  )
+            <div style={dropdownStyle}>
+              <div style={dropdownScrollStyle}>
+                {filteredCities.length > 0 ? (
+                  filteredCities.map((city) => (
+                    <button
+                      key={city.id}
+                      type="button"
+                      onMouseDown={(event) =>
+                        event.preventDefault()
+                      }
+                      onClick={() => chooseCity(city)}
+                      style={{
+                        ...optionStyle,
+                        background:
+                          selectedCity?.id === city.id
+                            ? "#EFF6FF"
+                            : "#FFFFFF",
+                        color:
+                          selectedCity?.id === city.id
+                            ? "#2563EB"
+                            : "#0F172A",
+                        fontWeight:
+                          selectedCity?.id === city.id
+                            ? "800"
+                            : "600",
+                      }}
+                    >
+                      {city.name}
+                    </button>
+                  ))
                 ) : (
                   <div
                     style={{
-                      padding:
-                        "15px",
-                      color:
-                        "#64748B",
-                      fontSize:
-                        "14px",
+                      padding: "15px",
+                      color: "#64748B",
+                      fontSize: "14px",
                     }}
                   >
                     Niciun oraș găsit
@@ -1439,204 +1073,128 @@ export default function SearchBox({
             autoComplete="off"
             onFocus={() => {
               if (selectedCity) {
-                setShowUniversitySuggestions(
-                  true
-                );
-
-                setShowCitySuggestions(
-                  false
-                );
-
-                setShowNeighborhoodSuggestions(
-                  false
-                );
+                setShowUniversitySuggestions(true);
+                setShowCitySuggestions(false);
+                setShowNeighborhoodSuggestions(false);
+              }
+            }}
+            onClick={() => {
+              if (selectedCity) {
+                setShowUniversitySuggestions(true);
+                setShowCitySuggestions(false);
+                setShowNeighborhoodSuggestions(false);
               }
             }}
             onChange={(event) => {
-              if (!selectedCity) {
-                return;
-              }
+              if (!selectedCity) return;
 
-              setUniversityQuery(
-                event.target.value
-              );
+              setUniversityQuery(event.target.value);
+              setSelectedUniversity(null);
 
-              setSelectedUniversity(
-                null
-              );
-
-              setShowUniversitySuggestions(
-                true
-              );
-
-              setShowCitySuggestions(
-                false
-              );
-
-              setShowNeighborhoodSuggestions(
-                false
-              );
+              setShowUniversitySuggestions(true);
+              setShowCitySuggestions(false);
+              setShowNeighborhoodSuggestions(false);
             }}
             style={{
               ...inputStyle,
-              background:
-                selectedCity
-                  ? "#FFFFFF"
-                  : "#F8FAFC",
-              cursor: selectedCity
-                ? "text"
-                : "not-allowed",
-              opacity: selectedCity
-                ? 1
-                : 0.65,
+              background: selectedCity ? "#FFFFFF" : "#F8FAFC",
+              cursor: selectedCity ? "text" : "not-allowed",
+              opacity: selectedCity ? 1 : 0.65,
             }}
           />
 
-          {showUniversitySuggestions &&
-            selectedCity && (
-              <div
-                style={dropdownStyle}
-              >
-                <div
-                  style={
-                    dropdownScrollStyle
+          {showUniversitySuggestions && selectedCity && (
+            <div style={dropdownStyle}>
+              <div style={dropdownScrollStyle}>
+                <button
+                  type="button"
+                  onMouseDown={(event) =>
+                    event.preventDefault()
                   }
+                  onClick={() => {
+                    setSelectedUniversity(null);
+                    setUniversityQuery("");
+                    setShowUniversitySuggestions(false);
+                  }}
+                  style={{
+                    ...optionStyle,
+                    background: "#EFF6FF",
+                    color: "#2563EB",
+                    fontWeight: "800",
+                  }}
                 >
-                  <button
-                    type="button"
-                    onMouseDown={(
-                      event
-                    ) =>
-                      event.preventDefault()
-                    }
-                    onClick={() => {
-                      setSelectedUniversity(
-                        null
-                      );
+                  <div>
+                    Toate chiriile din {selectedCity.name}
+                  </div>
 
-                      setUniversityQuery(
-                        ""
-                      );
-
-                      setShowUniversitySuggestions(
-                        false
-                      );
-                    }}
+                  <div
                     style={{
-                      ...optionStyle,
-                      background:
-                        "#EFF6FF",
-                      color:
-                        "#2563EB",
-                      fontWeight:
-                        "800",
+                      fontSize: "12px",
+                      color: "#64748B",
+                      marginTop: "3px",
+                      fontWeight: "500",
                     }}
                   >
-                    <div>
-                      Toate chiriile din{" "}
-                      {
-                        selectedCity.name
-                      }
-                    </div>
+                    Fără filtrare după universitate
+                  </div>
+                </button>
 
-                    <div
+                {filteredUniversities.length > 0 ? (
+                  filteredUniversities.map((university) => (
+                    <button
+                      key={university.id}
+                      type="button"
+                      onMouseDown={(event) =>
+                        event.preventDefault()
+                      }
+                      onClick={() =>
+                        chooseUniversity(university)
+                      }
                       style={{
-                        fontSize:
-                          "12px",
-                        color:
-                          "#64748B",
-                        marginTop:
-                          "3px",
-                        fontWeight:
-                          "500",
+                        ...optionStyle,
+                        background:
+                          selectedUniversity?.id === university.id
+                            ? "#EFF6FF"
+                            : "#FFFFFF",
                       }}
                     >
-                      Fără filtrare după
-                      universitate
-                    </div>
-                  </button>
+                      <div
+                        style={{
+                          fontWeight: "700",
+                          color: "#0F172A",
+                        }}
+                      >
+                        {university.short_name || university.name}
+                      </div>
 
-                  {filteredUniversities.length >
-                  0 ? (
-                    filteredUniversities.map(
-                      (
-                        university
-                      ) => (
-                        <button
-                          key={
-                            university.id
-                          }
-                          type="button"
-                          onMouseDown={(
-                            event
-                          ) =>
-                            event.preventDefault()
-                          }
-                          onClick={() =>
-                            chooseUniversity(
-                              university
-                            )
-                          }
+                      {university.short_name && (
+                        <div
                           style={{
-                            ...optionStyle,
-                            background:
-                              selectedUniversity?.id ===
-                              university.id
-                                ? "#EFF6FF"
-                                : "#FFFFFF",
+                            fontSize: "12px",
+                            color: "#64748B",
+                            marginTop: "3px",
+                            lineHeight: "1.35",
                           }}
                         >
-                          <div
-                            style={{
-                              fontWeight:
-                                "700",
-                              color:
-                                "#0F172A",
-                            }}
-                          >
-                            {university.short_name ||
-                              university.name}
-                          </div>
-
-                          {university.short_name && (
-                            <div
-                              style={{
-                                fontSize:
-                                  "12px",
-                                color:
-                                  "#64748B",
-                                marginTop:
-                                  "3px",
-                                lineHeight:
-                                  "1.35",
-                              }}
-                            >
-                              {
-                                university.name
-                              }
-                            </div>
-                          )}
-                        </button>
-                      )
-                    )
-                  ) : (
-                    <div
-                      style={{
-                        padding:
-                          "15px",
-                        color:
-                          "#64748B",
-                        fontSize:
-                          "14px",
-                      }}
-                    >
-                      Nicio universitate
-                      găsită
-                    </div>
-                  )}
-                </div>
+                          {university.name}
+                        </div>
+                      )}
+                    </button>
+                  ))
+                ) : (
+                  <div
+                    style={{
+                      padding: "15px",
+                      color: "#64748B",
+                      fontSize: "14px",
+                    }}
+                  >
+                    Nicio universitate găsită
+                  </div>
+                )}
               </div>
-            )}
+            </div>
+          )}
         </div>
 
         {/* MAI MULTE FILTRE */}
@@ -1644,55 +1202,36 @@ export default function SearchBox({
         <button
           type="button"
           onClick={() => {
-            setShowMoreFilters(
-              (current) =>
-                !current
-            );
+            setShowMoreFilters((current) => !current);
 
-            setShowCitySuggestions(
-              false
-            );
-
-            setShowUniversitySuggestions(
-              false
-            );
-
-            setShowNeighborhoodSuggestions(
-              false
-            );
+            setShowCitySuggestions(false);
+            setShowUniversitySuggestions(false);
+            setShowNeighborhoodSuggestions(false);
           }}
           style={{
             ...inputStyle,
             padding: "0 15px",
-            background:
-              showMoreFilters
-                ? "#F8FAFC"
-                : "#FFFFFF",
+            background: showMoreFilters ? "#F8FAFC" : "#FFFFFF",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
-            justifyContent:
-              "space-between",
+            justifyContent: "space-between",
             gap: "10px",
             textAlign: "left",
             whiteSpace: "nowrap",
             fontWeight: "700",
           }}
         >
-          <span>
-            Mai multe filtre
-          </span>
+          <span>Mai multe filtre</span>
 
           <span
             style={{
               fontSize: "16px",
               color: "#64748B",
-              transform:
-                showMoreFilters
-                  ? "rotate(180deg)"
-                  : "rotate(0deg)",
-              transition:
-                "transform 150ms ease",
+              transform: showMoreFilters
+                ? "rotate(180deg)"
+                : "rotate(0deg)",
+              transition: "transform 150ms ease",
             }}
           >
             ⌄
@@ -1711,24 +1250,17 @@ export default function SearchBox({
             border: "none",
             borderRadius: "12px",
             padding: "0 15px",
-            background:
-              selectedCity
-                ? "#172554"
-                : "#94A3B8",
+            background: selectedCity ? "#172554" : "#94A3B8",
             color: "#FFFFFF",
             fontSize: "14px",
             fontFamily: "inherit",
             fontWeight: "700",
-            cursor: selectedCity
-              ? "pointer"
-              : "not-allowed",
+            cursor: selectedCity ? "pointer" : "not-allowed",
             whiteSpace: "nowrap",
-            transition:
-              "background-color 150ms ease",
-            boxShadow:
-              selectedCity
-                ? "0 6px 16px rgba(23, 37, 84, 0.16)"
-                : "none",
+            transition: "background-color 150ms ease",
+            boxShadow: selectedCity
+              ? "0 6px 16px rgba(23, 37, 84, 0.16)"
+              : "none",
           }}
         >
           Vezi chirii
@@ -1744,15 +1276,13 @@ export default function SearchBox({
           style={{
             marginTop: "12px",
             paddingTop: "16px",
-            borderTop:
-              "1px solid #E2E8F0",
+            borderTop: "1px solid #E2E8F0",
           }}
         >
           <div
             style={{
               display: "grid",
-              gridTemplateColumns:
-                "repeat(4, minmax(0, 1fr))",
+              gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
               gap: "14px",
             }}
           >
@@ -1760,218 +1290,136 @@ export default function SearchBox({
 
             <div
               style={{
-                position:
-                  "relative",
+                position: "relative",
                 minWidth: 0,
               }}
             >
-              <label
-                style={labelStyle}
-              >
-                Zonă / cartier
-              </label>
+              <label style={labelStyle}>Zonă / cartier</label>
 
               <input
                 type="text"
-                value={
-                  neighborhoodQuery
-                }
+                value={neighborhoodQuery}
                 placeholder={
-                  selectedCity
-                    ? "Toate zonele"
-                    : "Alege orașul"
+                  selectedCity ? "Toate zonele" : "Alege orașul"
                 }
-                disabled={
-                  !selectedCity
-                }
+                disabled={!selectedCity}
                 autoComplete="off"
                 onFocus={() => {
-                  if (
-                    selectedCity
-                  ) {
-                    setShowNeighborhoodSuggestions(
-                      true
-                    );
-
-                    setShowCitySuggestions(
-                      false
-                    );
-
-                    setShowUniversitySuggestions(
-                      false
-                    );
+                  if (selectedCity) {
+                    setShowNeighborhoodSuggestions(true);
+                    setShowCitySuggestions(false);
+                    setShowUniversitySuggestions(false);
                   }
                 }}
-                onChange={(
-                  event
-                ) => {
-                  if (
-                    !selectedCity
-                  ) {
-                    return;
+                onClick={() => {
+                  if (selectedCity) {
+                    setShowNeighborhoodSuggestions(true);
+                    setShowCitySuggestions(false);
+                    setShowUniversitySuggestions(false);
                   }
+                }}
+                onChange={(event) => {
+                  if (!selectedCity) return;
 
-                  setNeighborhoodQuery(
-                    event.target
-                      .value
-                  );
-
-                  setSelectedNeighborhood(
-                    null
-                  );
-
-                  setShowNeighborhoodSuggestions(
-                    true
-                  );
+                  setNeighborhoodQuery(event.target.value);
+                  setSelectedNeighborhood(null);
+                  setShowNeighborhoodSuggestions(true);
                 }}
                 style={{
                   ...inputStyle,
-                  background:
-                    selectedCity
-                      ? "#FFFFFF"
-                      : "#F8FAFC",
-                  cursor:
-                    selectedCity
-                      ? "text"
-                      : "not-allowed",
-                  opacity:
-                    selectedCity
-                      ? 1
-                      : 0.65,
+                  background: selectedCity ? "#FFFFFF" : "#F8FAFC",
+                  cursor: selectedCity ? "text" : "not-allowed",
+                  opacity: selectedCity ? 1 : 0.65,
                 }}
               />
 
-              {showNeighborhoodSuggestions &&
-                selectedCity && (
-                  <div
-                    style={
-                      dropdownStyle
-                    }
-                  >
-                    <div
-                      style={
-                        dropdownScrollStyle
+              {showNeighborhoodSuggestions && selectedCity && (
+                <div style={dropdownStyle}>
+                  <div style={dropdownScrollStyle}>
+                    <button
+                      type="button"
+                      onMouseDown={(event) =>
+                        event.preventDefault()
                       }
+                      onClick={() => {
+                        setSelectedNeighborhood(null);
+                        setNeighborhoodQuery("");
+                        setShowNeighborhoodSuggestions(false);
+                      }}
+                      style={{
+                        ...optionStyle,
+                        background: "#EFF6FF",
+                        color: "#2563EB",
+                        fontWeight: "800",
+                      }}
                     >
-                      <button
-                        type="button"
-                        onMouseDown={(
-                          event
-                        ) =>
-                          event.preventDefault()
-                        }
-                        onClick={() => {
-                          setSelectedNeighborhood(
-                            null
-                          );
+                      Toate zonele
+                    </button>
 
-                          setNeighborhoodQuery(
-                            ""
-                          );
-
-                          setShowNeighborhoodSuggestions(
-                            false
-                          );
-                        }}
+                    {filteredNeighborhoods.length > 0 ? (
+                      filteredNeighborhoods.map(
+                        (neighborhood) => (
+                          <button
+                            key={neighborhood.id}
+                            type="button"
+                            onMouseDown={(event) =>
+                              event.preventDefault()
+                            }
+                            onClick={() =>
+                              chooseNeighborhood(neighborhood)
+                            }
+                            style={{
+                              ...optionStyle,
+                              background:
+                                selectedNeighborhood?.id ===
+                                neighborhood.id
+                                  ? "#EFF6FF"
+                                  : "#FFFFFF",
+                              color:
+                                selectedNeighborhood?.id ===
+                                neighborhood.id
+                                  ? "#2563EB"
+                                  : "#0F172A",
+                              fontWeight:
+                                selectedNeighborhood?.id ===
+                                neighborhood.id
+                                  ? "800"
+                                  : "600",
+                            }}
+                          >
+                            {neighborhood.name}
+                          </button>
+                        )
+                      )
+                    ) : (
+                      <div
                         style={{
-                          ...optionStyle,
-                          background:
-                            "#EFF6FF",
-                          color:
-                            "#2563EB",
-                          fontWeight:
-                            "800",
+                          padding: "15px",
+                          color: "#64748B",
+                          fontSize: "14px",
                         }}
                       >
-                        Toate zonele
-                      </button>
-
-                      {filteredNeighborhoods.length >
-                      0 ? (
-                        filteredNeighborhoods.map(
-                          (
-                            neighborhood
-                          ) => (
-                            <button
-                              key={
-                                neighborhood.id
-                              }
-                              type="button"
-                              onMouseDown={(
-                                event
-                              ) =>
-                                event.preventDefault()
-                              }
-                              onClick={() =>
-                                chooseNeighborhood(
-                                  neighborhood
-                                )
-                              }
-                              style={{
-                                ...optionStyle,
-                                background:
-                                  selectedNeighborhood?.id ===
-                                  neighborhood.id
-                                    ? "#EFF6FF"
-                                    : "#FFFFFF",
-                                color:
-                                  selectedNeighborhood?.id ===
-                                  neighborhood.id
-                                    ? "#2563EB"
-                                    : "#0F172A",
-                                fontWeight:
-                                  selectedNeighborhood?.id ===
-                                  neighborhood.id
-                                    ? "800"
-                                    : "600",
-                              }}
-                            >
-                              {
-                                neighborhood.name
-                              }
-                            </button>
-                          )
-                        )
-                      ) : (
-                        <div
-                          style={{
-                            padding:
-                              "15px",
-                            color:
-                              "#64748B",
-                            fontSize:
-                              "14px",
-                          }}
-                        >
-                          Nicio zonă
-                          găsită
-                        </div>
-                      )}
-                    </div>
+                        Nicio zonă găsită
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
+              )}
             </div>
 
             {/* PREȚ MINIM */}
 
             <div>
-              <label
-                style={labelStyle}
-              >
-                Preț minim
-              </label>
+              <label style={labelStyle}>Preț minim</label>
 
               <input
                 type="text"
                 inputMode="numeric"
                 value={minPrice}
-                placeholder="€ minim"
-                onChange={(
-                  event
-                ) =>
+                placeholder="De la €"
+                onChange={(event) =>
                   handleIntegerChange(
-                    event.target
-                      .value,
+                    event.target.value,
                     setMinPrice
                   )
                 }
@@ -1982,23 +1430,16 @@ export default function SearchBox({
             {/* PREȚ MAXIM */}
 
             <div>
-              <label
-                style={labelStyle}
-              >
-                Preț maxim
-              </label>
+              <label style={labelStyle}>Preț maxim</label>
 
               <input
                 type="text"
                 inputMode="numeric"
                 value={maxPrice}
-                placeholder="€ maxim"
-                onChange={(
-                  event
-                ) =>
+                placeholder="Până la €"
+                onChange={(event) =>
                   handleIntegerChange(
-                    event.target
-                      .value,
+                    event.target.value,
                     setMaxPrice
                   )
                 }
@@ -2009,199 +1450,106 @@ export default function SearchBox({
             {/* CAMERE */}
 
             <div>
-              <label
-                style={labelStyle}
-              >
-                Camere
-              </label>
+              <label style={labelStyle}>Camere</label>
 
               <select
                 value={rooms}
-                onChange={(
-                  event
-                ) =>
-                  setRooms(
-                    event.target
-                      .value
-                  )
-                }
+                onChange={(event) => setRooms(event.target.value)}
                 style={{
                   ...inputStyle,
-                  cursor:
-                    "pointer",
+                  cursor: "pointer",
                 }}
               >
-                <option value="">
-                  Oricâte
-                </option>
-                <option value="1">
-                  1 cameră
-                </option>
-                <option value="2">
-                  2 camere
-                </option>
-                <option value="3">
-                  3 camere
-                </option>
-                <option value="4">
-                  4 camere
-                </option>
-                <option value="5">
-                  5+ camere
-                </option>
+                <option value="">Oricare</option>
+                <option value="1">1 cameră</option>
+                <option value="2">2 camere</option>
+                <option value="3">3 camere</option>
+                <option value="4">4 camere</option>
+                <option value="5">5+ camere</option>
               </select>
             </div>
 
             {/* TIP PROPRIETATE */}
 
             <div>
-              <label
-                style={labelStyle}
-              >
-                Tip proprietate
-              </label>
+              <label style={labelStyle}>Tip proprietate</label>
 
               <select
-                value={
-                  propertyType
-                }
-                onChange={(
-                  event
-                ) =>
-                  setPropertyType(
-                    event.target
-                      .value
-                  )
+                value={propertyType}
+                onChange={(event) =>
+                  setPropertyType(event.target.value)
                 }
                 style={{
                   ...inputStyle,
-                  cursor:
-                    "pointer",
+                  cursor: "pointer",
                 }}
               >
-                <option value="">
-                  Orice tip
-                </option>
-                <option value="apartament">
-                  Apartament
-                </option>
-                <option value="garsoniera">
-                  Garsonieră
-                </option>
-                <option value="casa">
-                  Casă
-                </option>
-                <option value="camera">
-                  Cameră
-                </option>
+                <option value="">Oricare</option>
+                <option value="apartment">Apartament</option>
+                <option value="studio">Garsonieră</option>
+                <option value="room">Cameră</option>
+                <option value="house">Casă</option>
               </select>
             </div>
 
             {/* DORMITOARE */}
 
             <div>
-              <label
-                style={labelStyle}
-              >
-                Dormitoare
-              </label>
+              <label style={labelStyle}>Dormitoare</label>
 
               <select
                 value={bedrooms}
-                onChange={(
-                  event
-                ) =>
-                  setBedrooms(
-                    event.target
-                      .value
-                  )
+                onChange={(event) =>
+                  setBedrooms(event.target.value)
                 }
                 style={{
                   ...inputStyle,
-                  cursor:
-                    "pointer",
+                  cursor: "pointer",
                 }}
               >
-                <option value="">
-                  Oricâte
-                </option>
-                <option value="1">
-                  1+
-                </option>
-                <option value="2">
-                  2+
-                </option>
-                <option value="3">
-                  3+
-                </option>
-                <option value="4">
-                  4+
-                </option>
+                <option value="">Oricare</option>
+                <option value="1">1 dormitor</option>
+                <option value="2">2 dormitoare</option>
+                <option value="3">3 dormitoare</option>
+                <option value="4">4+ dormitoare</option>
               </select>
             </div>
 
             {/* BĂI */}
 
             <div>
-              <label
-                style={labelStyle}
-              >
-                Băi
-              </label>
+              <label style={labelStyle}>Băi</label>
 
               <select
                 value={bathrooms}
-                onChange={(
-                  event
-                ) =>
-                  setBathrooms(
-                    event.target
-                      .value
-                  )
+                onChange={(event) =>
+                  setBathrooms(event.target.value)
                 }
                 style={{
                   ...inputStyle,
-                  cursor:
-                    "pointer",
+                  cursor: "pointer",
                 }}
               >
-                <option value="">
-                  Oricâte
-                </option>
-                <option value="1">
-                  1+
-                </option>
-                <option value="2">
-                  2+
-                </option>
-                <option value="3">
-                  3+
-                </option>
+                <option value="">Oricare</option>
+                <option value="1">1 baie</option>
+                <option value="2">2 băi</option>
+                <option value="3">3+ băi</option>
               </select>
             </div>
 
             {/* SUPRAFAȚĂ MINIMĂ */}
 
             <div>
-              <label
-                style={labelStyle}
-              >
-                Suprafață minimă
-              </label>
+              <label style={labelStyle}>Suprafață minimă</label>
 
               <input
                 type="text"
                 inputMode="numeric"
-                value={
-                  minSurface
-                }
-                placeholder="m² minim"
-                onChange={(
-                  event
-                ) =>
+                value={minSurface}
+                placeholder="De la m²"
+                onChange={(event) =>
                   handleIntegerChange(
-                    event.target
-                      .value,
+                    event.target.value,
                     setMinSurface
                   )
                 }
@@ -2212,25 +1560,16 @@ export default function SearchBox({
             {/* SUPRAFAȚĂ MAXIMĂ */}
 
             <div>
-              <label
-                style={labelStyle}
-              >
-                Suprafață maximă
-              </label>
+              <label style={labelStyle}>Suprafață maximă</label>
 
               <input
                 type="text"
                 inputMode="numeric"
-                value={
-                  maxSurface
-                }
-                placeholder="m² maxim"
-                onChange={(
-                  event
-                ) =>
+                value={maxSurface}
+                placeholder="Până la m²"
+                onChange={(event) =>
                   handleIntegerChange(
-                    event.target
-                      .value,
+                    event.target.value,
                     setMaxSurface
                   )
                 }
@@ -2241,133 +1580,83 @@ export default function SearchBox({
             {/* MOBILAT */}
 
             <div>
-              <label
-                style={labelStyle}
-              >
-                Mobilat
-              </label>
+              <label style={labelStyle}>Mobilat</label>
 
               <select
                 value={furnished}
-                onChange={(
-                  event
-                ) =>
-                  setFurnished(
-                    event.target
-                      .value
-                  )
+                onChange={(event) =>
+                  setFurnished(event.target.value)
                 }
                 style={{
                   ...inputStyle,
-                  cursor:
-                    "pointer",
+                  cursor: "pointer",
                 }}
               >
-                <option value="">
-                  Oricare
-                </option>
-                <option value="true">
-                  Mobilat
-                </option>
-                <option value="false">
-                  Nemobilat
-                </option>
+                <option value="">Oricare</option>
+                <option value="yes">Da</option>
+                <option value="no">Nu</option>
               </select>
             </div>
 
             {/* TIP ANUNȚ */}
 
             <div>
-              <label
-                style={labelStyle}
-              >
-                Tip anunț
-              </label>
+              <label style={labelStyle}>Tip anunț</label>
 
               <select
                 value={listingType}
-                onChange={(
-                  event
-                ) =>
-                  setListingType(
-                    event.target
-                      .value
-                  )
+                onChange={(event) =>
+                  setListingType(event.target.value)
                 }
                 style={{
                   ...inputStyle,
-                  cursor:
-                    "pointer",
+                  cursor: "pointer",
                 }}
               >
-                <option value="">
-                  Oricare
-                </option>
-                <option value="proprietar">
-                  Proprietar
-                </option>
-                <option value="agentie">
-                  Agenție
-                </option>
+                <option value="">Oricare</option>
+                <option value="rent">Închiriere</option>
+                <option value="room">Cameră</option>
               </select>
             </div>
 
             {/* DISPONIBIL DE LA */}
 
             <div
-              ref={
-                calendarWrapperRef
-              }
+              ref={calendarWrapperRef}
               style={{
-                position:
-                  "relative",
+                position: "relative",
               }}
             >
-              <label
-                style={labelStyle}
-              >
-                Disponibil de la
-              </label>
+              <label style={labelStyle}>Disponibil de la</label>
 
               <button
                 type="button"
                 onClick={() =>
-                  setCalendarOpen(
-                    (current) =>
-                      !current
-                  )
+                  setCalendarOpen((current) => !current)
                 }
                 style={{
                   ...inputStyle,
-                  cursor:
-                    "pointer",
+                  cursor: "pointer",
                   display: "flex",
-                  alignItems:
-                    "center",
-                  justifyContent:
-                    "space-between",
-                  textAlign:
-                    "left",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  textAlign: "left",
                 }}
               >
                 <span
                   style={{
-                    color:
-                      availableFrom
-                        ? "#0F172A"
-                        : "#94A3B8",
+                    color: availableFrom
+                      ? "#0F172A"
+                      : "#94A3B8",
                   }}
                 >
-                  {availableFrom ||
-                    "Alege data"}
+                  {availableFrom || "ZZ/LL/AAAA"}
                 </span>
 
                 <span
                   style={{
-                    fontSize:
-                      "16px",
-                    color:
-                      "#64748B",
+                    fontSize: "16px",
+                    color: "#64748B",
                   }}
                 >
                   ▣
@@ -2376,17 +1665,9 @@ export default function SearchBox({
 
               {calendarOpen && (
                 <DateCalendar
-                  value={
-                    availableFrom
-                  }
-                  onChange={
-                    setAvailableFrom
-                  }
-                  onClose={() =>
-                    setCalendarOpen(
-                      false
-                    )
-                  }
+                  value={availableFrom}
+                  onChange={setAvailableFrom}
+                  onClose={() => setCalendarOpen(false)}
                 />
               )}
             </div>
@@ -2394,37 +1675,19 @@ export default function SearchBox({
             {/* SORTARE */}
 
             <div>
-              <label
-                style={labelStyle}
-              >
-                Sortare
-              </label>
+              <label style={labelStyle}>Sortare</label>
 
               <select
                 value={sort}
-                onChange={(
-                  event
-                ) =>
-                  setSort(
-                    event.target
-                      .value
-                  )
-                }
+                onChange={(event) => setSort(event.target.value)}
                 style={{
                   ...inputStyle,
-                  cursor:
-                    "pointer",
+                  cursor: "pointer",
                 }}
               >
-                <option value="newest">
-                  Cele mai noi
-                </option>
-                <option value="price_asc">
-                  Preț crescător
-                </option>
-                <option value="price_desc">
-                  Preț descrescător
-                </option>
+                <option value="newest">Cele mai noi</option>
+                <option value="price_asc">Preț crescător</option>
+                <option value="price_desc">Preț descrescător</option>
                 <option value="surface_desc">
                   Suprafață descrescător
                 </option>
@@ -2432,86 +1695,37 @@ export default function SearchBox({
             </div>
           </div>
 
-          {/* ACȚIUNI FILTRE */}
+          {/* =========================
+              DOAR RESETEAZĂ
+          ========================= */}
 
           <div
             style={{
               display: "flex",
-              alignItems:
-                "center",
-              justifyContent:
-                "space-between",
-              gap: "12px",
+              alignItems: "center",
+              justifyContent: "flex-start",
               marginTop: "16px",
               paddingTop: "14px",
-              borderTop:
-                "1px solid #F1F5F9",
+              borderTop: "1px solid #F1F5F9",
             }}
           >
             <button
               type="button"
-              onClick={
-                resetMoreFilters
-              }
+              onClick={resetMoreFilters}
               style={{
                 height: "42px",
-                padding:
-                  "0 15px",
-                border:
-                  "1px solid #E2E8F0",
-                borderRadius:
-                  "10px",
-                background:
-                  "#FFFFFF",
-                color:
-                  "#475569",
-                fontFamily:
-                  "inherit",
-                fontSize:
-                  "13px",
-                fontWeight:
-                  "700",
-                cursor:
-                  "pointer",
+                padding: "0 15px",
+                border: "1px solid #E2E8F0",
+                borderRadius: "10px",
+                background: "#FFFFFF",
+                color: "#475569",
+                fontFamily: "inherit",
+                fontSize: "13px",
+                fontWeight: "700",
+                cursor: "pointer",
               }}
             >
               Resetează filtrele
-            </button>
-
-            <button
-              type="button"
-              disabled={
-                !selectedCity
-              }
-              onClick={
-                handleSearch
-              }
-              style={{
-                height: "42px",
-                padding:
-                  "0 18px",
-                border: "none",
-                borderRadius:
-                  "10px",
-                background:
-                  selectedCity
-                    ? "#172554"
-                    : "#94A3B8",
-                color:
-                  "#FFFFFF",
-                fontFamily:
-                  "inherit",
-                fontSize:
-                  "13px",
-                fontWeight:
-                  "800",
-                cursor:
-                  selectedCity
-                    ? "pointer"
-                    : "not-allowed",
-              }}
-            >
-              Aplică filtrele
             </button>
           </div>
         </div>
