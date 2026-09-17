@@ -1692,11 +1692,18 @@ export default function DashboardPage() {
 
                 <button
                   type="button"
-                  onClick={() =>
-                    router.push(
-                      "/adaugaproprietate"
-                    )
-                  }
+                  onClick={() => {
+  if (!profilePhone.trim()) {
+    setPhoneRequired(true);
+    setActiveSection("profile");
+    router.push(
+      "/dashboard?section=profile&required=phone"
+    );
+    return;
+  }
+
+  router.push("/adaugaproprietate");
+}}
                   style={{
                     border: "none",
                     borderRadius:
