@@ -103,6 +103,12 @@ export default async function CityListingsPage({ params }) {
       ? cityListings[0].city
       : formatFallbackCityName(citySlug);
 
+  /*
+    Pagina la care trebuie să revenim după ce utilizatorul
+    deschide un anunț.
+  */
+  const returnUrl = `/chirii/${citySlug}`;
+
   return (
     <main
       style={{
@@ -309,6 +315,10 @@ export default async function CityListingsPage({ params }) {
                 listing.created_at
               );
 
+              const propertyUrl =
+                `/proprietate/${listing.id}` +
+                `?from=${encodeURIComponent(returnUrl)}`;
+
               return (
                 <div
                   key={listing.id}
@@ -374,7 +384,7 @@ export default async function CityListingsPage({ params }) {
                   {/* LINK PESTE CONȚINUTUL ANUNȚULUI */}
 
                   <a
-                    href={`/proprietate/${listing.id}`}
+                    href={propertyUrl}
                     className="listing-main-link"
                     style={{
                       flex: 1,
