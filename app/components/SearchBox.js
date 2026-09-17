@@ -513,10 +513,14 @@ export default function SearchBox({
 
   const calendarWrapperRef = useRef(null);
 
-  /* CLICK OUTSIDE — DOAR ORAȘ + UNIVERSITATE */
+  /* =========================
+     CLICK OUTSIDE
+     ORAȘ + UNIVERSITATE + CARTIER
+  ========================= */
 
   const cityWrapperRef = useRef(null);
   const universityWrapperRef = useRef(null);
+  const neighborhoodWrapperRef = useRef(null);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -532,6 +536,13 @@ export default function SearchBox({
         !universityWrapperRef.current.contains(event.target)
       ) {
         setShowUniversitySuggestions(false);
+      }
+
+      if (
+        neighborhoodWrapperRef.current &&
+        !neighborhoodWrapperRef.current.contains(event.target)
+      ) {
+        setShowNeighborhoodSuggestions(false);
       }
     }
 
@@ -1321,6 +1332,7 @@ export default function SearchBox({
             {/* ZONĂ / CARTIER */}
 
             <div
+              ref={neighborhoodWrapperRef}
               style={{
                 position: "relative",
                 minWidth: 0,
