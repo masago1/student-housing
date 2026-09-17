@@ -1,0 +1,156 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
+
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+
+function createCircle(center, radiusInMeters, points = 64) {
+    const [longitude, latitude] = center;
+
+    const coordinates = [];
+    const earthRadius = 6371000;
+
+    const latRadians = (latitude * Math.PI) / 180;
+
+    for (let i = 0; i <= points; i++) {
+        const angle = (i / points) * Math.PI * 2;
+
+        const dx = Math.cos(angle) * radiusInMeters;
+        const dy = Math.sin(angle) * radiusInMeters;
+
+        const deltaLatitude =
+            (dy / earthRadius) * (180 / Math.PI);
+
+        const deltaLongitude =
+            (dx / (earthRadius * Math.cos(latRadians))) *
+            (180 / Math.PI);
+
+        coordinates.push([
+            longitude + deltaLongitude,
+            latitude + deltaLatitude,
+        ]);
+    }
+
+    return {
+        type: "Feature",
+        geometry: {
+            type: "Polygon",
+            coordinates: [coordinates],
+        },
+        properties: {},
+    };
+}
+
+export default function ApproximateLocationMap({
+    latitude,
+    longitude,
+}) {
+    const mapContainerRef = useRef(null);
+    const mapRef = useRef(null);
+
+    useEffect(() => {
+        if (!MAPBOX_TOKEN) return;
+
+        const lat = Number(latitude);
+        const lng = Number(longitude);
+
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+            return;
+        }
+
+        if (!mapContainerRef.current) return;
+
+        mapboxgl.accessToken = MAPBOX_TOKEN;
+
+        const map = new mapboxgl.Map({
+            container: mapContainerRef.current,
+            style: "mapbox://styles/mapbox/streets-v12",
+            center: [lng, lat],
+            zoom: 14.2,
+            attributionControl: true,
+        });
+
+        mapRef.current = map;
+
+        map.addControl(
+            new mapboxgl.NavigationControl({
+                showCompass: false,
+            }),
+            "top-right"
+        );
+
+        map.on("load", () => {
+            const circle = createCircle([lng, lat], 500);
+
+            map.addSource("approximate-location", {
+                type: "geojson",
+                data: circle,
+            });
+
+            map.addLayer({
+                id: "approximate-location-fill",
+                type: "fill",
+                source: "approximate-location",
+                paint: {
+                    "fill-color": "#2563eb",
+                    "fill-opacity": 0.18,
+                },
+            });
+
+            map.addLayer({
+                id: "approximate-location-outline",
+                type: "line",
+                source: "approximate-location",
+                paint: {
+                    "line-color": "#2563eb",
+                    "line-width": 2,
+                    "line-opacity": 0.75,
+                },
+            });
+        });
+
+        return () => {
+            map.remove();
+            mapRef.current = null;
+        };
+    }, [latitude, longitude]);
+
+    if (!MAPBOX_TOKEN) {
+        return null;
+    }
+
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        return null;
+    }
+
+    return (
+        <div>
+            <div
+                ref={mapContainerRef}
+                style={{
+                    width: "100%",
+                    height: "360px",
+                    borderRadius: "16px",
+                    overflow: "hidden",
+                    border: "1px solid #e5e7eb",
+                }}
+            />
+
+            <div
+                style={{
+                    marginTop: "11px",
+                    color: "#6b7280",
+                    fontSize: "13px",
+                    lineHeight: "1.5",
+                }}
+            >
+                Locația afișată pe hartă este aproximativă.
+            </div>
+        </div>
+    );
+}
