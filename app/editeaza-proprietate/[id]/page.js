@@ -17,8 +17,7 @@ export default function EditeazaProprietatePage() {
   const [success, setSuccess] = useState("");
 
   const [universities, setUniversities] = useState([]);
-  const [selectedUniversityIds, setSelectedUniversityIds] =
-    useState([]);
+  const [selectedUniversityIds, setSelectedUniversityIds] = useState([]);
 
   const [form, setForm] = useState({
     title: "",
@@ -26,13 +25,31 @@ export default function EditeazaProprietatePage() {
     city: "",
     address: "",
     price_monthly: "",
+
     rooms: "",
     bedrooms: "",
     bathrooms: "",
     surface_m2: "",
+
+    floor: "",
+    total_floors: "",
+    construction_year: "",
+    heating_type: "",
+
     furnished: "true",
+    air_conditioning: "false",
+    balcony: "false",
+    parking: "false",
+
+    pets_allowed: "false",
+    smoking_allowed: "false",
+    max_tenants: "",
+    deposit_amount: "",
+    utilities_included: "false",
+
     available_from: "",
     description: "",
+
     owner_name: "",
     owner_phone: "",
     owner_email: "",
@@ -102,7 +119,19 @@ export default function EditeazaProprietatePage() {
             bedrooms,
             bathrooms,
             surface_m2,
+            floor,
+            total_floors,
+            construction_year,
+            heating_type,
             furnished,
+            air_conditioning,
+            balcony,
+            parking,
+            pets_allowed,
+            smoking_allowed,
+            max_tenants,
+            deposit_amount,
+            utilities_included,
             available_from,
             description,
             owner_name,
@@ -122,28 +151,94 @@ export default function EditeazaProprietatePage() {
 
         setForm({
           title: listing.title || "",
+
           property_type:
             listing.property_type || "apartment",
+
           city: listing.city || "",
+
           address: listing.address || "",
+
           price_monthly:
             listing.price_monthly ?? "",
-          rooms: listing.rooms ?? "",
-          bedrooms: listing.bedrooms ?? "",
-          bathrooms: listing.bathrooms ?? "",
-          surface_m2: listing.surface_m2 ?? "",
+
+          rooms:
+            listing.rooms ?? "",
+
+          bedrooms:
+            listing.bedrooms ?? "",
+
+          bathrooms:
+            listing.bathrooms ?? "",
+
+          surface_m2:
+            listing.surface_m2 ?? "",
+
+          floor:
+            listing.floor ?? "",
+
+          total_floors:
+            listing.total_floors ?? "",
+
+          construction_year:
+            listing.construction_year ?? "",
+
+          heating_type:
+            listing.heating_type || "",
+
           furnished:
             listing.furnished === false
               ? "false"
               : "true",
+
+          air_conditioning:
+            listing.air_conditioning === true
+              ? "true"
+              : "false",
+
+          balcony:
+            listing.balcony === true
+              ? "true"
+              : "false",
+
+          parking:
+            listing.parking === true
+              ? "true"
+              : "false",
+
+          pets_allowed:
+            listing.pets_allowed === true
+              ? "true"
+              : "false",
+
+          smoking_allowed:
+            listing.smoking_allowed === true
+              ? "true"
+              : "false",
+
+          max_tenants:
+            listing.max_tenants ?? "",
+
+          deposit_amount:
+            listing.deposit_amount ?? "",
+
+          utilities_included:
+            listing.utilities_included === true
+              ? "true"
+              : "false",
+
           available_from:
             listing.available_from || "",
+
           description:
             listing.description || "",
+
           owner_name:
             listing.owner_name || "",
+
           owner_phone:
             listing.owner_phone || "",
+
           owner_email:
             listing.owner_email ||
             user.email ||
@@ -237,7 +332,8 @@ export default function EditeazaProprietatePage() {
     setSelectedUniversityIds((current) =>
       current.includes(universityId)
         ? current.filter(
-            (id) => id !== universityId
+            (currentId) =>
+              currentId !== universityId
           )
         : [...current, universityId]
     );
@@ -268,13 +364,6 @@ export default function EditeazaProprietatePage() {
       return;
     }
 
-    if (selectedUniversityIds.length === 0) {
-      setError(
-        "Alege cel puțin o universitate sau facultate apropiată proprietății."
-      );
-      return;
-    }
-
     if (!form.address.trim()) {
       setError("Completează adresa proprietății.");
       return;
@@ -288,6 +377,65 @@ export default function EditeazaProprietatePage() {
       return;
     }
 
+    /* ETAJ */
+
+    if (
+      form.floor !== "" &&
+      form.total_floors !== "" &&
+      Number(form.floor) >
+        Number(form.total_floors)
+    ) {
+      setError(
+        "Etajul proprietății nu poate fi mai mare decât numărul total de etaje."
+      );
+      return;
+    }
+
+    /* AN CONSTRUCȚIE */
+
+    if (form.construction_year !== "") {
+      const year = Number(
+        form.construction_year
+      );
+
+      const currentYear =
+        new Date().getFullYear();
+
+      if (
+        year < 1800 ||
+        year > currentYear
+      ) {
+        setError(
+          `Anul construcției trebuie să fie între 1800 și ${currentYear}.`
+        );
+        return;
+      }
+    }
+
+    /* MAX CHIRIAȘI */
+
+    if (
+      form.max_tenants !== "" &&
+      Number(form.max_tenants) <= 0
+    ) {
+      setError(
+        "Numărul maxim de chiriași trebuie să fie mai mare decât 0."
+      );
+      return;
+    }
+
+    /* GARANȚIE */
+
+    if (
+      form.deposit_amount !== "" &&
+      Number(form.deposit_amount) < 0
+    ) {
+      setError(
+        "Garanția nu poate avea o valoare negativă."
+      );
+      return;
+    }
+
     if (!form.owner_name.trim()) {
       setError(
         "Completează numele persoanei de contact."
@@ -296,7 +444,9 @@ export default function EditeazaProprietatePage() {
     }
 
     if (!form.owner_phone.trim()) {
-      setError("Completează numărul de telefon.");
+      setError(
+        "Completează numărul de telefon."
+      );
       return;
     }
 
@@ -306,39 +456,92 @@ export default function EditeazaProprietatePage() {
       /* ACTUALIZARE ANUNȚ */
 
       const listingData = {
-        title: form.title.trim(),
+        title:
+          form.title.trim(),
 
         description:
           form.description.trim() || null,
 
-        city: form.city.trim(),
+        city:
+          form.city.trim(),
 
-        address: form.address.trim(),
+        address:
+          form.address.trim(),
 
         price_monthly:
           Number(form.price_monthly),
 
-        rooms: form.rooms
-          ? Number(form.rooms)
-          : null,
+        rooms:
+          form.rooms !== ""
+            ? Number(form.rooms)
+            : null,
 
-        bedrooms: form.bedrooms
-          ? Number(form.bedrooms)
-          : null,
+        bedrooms:
+          form.bedrooms !== ""
+            ? Number(form.bedrooms)
+            : null,
 
-        bathrooms: form.bathrooms
-          ? Number(form.bathrooms)
-          : null,
+        bathrooms:
+          form.bathrooms !== ""
+            ? Number(form.bathrooms)
+            : null,
 
-        surface_m2: form.surface_m2
-          ? Number(form.surface_m2)
-          : null,
+        surface_m2:
+          form.surface_m2 !== ""
+            ? Number(form.surface_m2)
+            : null,
 
         property_type:
           form.property_type,
 
         furnished:
           form.furnished === "true",
+
+        floor:
+          form.floor !== ""
+            ? Number(form.floor)
+            : null,
+
+        total_floors:
+          form.total_floors !== ""
+            ? Number(form.total_floors)
+            : null,
+
+        construction_year:
+          form.construction_year !== ""
+            ? Number(form.construction_year)
+            : null,
+
+        heating_type:
+          form.heating_type.trim() || null,
+
+        air_conditioning:
+          form.air_conditioning === "true",
+
+        balcony:
+          form.balcony === "true",
+
+        parking:
+          form.parking === "true",
+
+        pets_allowed:
+          form.pets_allowed === "true",
+
+        smoking_allowed:
+          form.smoking_allowed === "true",
+
+        max_tenants:
+          form.max_tenants !== ""
+            ? Number(form.max_tenants)
+            : null,
+
+        deposit_amount:
+          form.deposit_amount !== ""
+            ? Number(form.deposit_amount)
+            : null,
+
+        utilities_included:
+          form.utilities_included === "true",
 
         available_from:
           form.available_from || null,
@@ -368,7 +571,11 @@ export default function EditeazaProprietatePage() {
         );
       }
 
-      /* ȘTERGEM ASOCIERILE VECHI */
+      /* UNIVERSITĂȚI
+         Sunt opționale.
+         Ștergem asocierile existente,
+         apoi le recreăm doar dacă există selecții.
+      */
 
       const {
         error: deleteUniversitiesError,
@@ -383,28 +590,28 @@ export default function EditeazaProprietatePage() {
         );
       }
 
-      /* INTRODUCEM ASOCIERILE NOI */
+      if (selectedUniversityIds.length > 0) {
+        const universityLinks =
+          selectedUniversityIds.map(
+            (universityId) => ({
+              listing_id: id,
+              university_id: universityId,
+              distance_meters: null,
+              walking_minutes: null,
+            })
+          );
 
-      const universityLinks =
-        selectedUniversityIds.map(
-          (universityId) => ({
-            listing_id: id,
-            university_id: universityId,
-            distance_meters: null,
-            walking_minutes: null,
-          })
-        );
+        const {
+          error: insertUniversitiesError,
+        } = await supabase
+          .from("listing_universities")
+          .insert(universityLinks);
 
-      const {
-        error: insertUniversitiesError,
-      } = await supabase
-        .from("listing_universities")
-        .insert(universityLinks);
-
-      if (insertUniversitiesError) {
-        throw new Error(
-          `Universitățile nu au putut fi salvate: ${insertUniversitiesError.message}`
-        );
+        if (insertUniversitiesError) {
+          throw new Error(
+            `Universitățile nu au putut fi salvate: ${insertUniversitiesError.message}`
+          );
+        }
       }
 
       setSuccess(
@@ -412,7 +619,9 @@ export default function EditeazaProprietatePage() {
       );
 
       setTimeout(() => {
-        router.push("/dashboard");
+        router.push(
+          `/proprietate/${id}`
+        );
         router.refresh();
       }, 900);
     } catch (saveError) {
@@ -490,6 +699,16 @@ export default function EditeazaProprietatePage() {
     marginBottom: "22px",
   };
 
+  const cardStyle = {
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
+    borderRadius: "20px",
+    padding: "32px",
+    boxShadow:
+      "0 12px 35px rgba(17,24,39,0.05)",
+    marginBottom: "22px",
+  };
+
   return (
     <main
       style={{
@@ -504,10 +723,12 @@ export default function EditeazaProprietatePage() {
         style={{
           height: "72px",
           background: "#ffffff",
-          borderBottom: "1px solid #e5e7eb",
+          borderBottom:
+            "1px solid #e5e7eb",
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent:
+            "space-between",
           padding: "0 7%",
         }}
       >
@@ -547,7 +768,8 @@ export default function EditeazaProprietatePage() {
             style={{
               background: "#ffffff",
               color: "#111827",
-              border: "1px solid #e5e7eb",
+              border:
+                "1px solid #e5e7eb",
               borderRadius: "10px",
               padding: "10px 15px",
               fontFamily: "inherit",
@@ -652,7 +874,8 @@ export default function EditeazaProprietatePage() {
           <div
             style={{
               background: "#fef2f2",
-              border: "1px solid #fecaca",
+              border:
+                "1px solid #fecaca",
               color: "#b91c1c",
               borderRadius: "12px",
               padding: "14px 16px",
@@ -666,19 +889,9 @@ export default function EditeazaProprietatePage() {
         )}
 
         <form onSubmit={handleSubmit}>
-          {/* DETALII */}
+          {/* DETALII PRINCIPALE */}
 
-          <div
-            style={{
-              background: "#ffffff",
-              border: "1px solid #e5e7eb",
-              borderRadius: "20px",
-              padding: "32px",
-              boxShadow:
-                "0 12px 35px rgba(17,24,39,0.05)",
-              marginBottom: "22px",
-            }}
-          >
+          <div style={cardStyle}>
             <h2
               style={{
                 margin: "0 0 27px",
@@ -735,9 +948,11 @@ export default function EditeazaProprietatePage() {
             {/* ORAȘ + UNIVERSITĂȚI */}
 
             <div
+              className="edit-grid-2"
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 1fr",
+                gridTemplateColumns:
+                  "1fr 1fr",
                 gap: "18px",
               }}
             >
@@ -807,7 +1022,8 @@ export default function EditeazaProprietatePage() {
                       }}
                     >
                       Nu există universități
-                      disponibile pentru acest oraș.
+                      disponibile pentru acest
+                      oraș.
                     </div>
                   ) : (
                     universitiesForCity.map(
@@ -895,13 +1111,29 @@ export default function EditeazaProprietatePage() {
                         : `${selectedUniversityIds.length} universități selectate`}
                     </div>
                   )}
+
+                <div
+                  style={{
+                    marginTop: "8px",
+                    color: "#9ca3af",
+                    fontSize: "12px",
+                    lineHeight: "1.5",
+                  }}
+                >
+                  Selectarea unei universități este
+                  opțională.
+                </div>
               </div>
             </div>
 
+            {/* PREȚ + ADRESĂ */}
+
             <div
+              className="edit-grid-2"
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 1fr",
+                gridTemplateColumns:
+                  "1fr 1fr",
                 gap: "18px",
               }}
             >
@@ -936,7 +1168,10 @@ export default function EditeazaProprietatePage() {
               </div>
             </div>
 
+            {/* CAMERE / DORMITOARE / BĂI / SUPRAFAȚĂ */}
+
             <div
+              className="edit-grid-2"
               style={{
                 display: "grid",
                 gridTemplateColumns:
@@ -1006,10 +1241,14 @@ export default function EditeazaProprietatePage() {
               </div>
             </div>
 
+            {/* MOBILAT + DISPONIBILITATE */}
+
             <div
+              className="edit-grid-2"
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 1fr",
+                gridTemplateColumns:
+                  "1fr 1fr",
                 gap: "18px",
               }}
             >
@@ -1049,6 +1288,8 @@ export default function EditeazaProprietatePage() {
               </div>
             </div>
 
+            {/* DESCRIERE */}
+
             <div>
               <label style={labelStyle}>
                 Descriere
@@ -1068,19 +1309,363 @@ export default function EditeazaProprietatePage() {
             </div>
           </div>
 
+          {/* CONTINUĂ DIRECT CU PARTEA 2/2 */}
+          {/* DETALII SUPLIMENTARE */}
+
+          <div style={cardStyle}>
+            <h2
+              style={{
+                margin: "0 0 8px",
+                fontSize: "20px",
+                fontWeight: "800",
+              }}
+            >
+              Detalii suplimentare
+            </h2>
+
+            <p
+              style={{
+                margin: "0 0 27px",
+                color: "#6b7280",
+                fontSize: "14px",
+                lineHeight: "1.6",
+              }}
+            >
+              Actualizează caracteristicile proprietății și
+              condițiile de închiriere.
+            </p>
+
+            {/* ETAJ + ETAJE TOTALE */}
+
+            <div
+              className="edit-grid-2"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "18px",
+              }}
+            >
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
+                  Etaj
+                </label>
+
+                <input
+                  name="floor"
+                  type="number"
+                  min="0"
+                  value={form.floor}
+                  onChange={updateField}
+                  style={inputStyle}
+                  placeholder="Ex: 3"
+                />
+              </div>
+
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
+                  Număr total de etaje
+                </label>
+
+                <input
+                  name="total_floors"
+                  type="number"
+                  min="0"
+                  value={form.total_floors}
+                  onChange={updateField}
+                  style={inputStyle}
+                  placeholder="Ex: 8"
+                />
+              </div>
+            </div>
+
+            {/* AN CONSTRUCȚIE + ÎNCĂLZIRE */}
+
+            <div
+              className="edit-grid-2"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "18px",
+              }}
+            >
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
+                  Anul construcției
+                </label>
+
+                <input
+                  name="construction_year"
+                  type="number"
+                  min="1800"
+                  max={new Date().getFullYear()}
+                  value={form.construction_year}
+                  onChange={updateField}
+                  style={inputStyle}
+                  placeholder="Ex: 2018"
+                />
+              </div>
+
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
+                  Tip încălzire
+                </label>
+
+                <select
+                  name="heating_type"
+                  value={form.heating_type}
+                  onChange={updateField}
+                  style={inputStyle}
+                >
+                  <option value="">
+                    Nespecificat
+                  </option>
+
+                  <option value="Centrala proprie">
+                    Centrală proprie
+                  </option>
+
+                  <option value="Centrala blocului">
+                    Centrală de bloc
+                  </option>
+
+                  <option value="Termoficare">
+                    Termoficare
+                  </option>
+
+                  <option value="Incalzire electrica">
+                    Încălzire electrică
+                  </option>
+
+                  <option value="Pompa de caldura">
+                    Pompă de căldură
+                  </option>
+
+                  <option value="Alta">
+                    Altă variantă
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            {/* AC + BALCON */}
+
+            <div
+              className="edit-grid-2"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "18px",
+              }}
+            >
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
+                  Aer condiționat
+                </label>
+
+                <select
+                  name="air_conditioning"
+                  value={form.air_conditioning}
+                  onChange={updateField}
+                  style={inputStyle}
+                >
+                  <option value="true">
+                    Da
+                  </option>
+
+                  <option value="false">
+                    Nu
+                  </option>
+                </select>
+              </div>
+
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
+                  Balcon
+                </label>
+
+                <select
+                  name="balcony"
+                  value={form.balcony}
+                  onChange={updateField}
+                  style={inputStyle}
+                >
+                  <option value="true">
+                    Da
+                  </option>
+
+                  <option value="false">
+                    Nu
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            {/* PARCARE + ANIMALE */}
+
+            <div
+              className="edit-grid-2"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "18px",
+              }}
+            >
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
+                  Parcare
+                </label>
+
+                <select
+                  name="parking"
+                  value={form.parking}
+                  onChange={updateField}
+                  style={inputStyle}
+                >
+                  <option value="true">
+                    Da
+                  </option>
+
+                  <option value="false">
+                    Nu
+                  </option>
+                </select>
+              </div>
+
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
+                  Animale de companie acceptate
+                </label>
+
+                <select
+                  name="pets_allowed"
+                  value={form.pets_allowed}
+                  onChange={updateField}
+                  style={inputStyle}
+                >
+                  <option value="true">
+                    Da
+                  </option>
+
+                  <option value="false">
+                    Nu
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            {/* FUMAT + UTILITĂȚI */}
+
+            <div
+              className="edit-grid-2"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "18px",
+              }}
+            >
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
+                  Fumat permis
+                </label>
+
+                <select
+                  name="smoking_allowed"
+                  value={form.smoking_allowed}
+                  onChange={updateField}
+                  style={inputStyle}
+                >
+                  <option value="true">
+                    Da
+                  </option>
+
+                  <option value="false">
+                    Nu
+                  </option>
+                </select>
+              </div>
+
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
+                  Utilități incluse în preț
+                </label>
+
+                <select
+                  name="utilities_included"
+                  value={form.utilities_included}
+                  onChange={updateField}
+                  style={inputStyle}
+                >
+                  <option value="true">
+                    Da
+                  </option>
+
+                  <option value="false">
+                    Nu
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            {/* MAX CHIRIAȘI + GARANȚIE */}
+
+            <div
+              className="edit-grid-2"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "18px",
+              }}
+            >
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
+                  Număr maxim de chiriași
+                </label>
+
+                <input
+                  name="max_tenants"
+                  type="number"
+                  min="1"
+                  value={form.max_tenants}
+                  onChange={updateField}
+                  style={inputStyle}
+                  placeholder="Ex: 2"
+                />
+              </div>
+
+              <div style={fieldStyle}>
+                <label style={labelStyle}>
+                  Garanție (€)
+                </label>
+
+                <input
+                  name="deposit_amount"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.deposit_amount}
+                  onChange={updateField}
+                  style={inputStyle}
+                  placeholder="Opțional"
+                />
+
+                <div
+                  style={{
+                    marginTop: "7px",
+                    color: "#9ca3af",
+                    fontSize: "12px",
+                    lineHeight: "1.4",
+                  }}
+                >
+                  Lasă necompletat dacă nu dorești să
+                  specifici garanția.
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* CONTACT */}
 
-          <div
-            style={{
-              background: "#ffffff",
-              border: "1px solid #e5e7eb",
-              borderRadius: "20px",
-              padding: "32px",
-              boxShadow:
-                "0 12px 35px rgba(17,24,39,0.05)",
-              marginBottom: "22px",
-            }}
-          >
+          <div style={cardStyle}>
             <h2
               style={{
                 margin: "0 0 8px",
@@ -1099,9 +1684,8 @@ export default function EditeazaProprietatePage() {
                 lineHeight: "1.6",
               }}
             >
-              Modifică datele prin care
-              persoanele interesate te pot
-              contacta.
+              Modifică datele prin care persoanele
+              interesate te pot contacta.
             </p>
 
             <div style={fieldStyle}>
@@ -1119,6 +1703,7 @@ export default function EditeazaProprietatePage() {
             </div>
 
             <div
+              className="edit-grid-2"
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr",
@@ -1166,6 +1751,7 @@ export default function EditeazaProprietatePage() {
                 borderRadius: "12px",
                 padding: "14px 16px",
                 fontSize: "14px",
+                lineHeight: "1.5",
                 marginBottom: "18px",
               }}
             >
@@ -1183,6 +1769,7 @@ export default function EditeazaProprietatePage() {
                 padding: "14px 16px",
                 fontSize: "14px",
                 fontWeight: "600",
+                lineHeight: "1.5",
                 marginBottom: "18px",
               }}
             >
@@ -1219,6 +1806,7 @@ export default function EditeazaProprietatePage() {
                   color: "#6b7280",
                   fontSize: "13px",
                   marginTop: "5px",
+                  lineHeight: "1.5",
                 }}
               >
                 Modificările vor fi aplicate
@@ -1253,6 +1841,14 @@ export default function EditeazaProprietatePage() {
           </div>
         </form>
       </section>
+
+      <style>{`
+        @media (max-width: 700px) {
+          .edit-grid-2 {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </main>
   );
 }
