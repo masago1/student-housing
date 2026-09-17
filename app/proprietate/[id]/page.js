@@ -1,5 +1,6 @@
 import { supabase } from "../../lib/supabase";
 import MessageOwnerButton from "../../components/MessageOwnerButton";
+import PhoneRevealButton from "../../components/PhoneRevealButton";
 
 export const dynamic = "force-dynamic";
 
@@ -90,7 +91,7 @@ export default async function PropertyPage({ params }) {
     );
   }
 
-  // Luăm toate imaginile proprietății
+  // Luăm imaginile proprietății
   const { data: images } = await supabase
     .from("listing_images")
     .select("*")
@@ -137,18 +138,33 @@ export default async function PropertyPage({ params }) {
     }
   });
 
-  // Numărul de telefon salvat la publicarea anunțului
-  const ownerPhone = listing.owner_phone?.trim() || "";
+  /*
+    LUĂM TELEFONUL ACTUAL DIN PROFILUL PROPRIETARULUI
 
-  // Număr mascat, de exemplu: 07•• ••• •••
-  const maskedPhone = ownerPhone
-    ? `${ownerPhone.slice(0, 2)}•• ••• •••`
-    : "";
+    Dacă proprietarul își schimbă telefonul în Profilul meu,
+    noul număr va apărea automat și pe anunț.
+  */
 
-  // Pentru link-ul tel:
-  const phoneHref = ownerPhone
-    ? ownerPhone.replace(/[^\d+]/g, "")
-    : "";
+  const { data: ownerProfile, error: ownerProfileError } =
+    await supabase
+      .from("profiles")
+      .select("name, phone")
+      .eq("id", listing.user_id)
+      .maybeSingle();
+
+  if (ownerProfileError) {
+    console.error(
+      "Eroare încărcare profil proprietar:",
+      ownerProfileError
+    );
+  }
+
+  // Preferăm telefonul actual din profil.
+  // owner_phone rămâne fallback pentru anunțurile mai vechi.
+  const ownerPhone =
+    ownerProfile?.phone?.trim() ||
+    listing.owner_phone?.trim() ||
+    "";
 
   return (
     <main
@@ -611,85 +627,7 @@ export default async function PropertyPage({ params }) {
             </div>
 
             {/* TELEFON PROPRIETAR */}
-            {ownerPhone && (
-              <div
-                style={{
-                  marginTop: "20px",
-                  paddingTop: "18px",
-                  borderTop: "1px solid #e5e7eb",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "12px",
-                    color: "#6b7280",
-                    fontWeight: "700",
-                    marginBottom: "9px",
-                  }}
-                >
-                  Telefon proprietar
-                </div>
-
-                <details
-                  style={{
-                    width: "100%",
-                  }}
-                >
-                  <summary
-                    style={{
-                      listStyle: "none",
-                      cursor: "pointer",
-                      width: "100%",
-                      boxSizing: "border-box",
-                      border: "1px solid #cbd5e1",
-                      borderRadius: "11px",
-                      padding: "13px 15px",
-                      background: "#ffffff",
-                      color: "#172554",
-                      fontSize: "14px",
-                      fontWeight: "800",
-                      textAlign: "center",
-                      userSelect: "none",
-                    }}
-                  >
-                    ☎ {maskedPhone} · Arată numărul
-                  </summary>
-
-                  <a
-                    href={`tel:${phoneHref}`}
-                    style={{
-                      marginTop: "10px",
-                      width: "100%",
-                      boxSizing: "border-box",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "8px",
-                      textDecoration: "none",
-                      borderRadius: "11px",
-                      padding: "13px 15px",
-                      background: "#172554",
-                      color: "#ffffff",
-                      fontSize: "15px",
-                      fontWeight: "800",
-                    }}
-                  >
-                    ☎ {ownerPhone}
-                  </a>
-                </details>
-
-                <div
-                  style={{
-                    textAlign: "center",
-                    marginTop: "9px",
-                    color: "#9ca3af",
-                    fontSize: "11px",
-                  }}
-                >
-                  Apasă pe număr pentru a suna proprietarul
-                </div>
-              </div>
-            )}
+            <PhoneRevealButton phone={ownerPhone} />
           </aside>
         </div>
       </section>
