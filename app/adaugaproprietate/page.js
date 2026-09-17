@@ -36,6 +36,20 @@ export default function AdaugaProprietatePage() {
         furnished: "true",
         available_from: "",
         description: "",
+
+        floor: "",
+        total_floors: "",
+        construction_year: "",
+        heating_type: "",
+        air_conditioning: "false",
+        balcony: "false",
+        parking: "false",
+        pets_allowed: "false",
+        smoking_allowed: "false",
+        max_tenants: "",
+        deposit_amount: "",
+        utilities_included: "false",
+
         owner_name: "",
         owner_phone: "",
         owner_email: "",
@@ -326,11 +340,6 @@ export default function AdaugaProprietatePage() {
             return;
         }
 
-        /*
-         * VERIFICARE DIN NOU A TELEFONULUI.
-         * Nu ne bazăm doar pe verificarea făcută la intrarea în pagină.
-         */
-
         const { data: currentProfile, error: profileCheckError } =
             await supabase
                 .from("profiles")
@@ -378,6 +387,39 @@ export default function AdaugaProprietatePage() {
             return;
         }
 
+        if (
+            form.floor &&
+            form.total_floors &&
+            Number(form.floor) > Number(form.total_floors)
+        ) {
+            setError(
+                "Etajul proprietății nu poate fi mai mare decât numărul total de etaje."
+            );
+            return;
+        }
+
+        if (
+            form.construction_year &&
+            (
+                Number(form.construction_year) < 1800 ||
+                Number(form.construction_year) >
+                    new Date().getFullYear()
+            )
+        ) {
+            setError("Introdu un an de construcție valid.");
+            return;
+        }
+
+        if (form.max_tenants && Number(form.max_tenants) <= 0) {
+            setError("Numărul maxim de chiriași trebuie să fie cel puțin 1.");
+            return;
+        }
+
+        if (form.deposit_amount && Number(form.deposit_amount) < 0) {
+            setError("Garanția nu poate avea o valoare negativă.");
+            return;
+        }
+
         if (images.length === 0) {
             setError("Adaugă cel puțin o fotografie a proprietății.");
             return;
@@ -420,6 +462,41 @@ export default function AdaugaProprietatePage() {
                 listing_type: "rent",
                 furnished: form.furnished === "true",
                 available_from: form.available_from || null,
+
+                floor:
+                    form.floor !== ""
+                        ? Number(form.floor)
+                        : null,
+                total_floors:
+                    form.total_floors !== ""
+                        ? Number(form.total_floors)
+                        : null,
+                construction_year:
+                    form.construction_year !== ""
+                        ? Number(form.construction_year)
+                        : null,
+                heating_type:
+                    form.heating_type.trim() || null,
+                air_conditioning:
+                    form.air_conditioning === "true",
+                balcony:
+                    form.balcony === "true",
+                parking:
+                    form.parking === "true",
+                pets_allowed:
+                    form.pets_allowed === "true",
+                smoking_allowed:
+                    form.smoking_allowed === "true",
+                max_tenants:
+                    form.max_tenants !== ""
+                        ? Number(form.max_tenants)
+                        : null,
+                deposit_amount:
+                    form.deposit_amount !== ""
+                        ? Number(form.deposit_amount)
+                        : null,
+                utilities_included:
+                    form.utilities_included === "true",
 
                 owner_name: ownerName,
                 owner_phone: currentPhone,
@@ -1354,8 +1431,268 @@ export default function AdaugaProprietatePage() {
                                 <option value="false">Nu</option>
                             </select>
                         </div>
+                        {/* DETALII SUPLIMENTARE */}
 
-                        <div>
+                        <div
+                            style={{
+                                marginTop: "10px",
+                                paddingTop: "30px",
+                                borderTop: "1px solid #e5e7eb",
+                            }}
+                        >
+                            <h3
+                                style={{
+                                    margin: "0 0 8px",
+                                    fontSize: "18px",
+                                    fontWeight: "800",
+                                }}
+                            >
+                                Detalii suplimentare
+                            </h3>
+
+                            <p
+                                style={{
+                                    margin: "0 0 24px",
+                                    color: "#6b7280",
+                                    fontSize: "14px",
+                                    lineHeight: "1.6",
+                                }}
+                            >
+                                Adaugă informații utile pentru studenții
+                                interesați de proprietate.
+                            </p>
+
+                            <div
+                                style={{
+                                    display: "grid",
+                                    gridTemplateColumns:
+                                        "repeat(2, minmax(0, 1fr))",
+                                    gap: "18px",
+                                }}
+                            >
+                                <div style={fieldStyle}>
+                                    <label style={labelStyle}>Etaj</label>
+
+                                    <input
+                                        name="floor"
+                                        type="number"
+                                        min="0"
+                                        value={form.floor}
+                                        onChange={updateField}
+                                        placeholder="3"
+                                        style={inputStyle}
+                                    />
+                                </div>
+
+                                <div style={fieldStyle}>
+                                    <label style={labelStyle}>
+                                        Număr total de etaje
+                                    </label>
+
+                                    <input
+                                        name="total_floors"
+                                        type="number"
+                                        min="0"
+                                        value={form.total_floors}
+                                        onChange={updateField}
+                                        placeholder="6"
+                                        style={inputStyle}
+                                    />
+                                </div>
+
+                                <div style={fieldStyle}>
+                                    <label style={labelStyle}>
+                                        Anul construcției
+                                    </label>
+
+                                    <input
+                                        name="construction_year"
+                                        type="number"
+                                        min="1800"
+                                        max={new Date().getFullYear()}
+                                        value={form.construction_year}
+                                        onChange={updateField}
+                                        placeholder="2018"
+                                        style={inputStyle}
+                                    />
+                                </div>
+
+                                <div style={fieldStyle}>
+                                    <label style={labelStyle}>
+                                        Tip încălzire
+                                    </label>
+
+                                    <select
+                                        name="heating_type"
+                                        value={form.heating_type}
+                                        onChange={updateField}
+                                        style={inputStyle}
+                                    >
+                                        <option value="">
+                                            Alege tipul de încălzire
+                                        </option>
+                                        <option value="Centrala proprie">
+                                            Centrală proprie
+                                        </option>
+                                        <option value="Centrala blocului">
+                                            Centrală de bloc
+                                        </option>
+                                        <option value="Termoficare">
+                                            Termoficare
+                                        </option>
+                                        <option value="Incalzire electrica">
+                                            Încălzire electrică
+                                        </option>
+                                        <option value="Pompa de caldura">
+                                            Pompă de căldură
+                                        </option>
+                                        <option value="Alta">Alta</option>
+                                    </select>
+                                </div>
+
+                                <div style={fieldStyle}>
+                                    <label style={labelStyle}>
+                                        Număr maxim de chiriași
+                                    </label>
+
+                                    <input
+                                        name="max_tenants"
+                                        type="number"
+                                        min="1"
+                                        value={form.max_tenants}
+                                        onChange={updateField}
+                                        placeholder="2"
+                                        style={inputStyle}
+                                    />
+                                </div>
+
+                                <div style={fieldStyle}>
+                                    <label style={labelStyle}>
+                                        Garanție (€)
+                                    </label>
+
+                                    <input
+                                        name="deposit_amount"
+                                        type="number"
+                                        min="0"
+                                        step="1"
+                                        value={form.deposit_amount}
+                                        onChange={updateField}
+                                        placeholder="450"
+                                        style={inputStyle}
+                                    />
+                                </div>
+                            </div>
+
+                            <div
+                                style={{
+                                    display: "grid",
+                                    gridTemplateColumns:
+                                        "repeat(2, minmax(0, 1fr))",
+                                    gap: "18px",
+                                }}
+                            >
+                                <div style={fieldStyle}>
+                                    <label style={labelStyle}>
+                                        Aer condiționat
+                                    </label>
+
+                                    <select
+                                        name="air_conditioning"
+                                        value={form.air_conditioning}
+                                        onChange={updateField}
+                                        style={inputStyle}
+                                    >
+                                        <option value="false">Nu</option>
+                                        <option value="true">Da</option>
+                                    </select>
+                                </div>
+
+                                <div style={fieldStyle}>
+                                    <label style={labelStyle}>Balcon</label>
+
+                                    <select
+                                        name="balcony"
+                                        value={form.balcony}
+                                        onChange={updateField}
+                                        style={inputStyle}
+                                    >
+                                        <option value="false">Nu</option>
+                                        <option value="true">Da</option>
+                                    </select>
+                                </div>
+
+                                <div style={fieldStyle}>
+                                    <label style={labelStyle}>Parcare</label>
+
+                                    <select
+                                        name="parking"
+                                        value={form.parking}
+                                        onChange={updateField}
+                                        style={inputStyle}
+                                    >
+                                        <option value="false">Nu</option>
+                                        <option value="true">Da</option>
+                                    </select>
+                                </div>
+
+                                <div style={fieldStyle}>
+                                    <label style={labelStyle}>
+                                        Animale de companie acceptate
+                                    </label>
+
+                                    <select
+                                        name="pets_allowed"
+                                        value={form.pets_allowed}
+                                        onChange={updateField}
+                                        style={inputStyle}
+                                    >
+                                        <option value="false">Nu</option>
+                                        <option value="true">Da</option>
+                                    </select>
+                                </div>
+
+                                <div style={fieldStyle}>
+                                    <label style={labelStyle}>
+                                        Fumat permis
+                                    </label>
+
+                                    <select
+                                        name="smoking_allowed"
+                                        value={form.smoking_allowed}
+                                        onChange={updateField}
+                                        style={inputStyle}
+                                    >
+                                        <option value="false">Nu</option>
+                                        <option value="true">Da</option>
+                                    </select>
+                                </div>
+
+                                <div style={fieldStyle}>
+                                    <label style={labelStyle}>
+                                        Utilități incluse în preț
+                                    </label>
+
+                                    <select
+                                        name="utilities_included"
+                                        value={form.utilities_included}
+                                        onChange={updateField}
+                                        style={inputStyle}
+                                    >
+                                        <option value="false">Nu</option>
+                                        <option value="true">Da</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div
+                            style={{
+                                marginTop: "8px",
+                                paddingTop: "30px",
+                                borderTop: "1px solid #e5e7eb",
+                            }}
+                        >
                             <label style={labelStyle}>Descriere</label>
 
                             <textarea
