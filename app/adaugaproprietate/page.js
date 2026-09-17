@@ -4,58 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
-function formatDateForInput(value) {
-    if (!value) return "";
-
-    const parts = String(value).split("-");
-
-    if (parts.length === 3) {
-        return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    }
-
-    return value;
-}
-
-function formatDateForDatabase(value) {
-    if (!value) return null;
-
-    const parts = String(value).split("/");
-
-    if (parts.length !== 3) return null;
-
-    const [day, month, year] = parts;
-
-    return `${year}-${month}-${day}`;
-}
-
-function isValidRomanianDate(value) {
-    if (!value) return true;
-
-    if (
-        !/^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/.test(
-            value
-        )
-    ) {
-        return false;
-    }
-
-    const [day, month, year] = value
-        .split("/")
-        .map(Number);
-
-    const date = new Date(
-        year,
-        month - 1,
-        day
-    );
-
-    return (
-        date.getFullYear() === year &&
-        date.getMonth() === month - 1 &&
-        date.getDate() === day
-    );
-}
-
 export default function AdaugaProprietatePage() {
     const router = useRouter();
 
@@ -64,20 +12,24 @@ export default function AdaugaProprietatePage() {
     const [publishing, setPublishing] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
-
     const [images, setImages] = useState([]);
 
     const [universities, setUniversities] = useState([]);
     const [loadingUniversities, setLoadingUniversities] =
         useState(true);
-
     const [selectedUniversityIds, setSelectedUniversityIds] =
         useState([]);
+
+    const [cities, setCities] = useState([]);
+    const [neighborhoods, setNeighborhoods] = useState([]);
+    const [loadingLocations, setLoadingLocations] =
+        useState(true);
 
     const [form, setForm] = useState({
         title: "",
         property_type: "apartment",
         city: "",
+        neighborhood_id: "",
         address: "",
         price_monthly: "",
         rooms: "",
@@ -183,37 +135,132 @@ export default function AdaugaProprietatePage() {
     }, []);
 
     /* =========================
-       ORAȘE
+       ORAȘE + CARTIERE
     ========================= */
 
-    const cities = useMemo(() => {
-        return [
-            ...new Set(
-                universities
-                    .map(
-                        (university) =>
-                            university.city
-                    )
-                    .filter(Boolean)
-            ),
-        ].sort((a, b) =>
-            a.localeCompare(b, "ro")
-        );
-    }, [universities]);
+    useEffect(() => {
+        const loadLocations = async () => {
+            setLoadingLocations(true);
 
-    const universitiesForCity = useMemo(() => {
+            const {
+                data: citiesData,
+                error: citiesError,
+            } = await supabase
+                .from("cities")
+                .select(
+                    "id, name, slug"
+                )
+                .order("name", {
+                    ascending: true,
+                });
+
+            if (citiesError) {
+                console.error(
+                    "Eroare la încărcarea orașelor:",
+                    citiesError
+                );
+
+                setCities([]);
+            } else {
+                setCities(
+                    citiesData || []
+                );
+            }
+
+            const {
+                data: neighborhoodsData,
+                error: neighborhoodsError,
+            } = await supabase
+                .from("neighborhoods")
+                .select(
+                    "id, city_id, name, slug"
+                )
+                .order("name", {
+                    ascending: true,
+                });
+
+            if (neighborhoodsError) {
+                console.error(
+                    "Eroare la încărcarea cartierelor:",
+                    neighborhoodsError
+                );
+
+                setNeighborhoods([]);
+            } else {
+                setNeighborhoods(
+                    neighborhoodsData || []
+                );
+            }
+
+            setLoadingLocations(false);
+        };
+
+        loadLocations();
+    }, []);
+
+    /* =========================
+       ORAȘ SELECTAT
+    ========================= */
+
+    const selectedCity = useMemo(() => {
         if (!form.city) {
-            return [];
+            return null;
         }
 
-        return universities.filter(
-            (university) =>
-                university.city === form.city
+        return (
+            cities.find(
+                (city) =>
+                    city.name === form.city
+            ) || null
         );
     }, [
-        universities,
+        cities,
         form.city,
     ]);
+
+    /* =========================
+       CARTIERE PENTRU ORAȘ
+    ========================= */
+
+    const neighborhoodsForCity =
+        useMemo(() => {
+            if (!selectedCity) {
+                return [];
+            }
+
+            return neighborhoods.filter(
+                (neighborhood) =>
+                    String(
+                        neighborhood.city_id
+                    ) ===
+                    String(
+                        selectedCity.id
+                    )
+            );
+        }, [
+            neighborhoods,
+            selectedCity,
+        ]);
+
+    /* =========================
+       UNIVERSITĂȚI PENTRU ORAȘ
+    ========================= */
+
+    const universitiesForCity =
+        useMemo(() => {
+            if (!form.city) {
+                return [];
+            }
+
+            return universities.filter(
+                (university) =>
+                    university.city ===
+                    form.city
+            );
+        }, [
+            universities,
+            form.city,
+        ]);
 
     /* =========================
        FORM
@@ -231,70 +278,28 @@ export default function AdaugaProprietatePage() {
         }));
     };
 
-    const handleCityChange = (event) => {
+    const handleCityChange = (
+        event
+    ) => {
         const city =
             event.target.value;
 
         setForm((current) => ({
             ...current,
             city,
+            neighborhood_id: "",
         }));
 
         setSelectedUniversityIds([]);
     };
 
     /* =========================
-       DATA ZZ/LL/AAAA
-    ========================= */
-
-    const handleAvailableFromChange = (
-        event
-    ) => {
-        const digits =
-            event.target.value.replace(
-                /\D/g,
-                ""
-            );
-
-        if (digits.length > 8) {
-            return;
-        }
-
-        let formatted = "";
-
-        if (digits.length <= 2) {
-            formatted = digits;
-        } else if (
-            digits.length <= 4
-        ) {
-            formatted =
-                `${digits.slice(
-                    0,
-                    2
-                )}/${digits.slice(2)}`;
-        } else {
-            formatted =
-                `${digits.slice(
-                    0,
-                    2
-                )}/${digits.slice(
-                    2,
-                    4
-                )}/${digits.slice(4, 8)}`;
-        }
-
-        setForm((current) => ({
-            ...current,
-            available_from:
-                formatted,
-        }));
-    };
-
-    /* =========================
        POZE
     ========================= */
 
-    const handleImages = (event) => {
+    const handleImages = (
+        event
+    ) => {
         setError("");
 
         const selectedFiles =
@@ -303,7 +308,8 @@ export default function AdaugaProprietatePage() {
             );
 
         if (
-            selectedFiles.length === 0
+            selectedFiles.length ===
+            0
         ) {
             return;
         }
@@ -311,7 +317,9 @@ export default function AdaugaProprietatePage() {
         const remainingSlots =
             10 - images.length;
 
-        if (remainingSlots <= 0) {
+        if (
+            remainingSlots <= 0
+        ) {
             setError(
                 "Poți adăuga maximum 10 fotografii."
             );
@@ -383,7 +391,9 @@ export default function AdaugaProprietatePage() {
         event.target.value = "";
     };
 
-    const removeImage = (index) => {
+    const removeImage = (
+        index
+    ) => {
         setImages((current) => {
             const imageToRemove =
                 current[index];
@@ -397,8 +407,12 @@ export default function AdaugaProprietatePage() {
             }
 
             return current.filter(
-                (_, imageIndex) =>
-                    imageIndex !== index
+                (
+                    _,
+                    imageIndex
+                ) =>
+                    imageIndex !==
+                    index
             );
         });
     };
@@ -407,12 +421,13 @@ export default function AdaugaProprietatePage() {
        LOGOUT
     ========================= */
 
-    const handleLogout = async () => {
-        await supabase.auth.signOut();
+    const handleLogout =
+        async () => {
+            await supabase.auth.signOut();
 
-        router.push("/");
-        router.refresh();
-    };
+            router.push("/");
+            router.refresh();
+        };
 
     /* =========================
        CLEANUP STORAGE
@@ -425,7 +440,9 @@ export default function AdaugaProprietatePage() {
             }
 
             await supabase.storage
-                .from("listing-images")
+                .from(
+                    "listing-images"
+                )
                 .remove(paths);
         };
 
@@ -433,442 +450,458 @@ export default function AdaugaProprietatePage() {
        PUBLICARE
     ========================= */
 
-    const handleSubmit = async (
-        event
-    ) => {
-        event.preventDefault();
+    const handleSubmit =
+        async (event) => {
+            event.preventDefault();
 
-        setError("");
-        setSuccess("");
+            setError("");
+            setSuccess("");
 
-        if (!user) {
-            router.replace("/login");
-            return;
-        }
-
-        if (!form.title.trim()) {
-            setError(
-                "Completează titlul anunțului."
-            );
-            return;
-        }
-
-        if (!form.city.trim()) {
-            setError(
-                "Alege orașul proprietății."
-            );
-            return;
-        }
-
-        if (!form.address.trim()) {
-            setError(
-                "Completează adresa proprietății."
-            );
-            return;
-        }
-
-        if (
-            !form.price_monthly ||
-            Number(
-                form.price_monthly
-            ) <= 0
-        ) {
-            setError(
-                "Introdu un preț lunar valid."
-            );
-            return;
-        }
-
-        if (!form.owner_name.trim()) {
-            setError(
-                "Completează numele persoanei de contact."
-            );
-            return;
-        }
-
-        if (!form.owner_phone.trim()) {
-            setError(
-                "Completează numărul de telefon."
-            );
-            return;
-        }
-
-        if (
-            form.available_from &&
-            !isValidRomanianDate(
-                form.available_from
-            )
-        ) {
-            setError(
-                "Data disponibilității trebuie introdusă în formatul ZZ/LL/AAAA."
-            );
-            return;
-        }
-
-        if (images.length === 0) {
-            setError(
-                "Adaugă cel puțin o fotografie a proprietății."
-            );
-            return;
-        }
-
-        if (images.length > 10) {
-            setError(
-                "Poți adăuga maximum 10 fotografii."
-            );
-            return;
-        }
-
-        setPublishing(true);
-
-        let listingId = null;
-        const uploadedPaths = [];
-
-        try {
-            /* =========================
-               ANUNȚ
-            ========================= */
-
-            const listingData = {
-                user_id: user.id,
-
-                title:
-                    form.title.trim(),
-
-                description:
-                    form.description.trim() ||
-                    null,
-
-                city:
-                    form.city.trim(),
-
-                address:
-                    form.address.trim(),
-
-                price_monthly:
-                    Number(
-                        form.price_monthly
-                    ),
-
-                rooms: form.rooms
-                    ? Number(
-                          form.rooms
-                      )
-                    : null,
-
-                bedrooms:
-                    form.bedrooms
-                        ? Number(
-                              form.bedrooms
-                          )
-                        : null,
-
-                bathrooms:
-                    form.bathrooms
-                        ? Number(
-                              form.bathrooms
-                          )
-                        : null,
-
-                surface_m2:
-                    form.surface_m2
-                        ? Number(
-                              form.surface_m2
-                          )
-                        : null,
-
-                property_type:
-                    form.property_type,
-
-                listing_type: "rent",
-
-                furnished:
-                    form.furnished ===
-                    "true",
-
-                available_from:
-                    formatDateForDatabase(
-                        form.available_from
-                    ),
-
-                owner_name:
-                    form.owner_name.trim(),
-
-                owner_phone:
-                    form.owner_phone.trim(),
-
-                owner_email:
-                    form.owner_email.trim() ||
-                    user.email ||
-                    null,
-
-                active: true,
-            };
-
-            const {
-                data: createdListing,
-                error:
-                    listingError,
-            } = await supabase
-                .from("listings")
-                .insert([
-                    listingData,
-                ])
-                .select("id")
-                .single();
-
-            if (listingError) {
-                throw new Error(
-                    `Anunțul nu a putut fi creat: ${listingError.message}`
+            if (!user) {
+                router.replace(
+                    "/login"
                 );
+                return;
             }
 
-            listingId =
-                createdListing.id;
+            if (!form.title.trim()) {
+                setError(
+                    "Completează titlul anunțului."
+                );
+                return;
+            }
 
-            /* =========================
-               UNIVERSITĂȚI
-            ========================= */
+            if (!form.city.trim()) {
+                setError(
+                    "Alege orașul proprietății."
+                );
+                return;
+            }
+
+            if (!form.neighborhood_id) {
+                setError(
+                    "Alege zona / cartierul proprietății."
+                );
+                return;
+            }
+
+            if (!form.address.trim()) {
+                setError(
+                    "Completează adresa proprietății."
+                );
+                return;
+            }
 
             if (
-                selectedUniversityIds.length >
-                0
+                !form.price_monthly ||
+                Number(
+                    form.price_monthly
+                ) <= 0
             ) {
-                const universityLinks =
-                    selectedUniversityIds.map(
-                        (
-                            universityId
-                        ) => ({
-                            listing_id:
-                                listingId,
-
-                            university_id:
-                                universityId,
-
-                            distance_meters:
-                                null,
-
-                            walking_minutes:
-                                null,
-                        })
-                    );
-
-                const {
-                    error:
-                        universityLinkError,
-                } = await supabase
-                    .from(
-                        "listing_universities"
-                    )
-                    .insert(
-                        universityLinks
-                    );
-
-                if (
-                    universityLinkError
-                ) {
-                    throw new Error(
-                        `Universitățile nu au putut fi asociate anunțului: ${universityLinkError.message}`
-                    );
-                }
+                setError(
+                    "Introdu un preț lunar valid."
+                );
+                return;
             }
 
-            /* =========================
-               POZE
-            ========================= */
-
-            const uploadedImages = [];
-
-            for (
-                let index = 0;
-                index <
-                images.length;
-                index++
+            if (
+                !form.owner_name.trim()
             ) {
-                const image =
-                    images[index];
-
-                const file =
-                    image.file;
-
-                const extension =
-                    file.name
-                        .split(".")
-                        .pop()
-                        ?.toLowerCase() ||
-                    "jpg";
-
-                const safeExtension =
-                    extension.replace(
-                        /[^a-z0-9]/g,
-                        ""
-                    ) || "jpg";
-
-                const fileName =
-                    `${Date.now()}-${index}-${crypto.randomUUID()}.${safeExtension}`;
-
-                const storagePath =
-                    `${user.id}/${listingId}/${fileName}`;
-
-                const {
-                    error:
-                        uploadError,
-                } =
-                    await supabase.storage
-                        .from(
-                            "listing-images"
-                        )
-                        .upload(
-                            storagePath,
-                            file,
-                            {
-                                cacheControl:
-                                    "3600",
-
-                                upsert:
-                                    false,
-
-                                contentType:
-                                    file.type,
-                            }
-                        );
-
-                if (uploadError) {
-                    throw new Error(
-                        `Fotografia ${index + 1} nu a putut fi încărcată: ${uploadError.message}`
-                    );
-                }
-
-                uploadedPaths.push(
-                    storagePath
+                setError(
+                    "Completează numele persoanei de contact."
                 );
+                return;
+            }
+
+            if (
+                !form.owner_phone.trim()
+            ) {
+                setError(
+                    "Completează numărul de telefon."
+                );
+                return;
+            }
+
+            if (
+                images.length === 0
+            ) {
+                setError(
+                    "Adaugă cel puțin o fotografie a proprietății."
+                );
+                return;
+            }
+
+            if (
+                images.length > 10
+            ) {
+                setError(
+                    "Poți adăuga maximum 10 fotografii."
+                );
+                return;
+            }
+
+            setPublishing(true);
+
+            let listingId = null;
+            const uploadedPaths = [];
+
+            try {
+                const listingData = {
+                    user_id:
+                        user.id,
+
+                    title:
+                        form.title.trim(),
+
+                    description:
+                        form.description.trim() ||
+                        null,
+
+                    city:
+                        form.city.trim(),
+
+                    address:
+                        form.address.trim(),
+
+                    price_monthly:
+                        Number(
+                            form.price_monthly
+                        ),
+
+                    rooms:
+                        form.rooms
+                            ? Number(
+                                  form.rooms
+                              )
+                            : null,
+
+                    bedrooms:
+                        form.bedrooms
+                            ? Number(
+                                  form.bedrooms
+                              )
+                            : null,
+
+                    bathrooms:
+                        form.bathrooms
+                            ? Number(
+                                  form.bathrooms
+                              )
+                            : null,
+
+                    surface_m2:
+                        form.surface_m2
+                            ? Number(
+                                  form.surface_m2
+                              )
+                            : null,
+
+                    property_type:
+                        form.property_type,
+
+                    listing_type:
+                        "rent",
+
+                    furnished:
+                        form.furnished ===
+                        "true",
+
+                    available_from:
+                        form.available_from ||
+                        null,
+
+                    owner_name:
+                        form.owner_name.trim(),
+
+                    owner_phone:
+                        form.owner_phone.trim(),
+
+                    owner_email:
+                        form.owner_email.trim() ||
+                        user.email ||
+                        null,
+
+                    active: true,
+
+                    neighborhood_id:
+                        form.neighborhood_id
+                            ? Number(
+                                  form.neighborhood_id
+                              )
+                            : null,
+                };
 
                 const {
                     data:
-                        publicUrlData,
+                        createdListing,
+                    error:
+                        listingError,
                 } =
-                    supabase.storage
+                    await supabase
                         .from(
-                            "listing-images"
+                            "listings"
                         )
-                        .getPublicUrl(
-                            storagePath
+                        .insert([
+                            listingData,
+                        ])
+                        .select(
+                            "id"
+                        )
+                        .single();
+
+                if (
+                    listingError
+                ) {
+                    throw new Error(
+                        `Anunțul nu a putut fi creat: ${listingError.message}`
+                    );
+                }
+
+                listingId =
+                    createdListing.id;
+
+                if (
+                    selectedUniversityIds.length >
+                    0
+                ) {
+                    const universityLinks =
+                        selectedUniversityIds.map(
+                            (
+                                universityId
+                            ) => ({
+                                listing_id:
+                                    listingId,
+
+                                university_id:
+                                    universityId,
+
+                                distance_meters:
+                                    null,
+
+                                walking_minutes:
+                                    null,
+                            })
                         );
 
-                uploadedImages.push({
-                    listing_id:
-                        listingId,
+                    const {
+                        error:
+                            universityLinkError,
+                    } =
+                        await supabase
+                            .from(
+                                "listing_universities"
+                            )
+                            .insert(
+                                universityLinks
+                            );
 
-                    image_url:
-                        publicUrlData.publicUrl,
+                    if (
+                        universityLinkError
+                    ) {
+                        throw new Error(
+                            `Universitățile nu au putut fi asociate anunțului: ${universityLinkError.message}`
+                        );
+                    }
+                }
 
-                    storage_path:
-                        storagePath,
+                const uploadedImages = [];
 
-                    position:
-                        index,
-                });
-            }
+                for (
+                    let index = 0;
+                    index <
+                    images.length;
+                    index++
+                ) {
+                    const image =
+                        images[index];
 
-            /* =========================
-               SALVARE POZE
-            ========================= */
+                    const file =
+                        image.file;
 
-            const {
-                error:
-                    imagesDatabaseError,
-            } = await supabase
-                .from(
-                    "listing_images"
-                )
-                .insert(
-                    uploadedImages
-                );
+                    const extension =
+                        file.name
+                            .split(
+                                "."
+                            )
+                            .pop()
+                            ?.toLowerCase() ||
+                        "jpg";
 
-            if (
-                imagesDatabaseError
-            ) {
-                throw new Error(
-                    `Fotografiile nu au putut fi asociate anunțului: ${imagesDatabaseError.message}`
-                );
-            }
+                    const safeExtension =
+                        extension.replace(
+                            /[^a-z0-9]/g,
+                            ""
+                        ) || "jpg";
 
-            /* =========================
-               COPERTĂ
-            ========================= */
+                    const fileName =
+                        `${Date.now()}-${index}-${crypto.randomUUID()}.${safeExtension}`;
 
-            const coverImageUrl =
-                uploadedImages[0]
-                    ?.image_url ||
-                null;
+                    const storagePath =
+                        `${user.id}/${listingId}/${fileName}`;
 
-            const {
-                error: coverError,
-            } = await supabase
-                .from("listings")
-                .update({
-                    image_url:
-                        coverImageUrl,
-                })
-                .eq(
-                    "id",
-                    listingId
-                )
-                .eq(
-                    "user_id",
-                    user.id
-                );
+                    const {
+                        error:
+                            uploadError,
+                    } =
+                        await supabase.storage
+                            .from(
+                                "listing-images"
+                            )
+                            .upload(
+                                storagePath,
+                                file,
+                                {
+                                    cacheControl:
+                                        "3600",
 
-            if (coverError) {
-                throw new Error(
-                    `Coperta anunțului nu a putut fi salvată: ${coverError.message}`
-                );
-            }
+                                    upsert:
+                                        false,
 
-            setSuccess(
-                "Proprietatea a fost publicată cu succes."
-            );
+                                    contentType:
+                                        file.type,
+                                }
+                            );
 
-            setTimeout(() => {
-                router.push(
-                    "/dashboard"
-                );
+                    if (
+                        uploadError
+                    ) {
+                        throw new Error(
+                            `Fotografia ${index + 1} nu a putut fi încărcată: ${uploadError.message}`
+                        );
+                    }
 
-                router.refresh();
-            }, 1000);
-        } catch (
-            submitError
-        ) {
-            console.error(
-                submitError
-            );
-
-            await cleanupUploadedFiles(
-                uploadedPaths
-            );
-
-            if (listingId) {
-                await supabase
-                    .from("listings")
-                    .delete()
-                    .eq(
-                        "id",
-                        listingId
-                    )
-                    .eq(
-                        "user_id",
-                        user.id
+                    uploadedPaths.push(
+                        storagePath
                     );
+
+                    const {
+                        data:
+                            publicUrlData,
+                    } =
+                        supabase.storage
+                            .from(
+                                "listing-images"
+                            )
+                            .getPublicUrl(
+                                storagePath
+                            );
+
+                    uploadedImages.push({
+                        listing_id:
+                            listingId,
+
+                        image_url:
+                            publicUrlData.publicUrl,
+
+                        storage_path:
+                            storagePath,
+
+                        position:
+                            index,
+                    });
+                }
+
+                const {
+                    error:
+                        imagesDatabaseError,
+                } =
+                    await supabase
+                        .from(
+                            "listing_images"
+                        )
+                        .insert(
+                            uploadedImages
+                        );
+
+                if (
+                    imagesDatabaseError
+                ) {
+                    throw new Error(
+                        `Fotografiile nu au putut fi asociate anunțului: ${imagesDatabaseError.message}`
+                    );
+                }
+
+                const coverImageUrl =
+                    uploadedImages[0]
+                        ?.image_url ||
+                    null;
+
+                const {
+                    error:
+                        coverError,
+                } =
+                    await supabase
+                        .from(
+                            "listings"
+                        )
+                        .update({
+                            image_url:
+                                coverImageUrl,
+                        })
+                        .eq(
+                            "id",
+                            listingId
+                        )
+                        .eq(
+                            "user_id",
+                            user.id
+                        );
+
+                if (coverError) {
+                    throw new Error(
+                        `Coperta anunțului nu a putut fi salvată: ${coverError.message}`
+                    );
+                }
+
+                setSuccess(
+                    "Proprietatea a fost publicată cu succes."
+                );
+
+                setTimeout(
+                    () => {
+                        router.push(
+                            "/dashboard"
+                        );
+
+                        router.refresh();
+                    },
+                    1000
+                );
+            } catch (
+                submitError
+            ) {
+                console.error(
+                    submitError
+                );
+
+                await cleanupUploadedFiles(
+                    uploadedPaths
+                );
+
+                if (listingId) {
+                    await supabase
+                        .from(
+                            "listings"
+                        )
+                        .delete()
+                        .eq(
+                            "id",
+                            listingId
+                        )
+                        .eq(
+                            "user_id",
+                            user.id
+                        );
+                }
+
+                setError(
+                    submitError.message ||
+                        "A apărut o eroare la publicarea anunțului."
+                );
+
+                setPublishing(false);
             }
-
-            setError(
-                submitError.message ||
-                    "A apărut o eroare la publicarea anunțului."
-            );
-
-            setPublishing(false);
-        }
-    };
+        };
 
     /* =========================
        LOADING
@@ -882,7 +915,8 @@ export default function AdaugaProprietatePage() {
                         "100vh",
                     background:
                         "#f7f8fa",
-                    display: "flex",
+                    display:
+                        "flex",
                     alignItems:
                         "center",
                     justifyContent:
@@ -900,10 +934,6 @@ export default function AdaugaProprietatePage() {
             </main>
         );
     }
-
-    /* =========================
-       STILURI
-    ========================= */
 
     const inputStyle = {
         width: "100%",
@@ -956,8 +986,6 @@ export default function AdaugaProprietatePage() {
                     "#111827",
             }}
         >
-            {/* HEADER */}
-
             <header
                 style={{
                     height:
@@ -1047,8 +1075,6 @@ export default function AdaugaProprietatePage() {
                     </button>
                 </div>
             </header>
-
-            {/* PAGINA */}
 
             <section
                 style={{
@@ -1439,8 +1465,7 @@ export default function AdaugaProprietatePage() {
                             </div>
                         )}
                     </div>
-
-                    {/* DETALII */}
+                    {/* DETALII PROPRIETATE */}
 
                     <div
                         style={{
@@ -1546,7 +1571,7 @@ export default function AdaugaProprietatePage() {
                             </select>
                         </div>
 
-                        {/* ORAȘ + UNIVERSITĂȚI */}
+                        {/* ORAȘ + CARTIER */}
 
                         <div
                             style={{
@@ -1579,22 +1604,22 @@ export default function AdaugaProprietatePage() {
                                         handleCityChange
                                     }
                                     disabled={
-                                        loadingUniversities
+                                        loadingLocations
                                     }
                                     style={{
                                         ...inputStyle,
                                         cursor:
-                                            loadingUniversities
+                                            loadingLocations
                                                 ? "wait"
                                                 : "pointer",
                                         background:
-                                            loadingUniversities
+                                            loadingLocations
                                                 ? "#f9fafb"
                                                 : "#ffffff",
                                     }}
                                 >
                                     <option value="">
-                                        {loadingUniversities
+                                        {loadingLocations
                                             ? "Se încarcă orașele..."
                                             : "Alege orașul"}
                                     </option>
@@ -1605,14 +1630,14 @@ export default function AdaugaProprietatePage() {
                                         ) => (
                                             <option
                                                 key={
-                                                    city
+                                                    city.id
                                                 }
                                                 value={
-                                                    city
+                                                    city.name
                                                 }
                                             >
                                                 {
-                                                    city
+                                                    city.name
                                                 }
                                             </option>
                                         )
@@ -1630,187 +1655,290 @@ export default function AdaugaProprietatePage() {
                                         labelStyle
                                     }
                                 >
-                                    Universități
-                                    apropiate
-                                    (opțional)
+                                    Zonă /
+                                    cartier
                                 </label>
 
-                                <div
+                                <select
+                                    name="neighborhood_id"
+                                    value={
+                                        form.neighborhood_id
+                                    }
+                                    onChange={
+                                        updateField
+                                    }
+                                    disabled={
+                                        !form.city ||
+                                        loadingLocations
+                                    }
                                     style={{
-                                        border:
-                                            "1px solid #d1d5db",
-                                        borderRadius:
-                                            "11px",
+                                        ...inputStyle,
+                                        cursor:
+                                            !form.city ||
+                                            loadingLocations
+                                                ? "not-allowed"
+                                                : "pointer",
                                         background:
-                                            form.city
-                                                ? "#ffffff"
-                                                : "#f9fafb",
-                                        maxHeight:
-                                            "230px",
-                                        overflowY:
-                                            "auto",
-                                        padding:
-                                            "8px",
-                                        opacity:
-                                            form.city
-                                                ? 1
-                                                : 0.65,
+                                            !form.city ||
+                                            loadingLocations
+                                                ? "#f9fafb"
+                                                : "#ffffff",
                                     }}
                                 >
-                                    {!form.city ? (
-                                        <div
-                                            style={{
-                                                padding:
-                                                    "8px",
-                                                color:
-                                                    "#6b7280",
-                                                fontSize:
-                                                    "14px",
-                                            }}
-                                        >
-                                            Alege
-                                            mai
-                                            întâi
-                                            orașul
-                                        </div>
-                                    ) : universitiesForCity.length ===
-                                      0 ? (
-                                        <div
-                                            style={{
-                                                padding:
-                                                    "8px",
-                                                color:
-                                                    "#6b7280",
-                                                fontSize:
-                                                    "14px",
-                                            }}
-                                        >
-                                            Nu există
-                                            universități
-                                            disponibile
-                                            pentru
-                                            acest
-                                            oraș.
-                                        </div>
-                                    ) : (
-                                        universitiesForCity.map(
-                                            (
-                                                university
-                                            ) => {
-                                                const checked =
-                                                    selectedUniversityIds.includes(
-                                                        university.id
-                                                    );
+                                    <option value="">
+                                        {!form.city
+                                            ? "Alege mai întâi orașul"
+                                            : loadingLocations
+                                            ? "Se încarcă zonele..."
+                                            : "Alege zona / cartierul"}
+                                    </option>
 
-                                                return (
-                                                    <label
-                                                        key={
-                                                            university.id
-                                                        }
-                                                        style={{
-                                                            display:
-                                                                "flex",
-                                                            alignItems:
-                                                                "flex-start",
-                                                            gap:
-                                                                "10px",
-                                                            padding:
-                                                                "10px",
-                                                            borderRadius:
-                                                                "9px",
-                                                            cursor:
-                                                                "pointer",
-                                                            background:
-                                                                checked
-                                                                    ? "#eff6ff"
-                                                                    : "transparent",
-                                                        }}
-                                                    >
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={
-                                                                checked
-                                                            }
-                                                            onChange={() => {
-                                                                setSelectedUniversityIds(
-                                                                    (
-                                                                        current
-                                                                    ) =>
-                                                                        current.includes(
-                                                                            university.id
-                                                                        )
-                                                                            ? current.filter(
-                                                                                  (
-                                                                                      id
-                                                                                  ) =>
-                                                                                      id !==
-                                                                                      university.id
-                                                                              )
-                                                                            : [
-                                                                                  ...current,
-                                                                                  university.id,
-                                                                              ]
-                                                                );
-                                                            }}
-                                                            style={{
-                                                                marginTop:
-                                                                    "2px",
-                                                                width:
-                                                                    "16px",
-                                                                height:
-                                                                    "16px",
-                                                                cursor:
-                                                                    "pointer",
-                                                            }}
-                                                        />
-
-                                                        <span
-                                                            style={{
-                                                                fontSize:
-                                                                    "14px",
-                                                                lineHeight:
-                                                                    "1.4",
-                                                                color:
-                                                                    "#111827",
-                                                                fontWeight:
-                                                                    checked
-                                                                        ? "700"
-                                                                        : "500",
-                                                            }}
-                                                        >
-                                                            {university.short_name
-                                                                ? `${university.short_name} — ${university.name}`
-                                                                : university.name}
-                                                        </span>
-                                                    </label>
-                                                );
-                                            }
+                                    {neighborhoodsForCity.map(
+                                        (
+                                            neighborhood
+                                        ) => (
+                                            <option
+                                                key={
+                                                    neighborhood.id
+                                                }
+                                                value={
+                                                    neighborhood.id
+                                                }
+                                            >
+                                                {
+                                                    neighborhood.name
+                                                }
+                                            </option>
                                         )
                                     )}
-                                </div>
-
-                                {form.city &&
-                                    selectedUniversityIds.length >
-                                        0 && (
-                                        <div
-                                            style={{
-                                                marginTop:
-                                                    "8px",
-                                                color:
-                                                    "#2563eb",
-                                                fontSize:
-                                                    "12px",
-                                                fontWeight:
-                                                    "700",
-                                            }}
-                                        >
-                                            {selectedUniversityIds.length ===
-                                            1
-                                                ? "1 universitate selectată"
-                                                : `${selectedUniversityIds.length} universități selectate`}
-                                        </div>
-                                    )}
+                                </select>
                             </div>
+                        </div>
+
+                        {/* ADRESA */}
+
+                        <div
+                            style={
+                                fieldStyle
+                            }
+                        >
+                            <label
+                                style={
+                                    labelStyle
+                                }
+                            >
+                                Adresa
+                                proprietății
+                            </label>
+
+                            <input
+                                name="address"
+                                type="text"
+                                value={
+                                    form.address
+                                }
+                                onChange={
+                                    updateField
+                                }
+                                placeholder="Strada, număr"
+                                style={
+                                    inputStyle
+                                }
+                            />
+                        </div>
+
+                        {/* UNIVERSITĂȚI */}
+
+                        <div
+                            style={
+                                fieldStyle
+                            }
+                        >
+                            <label
+                                style={
+                                    labelStyle
+                                }
+                            >
+                                Universități
+                                apropiate
+                                (opțional)
+                            </label>
+
+                            <div
+                                style={{
+                                    border:
+                                        "1px solid #d1d5db",
+                                    borderRadius:
+                                        "11px",
+                                    background:
+                                        form.city
+                                            ? "#ffffff"
+                                            : "#f9fafb",
+                                    maxHeight:
+                                        "230px",
+                                    overflowY:
+                                        "auto",
+                                    padding:
+                                        "8px",
+                                    opacity:
+                                        form.city
+                                            ? 1
+                                            : 0.65,
+                                }}
+                            >
+                                {!form.city ? (
+                                    <div
+                                        style={{
+                                            padding:
+                                                "8px",
+                                            color:
+                                                "#6b7280",
+                                            fontSize:
+                                                "14px",
+                                        }}
+                                    >
+                                        Alege
+                                        mai
+                                        întâi
+                                        orașul
+                                    </div>
+                                ) : universitiesForCity.length ===
+                                  0 ? (
+                                    <div
+                                        style={{
+                                            padding:
+                                                "8px",
+                                            color:
+                                                "#6b7280",
+                                            fontSize:
+                                                "14px",
+                                        }}
+                                    >
+                                        Nu există
+                                        universități
+                                        disponibile
+                                        pentru
+                                        acest
+                                        oraș.
+                                    </div>
+                                ) : (
+                                    universitiesForCity.map(
+                                        (
+                                            university
+                                        ) => {
+                                            const checked =
+                                                selectedUniversityIds.includes(
+                                                    university.id
+                                                );
+
+                                            return (
+                                                <label
+                                                    key={
+                                                        university.id
+                                                    }
+                                                    style={{
+                                                        display:
+                                                            "flex",
+                                                        alignItems:
+                                                            "flex-start",
+                                                        gap:
+                                                            "10px",
+                                                        padding:
+                                                            "10px",
+                                                        borderRadius:
+                                                            "9px",
+                                                        cursor:
+                                                            "pointer",
+                                                        background:
+                                                            checked
+                                                                ? "#eff6ff"
+                                                                : "transparent",
+                                                    }}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={
+                                                            checked
+                                                        }
+                                                        onChange={() => {
+                                                            setSelectedUniversityIds(
+                                                                (
+                                                                    current
+                                                                ) =>
+                                                                    current.includes(
+                                                                        university.id
+                                                                    )
+                                                                        ? current.filter(
+                                                                              (
+                                                                                  id
+                                                                              ) =>
+                                                                                  id !==
+                                                                                  university.id
+                                                                          )
+                                                                        : [
+                                                                              ...current,
+                                                                              university.id,
+                                                                          ]
+                                                            );
+                                                        }}
+                                                        style={{
+                                                            marginTop:
+                                                                "2px",
+                                                            width:
+                                                                "16px",
+                                                            height:
+                                                                "16px",
+                                                            cursor:
+                                                                "pointer",
+                                                        }}
+                                                    />
+
+                                                    <span
+                                                        style={{
+                                                            fontSize:
+                                                                "14px",
+                                                            lineHeight:
+                                                                "1.4",
+                                                            color:
+                                                                "#111827",
+                                                            fontWeight:
+                                                                checked
+                                                                    ? "700"
+                                                                    : "500",
+                                                        }}
+                                                    >
+                                                        {university.short_name
+                                                            ? `${university.short_name} — ${university.name}`
+                                                            : university.name}
+                                                    </span>
+                                                </label>
+                                            );
+                                        }
+                                    )
+                                )}
+                            </div>
+
+                            {form.city &&
+                                selectedUniversityIds.length >
+                                    0 && (
+                                    <div
+                                        style={{
+                                            marginTop:
+                                                "8px",
+                                            color:
+                                                "#2563eb",
+                                            fontSize:
+                                                "12px",
+                                            fontWeight:
+                                                "700",
+                                        }}
+                                    >
+                                        {selectedUniversityIds.length ===
+                                        1
+                                            ? "1 universitate selectată"
+                                            : `${selectedUniversityIds.length} universități selectate`}
+                                    </div>
+                                )}
                         </div>
 
                         <div
@@ -1841,6 +1969,8 @@ export default function AdaugaProprietatePage() {
                             căutările generale
                             pentru orașul selectat.
                         </div>
+
+                        {/* PREȚ + ADRESĂ */}
 
                         <div
                             style={{
@@ -1894,26 +2024,42 @@ export default function AdaugaProprietatePage() {
                                         labelStyle
                                     }
                                 >
-                                    Adresa
-                                    proprietății
+                                    Tip
+                                    proprietate
                                 </label>
 
-                                <input
-                                    name="address"
-                                    type="text"
+                                <select
+                                    name="property_type"
                                     value={
-                                        form.address
+                                        form.property_type
                                     }
                                     onChange={
                                         updateField
                                     }
-                                    placeholder="Strada, număr"
                                     style={
                                         inputStyle
                                     }
-                                />
+                                >
+                                    <option value="apartment">
+                                        Apartament
+                                    </option>
+
+                                    <option value="studio">
+                                        Garsonieră
+                                    </option>
+
+                                    <option value="room">
+                                        Cameră
+                                    </option>
+
+                                    <option value="house">
+                                        Casă
+                                    </option>
+                                </select>
                             </div>
                         </div>
+
+                        {/* CAMERE / DORMITOARE / BĂI / SUPRAFAȚĂ */}
 
                         <div
                             style={{
@@ -2051,6 +2197,8 @@ export default function AdaugaProprietatePage() {
                             </div>
                         </div>
 
+                        {/* MOBILAT + DATA */}
+
                         <div
                             style={{
                                 display:
@@ -2096,8 +2244,6 @@ export default function AdaugaProprietatePage() {
                                 </select>
                             </div>
 
-                            {/* DATA - ZZ/LL/AAAA */}
-
                             <div
                                 style={
                                     fieldStyle
@@ -2114,17 +2260,13 @@ export default function AdaugaProprietatePage() {
 
                                 <input
                                     name="available_from"
-                                    type="text"
-                                    inputMode="numeric"
+                                    type="date"
+                                    lang="ro"
                                     value={
                                         form.available_from
                                     }
                                     onChange={
-                                        handleAvailableFromChange
-                                    }
-                                    placeholder="ZZ/LL/AAAA"
-                                    maxLength={
-                                        10
+                                        updateField
                                     }
                                     style={
                                         inputStyle
@@ -2132,6 +2274,8 @@ export default function AdaugaProprietatePage() {
                                 />
                             </div>
                         </div>
+
+                        {/* DESCRIERE */}
 
                         <div>
                             <label
@@ -2163,7 +2307,7 @@ export default function AdaugaProprietatePage() {
                         </div>
                     </div>
 
-                    {/* CONTACT */}
+                    {/* DATE CONTACT */}
 
                     <div
                         style={{
@@ -2306,7 +2450,6 @@ export default function AdaugaProprietatePage() {
                             </div>
                         </div>
                     </div>
-
                     {/* MESAJE */}
 
                     {error && (
@@ -2454,6 +2597,35 @@ export default function AdaugaProprietatePage() {
                     </div>
                 </form>
             </section>
+
+            {/* RESPONSIVE */}
+
+            <style>{`
+                @media (max-width: 760px) {
+                    header {
+                        padding: 0 20px !important;
+                    }
+
+                    section {
+                        padding: 40px 18px 70px !important;
+                    }
+
+                    form > div > div {
+                        grid-template-columns: 1fr !important;
+                    }
+
+                    h1 {
+                        font-size: 32px !important;
+                    }
+                }
+
+                input:focus,
+                select:focus,
+                textarea:focus {
+                    border-color: #93c5fd !important;
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
+                }
+            `}</style>
         </main>
     );
 }
