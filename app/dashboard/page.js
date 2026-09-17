@@ -1852,7 +1852,7 @@ export default function DashboardPage() {
                 >
                   Administrează datele
                   contului tău
-                  StudentHousing.
+                  shaus.
                 </p>
               </div>
 
