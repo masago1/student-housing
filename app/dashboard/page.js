@@ -3310,7 +3310,7 @@ function ListingsList({
               type="button"
               onClick={() =>
                 router.push(
-                  `/editeazaproprietate/${listing.id}`
+                  `/editeaza-proprietate/${listing.id}`
                 )
               }
               style={{
