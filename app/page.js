@@ -63,7 +63,7 @@ export default async function Home() {
             letterSpacing: "-1px",
           }}
         >
-          StudentHousing
+          shaus
         </a>
 
         <div
