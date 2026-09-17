@@ -12,18 +12,20 @@ export default function AdaugaProprietatePage() {
     const [publishing, setPublishing] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+
     const [images, setImages] = useState([]);
 
     const [universities, setUniversities] = useState([]);
-    const [loadingUniversities, setLoadingUniversities] =
-        useState(true);
-    const [selectedUniversityIds, setSelectedUniversityIds] =
-        useState([]);
+    const [selectedUniversityIds, setSelectedUniversityIds] = useState([]);
 
     const [cities, setCities] = useState([]);
     const [neighborhoods, setNeighborhoods] = useState([]);
-    const [loadingLocations, setLoadingLocations] =
-        useState(true);
+    const [loadingLocations, setLoadingLocations] = useState(true);
+
+    const [calendarOpen, setCalendarOpen] = useState(false);
+    const [calendarMonth, setCalendarMonth] = useState(
+        new Date()
+    );
 
     const [form, setForm] = useState({
         title: "",
@@ -99,12 +101,7 @@ export default function AdaugaProprietatePage() {
 
     useEffect(() => {
         const loadUniversities = async () => {
-            setLoadingUniversities(true);
-
-            const {
-                data,
-                error,
-            } = await supabase
+            const { data, error } = await supabase
                 .from("universities")
                 .select(
                     "id, name, short_name, city"
@@ -121,14 +118,11 @@ export default function AdaugaProprietatePage() {
                     "Eroare la încărcarea universităților:",
                     error
                 );
-
                 setUniversities([]);
-                setLoadingUniversities(false);
                 return;
             }
 
             setUniversities(data || []);
-            setLoadingUniversities(false);
         };
 
         loadUniversities();
@@ -142,53 +136,48 @@ export default function AdaugaProprietatePage() {
         const loadLocations = async () => {
             setLoadingLocations(true);
 
-            const {
-                data: citiesData,
-                error: citiesError,
-            } = await supabase
-                .from("cities")
-                .select(
-                    "id, name, slug"
-                )
-                .order("name", {
-                    ascending: true,
-                });
+            const [
+                citiesResult,
+                neighborhoodsResult,
+            ] = await Promise.all([
+                supabase
+                    .from("cities")
+                    .select("id, name, slug")
+                    .order("name", {
+                        ascending: true,
+                    }),
 
-            if (citiesError) {
+                supabase
+                    .from("neighborhoods")
+                    .select(
+                        "id, city_id, name, slug"
+                    )
+                    .order("name", {
+                        ascending: true,
+                    }),
+            ]);
+
+            if (citiesResult.error) {
                 console.error(
                     "Eroare la încărcarea orașelor:",
-                    citiesError
+                    citiesResult.error
                 );
-
                 setCities([]);
             } else {
                 setCities(
-                    citiesData || []
+                    citiesResult.data || []
                 );
             }
 
-            const {
-                data: neighborhoodsData,
-                error: neighborhoodsError,
-            } = await supabase
-                .from("neighborhoods")
-                .select(
-                    "id, city_id, name, slug"
-                )
-                .order("name", {
-                    ascending: true,
-                });
-
-            if (neighborhoodsError) {
+            if (neighborhoodsResult.error) {
                 console.error(
                     "Eroare la încărcarea cartierelor:",
-                    neighborhoodsError
+                    neighborhoodsResult.error
                 );
-
                 setNeighborhoods([]);
             } else {
                 setNeighborhoods(
-                    neighborhoodsData || []
+                    neighborhoodsResult.data || []
                 );
             }
 
@@ -198,69 +187,37 @@ export default function AdaugaProprietatePage() {
         loadLocations();
     }, []);
 
-    /* =========================
-       ORAȘ SELECTAT
-    ========================= */
-
     const selectedCity = useMemo(() => {
-        if (!form.city) {
-            return null;
-        }
-
         return (
             cities.find(
                 (city) =>
                     city.name === form.city
             ) || null
         );
-    }, [
-        cities,
-        form.city,
-    ]);
+    }, [cities, form.city]);
 
-    /* =========================
-       CARTIERE PENTRU ORAȘ
-    ========================= */
+    const neighborhoodsForCity = useMemo(() => {
+        if (!selectedCity) {
+            return [];
+        }
 
-    const neighborhoodsForCity =
-        useMemo(() => {
-            if (!selectedCity) {
-                return [];
-            }
+        return neighborhoods.filter(
+            (neighborhood) =>
+                neighborhood.city_id ===
+                selectedCity.id
+        );
+    }, [neighborhoods, selectedCity]);
 
-            return neighborhoods.filter(
-                (neighborhood) =>
-                    String(
-                        neighborhood.city_id
-                    ) ===
-                    String(
-                        selectedCity.id
-                    )
-            );
-        }, [
-            neighborhoods,
-            selectedCity,
-        ]);
+    const universitiesForCity = useMemo(() => {
+        if (!form.city) {
+            return [];
+        }
 
-    /* =========================
-       UNIVERSITĂȚI PENTRU ORAȘ
-    ========================= */
-
-    const universitiesForCity =
-        useMemo(() => {
-            if (!form.city) {
-                return [];
-            }
-
-            return universities.filter(
-                (university) =>
-                    university.city ===
-                    form.city
-            );
-        }, [
-            universities,
-            form.city,
-        ]);
+        return universities.filter(
+            (university) =>
+                university.city === form.city
+        );
+    }, [universities, form.city]);
 
     /* =========================
        FORM
@@ -278,11 +235,8 @@ export default function AdaugaProprietatePage() {
         }));
     };
 
-    const handleCityChange = (
-        event
-    ) => {
-        const city =
-            event.target.value;
+    const handleCityChange = (event) => {
+        const city = event.target.value;
 
         setForm((current) => ({
             ...current,
@@ -297,35 +251,25 @@ export default function AdaugaProprietatePage() {
        POZE
     ========================= */
 
-    const handleImages = (
-        event
-    ) => {
+    const handleImages = (event) => {
         setError("");
 
-        const selectedFiles =
-            Array.from(
-                event.target.files || []
-            );
+        const selectedFiles = Array.from(
+            event.target.files || []
+        );
 
-        if (
-            selectedFiles.length ===
-            0
-        ) {
+        if (!selectedFiles.length) {
             return;
         }
 
         const remainingSlots =
             10 - images.length;
 
-        if (
-            remainingSlots <= 0
-        ) {
+        if (remainingSlots <= 0) {
             setError(
                 "Poți adăuga maximum 10 fotografii."
             );
-
             event.target.value = "";
-
             return;
         }
 
@@ -336,28 +280,18 @@ export default function AdaugaProprietatePage() {
             setError(
                 `Poți adăuga maximum 10 fotografii. Mai poți selecta ${remainingSlots}.`
             );
-
             event.target.value = "";
-
             return;
         }
 
         const validFiles = [];
 
-        for (
-            const file of selectedFiles
-        ) {
-            if (
-                !file.type.startsWith(
-                    "image/"
-                )
-            ) {
+        for (const file of selectedFiles) {
+            if (!file.type.startsWith("image/")) {
                 setError(
                     "Poți încărca doar fișiere de tip imagine."
                 );
-
                 event.target.value = "";
-
                 return;
             }
 
@@ -368,18 +302,14 @@ export default function AdaugaProprietatePage() {
                 setError(
                     "Fiecare fotografie trebuie să aibă maximum 10 MB."
                 );
-
                 event.target.value = "";
-
                 return;
             }
 
             validFiles.push({
                 file,
                 preview:
-                    URL.createObjectURL(
-                        file
-                    ),
+                    URL.createObjectURL(file),
             });
         }
 
@@ -391,28 +321,18 @@ export default function AdaugaProprietatePage() {
         event.target.value = "";
     };
 
-    const removeImage = (
-        index
-    ) => {
+    const removeImage = (index) => {
         setImages((current) => {
-            const imageToRemove =
-                current[index];
+            const image = current[index];
 
-            if (
-                imageToRemove?.preview
-            ) {
+            if (image?.preview) {
                 URL.revokeObjectURL(
-                    imageToRemove.preview
+                    image.preview
                 );
             }
 
             return current.filter(
-                (
-                    _,
-                    imageIndex
-                ) =>
-                    imageIndex !==
-                    index
+                (_, i) => i !== index
             );
         });
     };
@@ -421,487 +341,540 @@ export default function AdaugaProprietatePage() {
        LOGOUT
     ========================= */
 
-    const handleLogout =
-        async () => {
-            await supabase.auth.signOut();
-
-            router.push("/");
-            router.refresh();
-        };
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        router.push("/");
+        router.refresh();
+    };
 
     /* =========================
        CLEANUP STORAGE
     ========================= */
 
-    const cleanupUploadedFiles =
-        async (paths) => {
-            if (!paths.length) {
-                return;
-            }
+    const cleanupUploadedFiles = async (
+        paths
+    ) => {
+        if (!paths.length) {
+            return;
+        }
 
-            await supabase.storage
-                .from(
-                    "listing-images"
+        await supabase.storage
+            .from("listing-images")
+            .remove(paths);
+    };
+
+    /* =========================
+       CALENDAR
+    ========================= */
+
+    const romanianMonths = [
+        "Ianuarie",
+        "Februarie",
+        "Martie",
+        "Aprilie",
+        "Mai",
+        "Iunie",
+        "Iulie",
+        "August",
+        "Septembrie",
+        "Octombrie",
+        "Noiembrie",
+        "Decembrie",
+    ];
+
+    const formatRomanianDate = (
+        isoDate
+    ) => {
+        if (!isoDate) {
+            return "";
+        }
+
+        const [
+            year,
+            month,
+            day,
+        ] = isoDate.split("-");
+
+        return `${day}/${month}/${year}`;
+    };
+
+    const openCalendar = () => {
+        if (form.available_from) {
+            const [
+                year,
+                month,
+            ] = form.available_from
+                .split("-")
+                .map(Number);
+
+            setCalendarMonth(
+                new Date(
+                    year,
+                    month - 1,
+                    1
                 )
-                .remove(paths);
-        };
+            );
+        } else {
+            setCalendarMonth(
+                new Date()
+            );
+        }
+
+        setCalendarOpen(
+            (current) => !current
+        );
+    };
+
+    const selectCalendarDate = (
+        year,
+        month,
+        day
+    ) => {
+        const isoDate =
+            `${year}-${String(
+                month + 1
+            ).padStart(2, "0")}-${String(
+                day
+            ).padStart(2, "0")}`;
+
+        setForm((current) => ({
+            ...current,
+            available_from: isoDate,
+        }));
+
+        setCalendarOpen(false);
+    };
+
+    const calendarYear =
+        calendarMonth.getFullYear();
+
+    const calendarMonthIndex =
+        calendarMonth.getMonth();
+
+    const firstDay = new Date(
+        calendarYear,
+        calendarMonthIndex,
+        1
+    ).getDay();
+
+    const mondayOffset =
+        (firstDay + 6) % 7;
+
+    const daysInMonth =
+        new Date(
+            calendarYear,
+            calendarMonthIndex + 1,
+            0
+        ).getDate();
+
+    const previousCalendarMonth = () => {
+        setCalendarMonth(
+            new Date(
+                calendarYear,
+                calendarMonthIndex - 1,
+                1
+            )
+        );
+    };
+
+    const nextCalendarMonth = () => {
+        setCalendarMonth(
+            new Date(
+                calendarYear,
+                calendarMonthIndex + 1,
+                1
+            )
+        );
+    };
 
     /* =========================
        PUBLICARE
     ========================= */
 
-    const handleSubmit =
-        async (event) => {
-            event.preventDefault();
+    const handleSubmit = async (
+        event
+    ) => {
+        event.preventDefault();
 
-            setError("");
-            setSuccess("");
+        setError("");
+        setSuccess("");
 
-            if (!user) {
-                router.replace(
-                    "/login"
-                );
-                return;
-            }
+        if (!user) {
+            router.replace("/login");
+            return;
+        }
 
-            if (!form.title.trim()) {
-                setError(
-                    "Completează titlul anunțului."
-                );
-                return;
-            }
+        if (!form.title.trim()) {
+            setError(
+                "Completează titlul anunțului."
+            );
+            return;
+        }
 
-            if (!form.city.trim()) {
-                setError(
-                    "Alege orașul proprietății."
-                );
-                return;
-            }
+        if (!form.city.trim()) {
+            setError(
+                "Alege orașul proprietății."
+            );
+            return;
+        }
 
-            if (!form.neighborhood_id) {
-                setError(
-                    "Alege zona / cartierul proprietății."
-                );
-                return;
-            }
+        if (!form.neighborhood_id) {
+            setError(
+                "Alege zona / cartierul proprietății."
+            );
+            return;
+        }
 
-            if (!form.address.trim()) {
-                setError(
-                    "Completează adresa proprietății."
-                );
-                return;
-            }
+        if (!form.address.trim()) {
+            setError(
+                "Completează adresa proprietății."
+            );
+            return;
+        }
 
-            if (
-                !form.price_monthly ||
-                Number(
-                    form.price_monthly
-                ) <= 0
-            ) {
-                setError(
-                    "Introdu un preț lunar valid."
-                );
-                return;
-            }
+        if (
+            !form.price_monthly ||
+            Number(form.price_monthly) <= 0
+        ) {
+            setError(
+                "Introdu un preț lunar valid."
+            );
+            return;
+        }
 
-            if (
-                !form.owner_name.trim()
-            ) {
-                setError(
-                    "Completează numele persoanei de contact."
-                );
-                return;
-            }
+        if (!form.owner_name.trim()) {
+            setError(
+                "Completează numele persoanei de contact."
+            );
+            return;
+        }
 
-            if (
-                !form.owner_phone.trim()
-            ) {
-                setError(
-                    "Completează numărul de telefon."
-                );
-                return;
-            }
+        if (!form.owner_phone.trim()) {
+            setError(
+                "Completează numărul de telefon."
+            );
+            return;
+        }
 
-            if (
-                images.length === 0
-            ) {
-                setError(
-                    "Adaugă cel puțin o fotografie a proprietății."
-                );
-                return;
-            }
+        if (!images.length) {
+            setError(
+                "Adaugă cel puțin o fotografie a proprietății."
+            );
+            return;
+        }
 
-            if (
-                images.length > 10
-            ) {
-                setError(
-                    "Poți adăuga maximum 10 fotografii."
-                );
-                return;
-            }
+        if (images.length > 10) {
+            setError(
+                "Poți adăuga maximum 10 fotografii."
+            );
+            return;
+        }
 
-            setPublishing(true);
+        setPublishing(true);
 
-            let listingId = null;
-            const uploadedPaths = [];
+        let listingId = null;
+        const uploadedPaths = [];
 
-            try {
-                const listingData = {
-                    user_id:
-                        user.id,
+        try {
+            const listingData = {
+                user_id: user.id,
 
-                    title:
-                        form.title.trim(),
+                title: form.title.trim(),
 
-                    description:
-                        form.description.trim() ||
-                        null,
+                description:
+                    form.description.trim() ||
+                    null,
 
-                    city:
-                        form.city.trim(),
+                city: form.city.trim(),
 
-                    address:
-                        form.address.trim(),
-
-                    price_monthly:
-                        Number(
-                            form.price_monthly
-                        ),
-
-                    rooms:
-                        form.rooms
-                            ? Number(
-                                  form.rooms
-                              )
-                            : null,
-
-                    bedrooms:
-                        form.bedrooms
-                            ? Number(
-                                  form.bedrooms
-                              )
-                            : null,
-
-                    bathrooms:
-                        form.bathrooms
-                            ? Number(
-                                  form.bathrooms
-                              )
-                            : null,
-
-                    surface_m2:
-                        form.surface_m2
-                            ? Number(
-                                  form.surface_m2
-                              )
-                            : null,
-
-                    property_type:
-                        form.property_type,
-
-                    listing_type:
-                        "rent",
-
-                    furnished:
-                        form.furnished ===
-                        "true",
-
-                    available_from:
-                        form.available_from ||
-                        null,
-
-                    owner_name:
-                        form.owner_name.trim(),
-
-                    owner_phone:
-                        form.owner_phone.trim(),
-
-                    owner_email:
-                        form.owner_email.trim() ||
-                        user.email ||
-                        null,
-
-                    active: true,
-
-                    neighborhood_id:
+                neighborhood_id:
+                    Number(
                         form.neighborhood_id
-                            ? Number(
-                                  form.neighborhood_id
-                              )
-                            : null,
-                };
+                    ),
+
+                address:
+                    form.address.trim(),
+
+                price_monthly:
+                    Number(
+                        form.price_monthly
+                    ),
+
+                rooms: form.rooms
+                    ? Number(form.rooms)
+                    : null,
+
+                bedrooms: form.bedrooms
+                    ? Number(form.bedrooms)
+                    : null,
+
+                bathrooms: form.bathrooms
+                    ? Number(form.bathrooms)
+                    : null,
+
+                surface_m2:
+                    form.surface_m2
+                        ? Number(
+                              form.surface_m2
+                          )
+                        : null,
+
+                property_type:
+                    form.property_type,
+
+                listing_type: "rent",
+
+                furnished:
+                    form.furnished ===
+                    "true",
+
+                available_from:
+                    form.available_from ||
+                    null,
+
+                owner_name:
+                    form.owner_name.trim(),
+
+                owner_phone:
+                    form.owner_phone.trim(),
+
+                owner_email:
+                    form.owner_email.trim() ||
+                    user.email ||
+                    null,
+
+                active: true,
+            };
+
+            const {
+                data: createdListing,
+                error: listingError,
+            } = await supabase
+                .from("listings")
+                .insert([listingData])
+                .select("id")
+                .single();
+
+            if (listingError) {
+                throw new Error(
+                    `Anunțul nu a putut fi creat: ${listingError.message}`
+                );
+            }
+
+            listingId =
+                createdListing.id;
+
+            /* UNIVERSITĂȚI OPȚIONALE */
+
+            if (
+                selectedUniversityIds.length >
+                0
+            ) {
+                const universityLinks =
+                    selectedUniversityIds.map(
+                        (universityId) => ({
+                            listing_id:
+                                listingId,
+                            university_id:
+                                universityId,
+                            distance_meters:
+                                null,
+                            walking_minutes:
+                                null,
+                        })
+                    );
+
+                const {
+                    error:
+                        universityLinkError,
+                } = await supabase
+                    .from(
+                        "listing_universities"
+                    )
+                    .insert(
+                        universityLinks
+                    );
+
+                if (universityLinkError) {
+                    throw new Error(
+                        `Universitățile nu au putut fi asociate anunțului: ${universityLinkError.message}`
+                    );
+                }
+            }
+
+            /* POZE */
+
+            const uploadedImages = [];
+
+            for (
+                let index = 0;
+                index < images.length;
+                index++
+            ) {
+                const image =
+                    images[index];
+
+                const file =
+                    image.file;
+
+                const extension =
+                    file.name
+                        .split(".")
+                        .pop()
+                        ?.toLowerCase() ||
+                    "jpg";
+
+                const safeExtension =
+                    extension.replace(
+                        /[^a-z0-9]/g,
+                        ""
+                    ) || "jpg";
+
+                const fileName =
+                    `${Date.now()}-${index}-${crypto.randomUUID()}.${safeExtension}`;
+
+                const storagePath =
+                    `${user.id}/${listingId}/${fileName}`;
+
+                const {
+                    error: uploadError,
+                } = await supabase.storage
+                    .from(
+                        "listing-images"
+                    )
+                    .upload(
+                        storagePath,
+                        file,
+                        {
+                            cacheControl:
+                                "3600",
+                            upsert: false,
+                            contentType:
+                                file.type,
+                        }
+                    );
+
+                if (uploadError) {
+                    throw new Error(
+                        `Fotografia ${index + 1} nu a putut fi încărcată: ${uploadError.message}`
+                    );
+                }
+
+                uploadedPaths.push(
+                    storagePath
+                );
 
                 const {
                     data:
-                        createdListing,
-                    error:
-                        listingError,
+                        publicUrlData,
                 } =
-                    await supabase
+                    supabase.storage
                         .from(
-                            "listings"
+                            "listing-images"
                         )
-                        .insert([
-                            listingData,
-                        ])
-                        .select(
-                            "id"
-                        )
-                        .single();
-
-                if (
-                    listingError
-                ) {
-                    throw new Error(
-                        `Anunțul nu a putut fi creat: ${listingError.message}`
-                    );
-                }
-
-                listingId =
-                    createdListing.id;
-
-                if (
-                    selectedUniversityIds.length >
-                    0
-                ) {
-                    const universityLinks =
-                        selectedUniversityIds.map(
-                            (
-                                universityId
-                            ) => ({
-                                listing_id:
-                                    listingId,
-
-                                university_id:
-                                    universityId,
-
-                                distance_meters:
-                                    null,
-
-                                walking_minutes:
-                                    null,
-                            })
+                        .getPublicUrl(
+                            storagePath
                         );
 
-                    const {
-                        error:
-                            universityLinkError,
-                    } =
-                        await supabase
-                            .from(
-                                "listing_universities"
-                            )
-                            .insert(
-                                universityLinks
-                            );
-
-                    if (
-                        universityLinkError
-                    ) {
-                        throw new Error(
-                            `Universitățile nu au putut fi asociate anunțului: ${universityLinkError.message}`
-                        );
-                    }
-                }
-
-                const uploadedImages = [];
-
-                for (
-                    let index = 0;
-                    index <
-                    images.length;
-                    index++
-                ) {
-                    const image =
-                        images[index];
-
-                    const file =
-                        image.file;
-
-                    const extension =
-                        file.name
-                            .split(
-                                "."
-                            )
-                            .pop()
-                            ?.toLowerCase() ||
-                        "jpg";
-
-                    const safeExtension =
-                        extension.replace(
-                            /[^a-z0-9]/g,
-                            ""
-                        ) || "jpg";
-
-                    const fileName =
-                        `${Date.now()}-${index}-${crypto.randomUUID()}.${safeExtension}`;
-
-                    const storagePath =
-                        `${user.id}/${listingId}/${fileName}`;
-
-                    const {
-                        error:
-                            uploadError,
-                    } =
-                        await supabase.storage
-                            .from(
-                                "listing-images"
-                            )
-                            .upload(
-                                storagePath,
-                                file,
-                                {
-                                    cacheControl:
-                                        "3600",
-
-                                    upsert:
-                                        false,
-
-                                    contentType:
-                                        file.type,
-                                }
-                            );
-
-                    if (
-                        uploadError
-                    ) {
-                        throw new Error(
-                            `Fotografia ${index + 1} nu a putut fi încărcată: ${uploadError.message}`
-                        );
-                    }
-
-                    uploadedPaths.push(
-                        storagePath
-                    );
-
-                    const {
-                        data:
-                            publicUrlData,
-                    } =
-                        supabase.storage
-                            .from(
-                                "listing-images"
-                            )
-                            .getPublicUrl(
-                                storagePath
-                            );
-
-                    uploadedImages.push({
-                        listing_id:
-                            listingId,
-
-                        image_url:
-                            publicUrlData.publicUrl,
-
-                        storage_path:
-                            storagePath,
-
-                        position:
-                            index,
-                    });
-                }
-
-                const {
-                    error:
-                        imagesDatabaseError,
-                } =
-                    await supabase
-                        .from(
-                            "listing_images"
-                        )
-                        .insert(
-                            uploadedImages
-                        );
-
-                if (
-                    imagesDatabaseError
-                ) {
-                    throw new Error(
-                        `Fotografiile nu au putut fi asociate anunțului: ${imagesDatabaseError.message}`
-                    );
-                }
-
-                const coverImageUrl =
-                    uploadedImages[0]
-                        ?.image_url ||
-                    null;
-
-                const {
-                    error:
-                        coverError,
-                } =
-                    await supabase
-                        .from(
-                            "listings"
-                        )
-                        .update({
-                            image_url:
-                                coverImageUrl,
-                        })
-                        .eq(
-                            "id",
-                            listingId
-                        )
-                        .eq(
-                            "user_id",
-                            user.id
-                        );
-
-                if (coverError) {
-                    throw new Error(
-                        `Coperta anunțului nu a putut fi salvată: ${coverError.message}`
-                    );
-                }
-
-                setSuccess(
-                    "Proprietatea a fost publicată cu succes."
-                );
-
-                setTimeout(
-                    () => {
-                        router.push(
-                            "/dashboard"
-                        );
-
-                        router.refresh();
-                    },
-                    1000
-                );
-            } catch (
-                submitError
-            ) {
-                console.error(
-                    submitError
-                );
-
-                await cleanupUploadedFiles(
-                    uploadedPaths
-                );
-
-                if (listingId) {
-                    await supabase
-                        .from(
-                            "listings"
-                        )
-                        .delete()
-                        .eq(
-                            "id",
-                            listingId
-                        )
-                        .eq(
-                            "user_id",
-                            user.id
-                        );
-                }
-
-                setError(
-                    submitError.message ||
-                        "A apărut o eroare la publicarea anunțului."
-                );
-
-                setPublishing(false);
+                uploadedImages.push({
+                    listing_id:
+                        listingId,
+                    image_url:
+                        publicUrlData.publicUrl,
+                    storage_path:
+                        storagePath,
+                    position: index,
+                });
             }
-        };
+
+            const {
+                error:
+                    imagesDatabaseError,
+            } = await supabase
+                .from("listing_images")
+                .insert(
+                    uploadedImages
+                );
+
+            if (
+                imagesDatabaseError
+            ) {
+                throw new Error(
+                    `Fotografiile nu au putut fi asociate anunțului: ${imagesDatabaseError.message}`
+                );
+            }
+
+            /* COPERTĂ */
+
+            const coverImageUrl =
+                uploadedImages[0]
+                    ?.image_url ||
+                null;
+
+            const {
+                error: coverError,
+            } = await supabase
+                .from("listings")
+                .update({
+                    image_url:
+                        coverImageUrl,
+                })
+                .eq(
+                    "id",
+                    listingId
+                )
+                .eq(
+                    "user_id",
+                    user.id
+                );
+
+            if (coverError) {
+                throw new Error(
+                    `Coperta anunțului nu a putut fi salvată: ${coverError.message}`
+                );
+            }
+
+            setSuccess(
+                "Proprietatea a fost publicată cu succes."
+            );
+
+            setTimeout(() => {
+                router.push(
+                    "/dashboard"
+                );
+                router.refresh();
+            }, 1000);
+        } catch (submitError) {
+            console.error(
+                submitError
+            );
+
+            await cleanupUploadedFiles(
+                uploadedPaths
+            );
+
+            if (listingId) {
+                await supabase
+                    .from("listings")
+                    .delete()
+                    .eq(
+                        "id",
+                        listingId
+                    )
+                    .eq(
+                        "user_id",
+                        user.id
+                    );
+            }
+
+            setError(
+                submitError.message ||
+                    "A apărut o eroare la publicarea anunțului."
+            );
+
+            setPublishing(false);
+        }
+    };
 
     /* =========================
        LOADING
@@ -911,108 +884,79 @@ export default function AdaugaProprietatePage() {
         return (
             <main
                 style={{
-                    minHeight:
-                        "100vh",
+                    minHeight: "100vh",
                     background:
                         "#f7f8fa",
-                    display:
-                        "flex",
+                    display: "flex",
                     alignItems:
                         "center",
                     justifyContent:
                         "center",
-                    color:
-                        "#6b7280",
-                    fontSize:
-                        "15px",
+                    color: "#6b7280",
+                    fontSize: "15px",
                     fontWeight:
                         "600",
                 }}
             >
-                Se verifică
-                autentificarea...
+                Se verifică autentificarea...
             </main>
         );
     }
 
     const inputStyle = {
         width: "100%",
-        boxSizing:
-            "border-box",
-        border:
-            "1px solid #d1d5db",
-        borderRadius:
-            "11px",
-        padding:
-            "14px 15px",
-        fontFamily:
-            "inherit",
-        fontSize:
-            "15px",
-        color:
-            "#111827",
-        background:
-            "#ffffff",
-        outline:
-            "none",
+        boxSizing: "border-box",
+        border: "1px solid #d1d5db",
+        borderRadius: "11px",
+        padding: "14px 15px",
+        fontFamily: "inherit",
+        fontSize: "15px",
+        color: "#111827",
+        background: "#ffffff",
+        outline: "none",
     };
 
     const labelStyle = {
-        display:
-            "block",
-        fontSize:
-            "14px",
-        fontWeight:
-            "700",
-        marginBottom:
-            "8px",
-        color:
-            "#111827",
+        display: "block",
+        fontSize: "14px",
+        fontWeight: "700",
+        marginBottom: "8px",
+        color: "#111827",
     };
 
     const fieldStyle = {
-        marginBottom:
-            "22px",
+        marginBottom: "22px",
     };
 
     return (
         <main
             style={{
-                minHeight:
-                    "100vh",
-                background:
-                    "#f7f8fa",
-                color:
-                    "#111827",
+                minHeight: "100vh",
+                background: "#f7f8fa",
+                color: "#111827",
             }}
         >
             <header
                 style={{
-                    height:
-                        "72px",
-                    background:
-                        "#ffffff",
+                    height: "72px",
+                    background: "#ffffff",
                     borderBottom:
                         "1px solid #e5e7eb",
-                    display:
-                        "flex",
+                    display: "flex",
                     alignItems:
                         "center",
                     justifyContent:
                         "space-between",
-                    padding:
-                        "0 7%",
+                    padding: "0 7%",
                 }}
             >
                 <a
                     href="/"
                     style={{
-                        color:
-                            "#111827",
+                        color: "#111827",
                         textDecoration:
                             "none",
-                        fontSize:
-                            "25px",
+                        fontSize: "25px",
                         fontWeight:
                             "800",
                         letterSpacing:
@@ -1024,20 +968,16 @@ export default function AdaugaProprietatePage() {
 
                 <div
                     style={{
-                        display:
-                            "flex",
+                        display: "flex",
                         alignItems:
                             "center",
-                        gap:
-                            "18px",
+                        gap: "18px",
                     }}
                 >
                     <span
                         style={{
-                            color:
-                                "#6b7280",
-                            fontSize:
-                                "13px",
+                            color: "#6b7280",
+                            fontSize: "13px",
                             fontWeight:
                                 "600",
                         }}
@@ -1098,8 +1038,7 @@ export default function AdaugaProprietatePage() {
                             "inline-flex",
                         alignItems:
                             "center",
-                        gap:
-                            "8px",
+                        gap: "8px",
                         border:
                             "none",
                         background:
@@ -1129,9 +1068,7 @@ export default function AdaugaProprietatePage() {
                     >
                         ←
                     </span>
-
-                    Înapoi la
-                    dashboard
+                    Înapoi la dashboard
                 </button>
 
                 <div
@@ -1160,14 +1097,12 @@ export default function AdaugaProprietatePage() {
                                 "16px",
                         }}
                     >
-                        Publică o
-                        proprietate
+                        Publică o proprietate
                     </div>
 
                     <h1
                         style={{
-                            margin:
-                                0,
+                            margin: 0,
                             fontSize:
                                 "40px",
                             lineHeight:
@@ -1178,8 +1113,7 @@ export default function AdaugaProprietatePage() {
                                 "800",
                         }}
                     >
-                        Adaugă
-                        proprietatea
+                        Adaugă proprietatea
                     </h1>
 
                     <p
@@ -1196,12 +1130,7 @@ export default function AdaugaProprietatePage() {
                                 "650px",
                         }}
                     >
-                        Completează
-                        informațiile
-                        proprietății
-                        tale pentru
-                        a publica
-                        anunțul.
+                        Completează informațiile proprietății tale pentru a publica anunțul.
                     </p>
                 </div>
 
@@ -1230,8 +1159,7 @@ export default function AdaugaProprietatePage() {
                     >
                         <h2
                             style={{
-                                margin:
-                                    0,
+                                margin: 0,
                                 fontSize:
                                     "20px",
                                 fontWeight:
@@ -1253,15 +1181,7 @@ export default function AdaugaProprietatePage() {
                                     "8px 0 22px",
                             }}
                         >
-                            Adaugă
-                            între 1
-                            și 10
-                            fotografii.
-                            Prima
-                            fotografie
-                            va fi
-                            coperta
-                            anunțului.
+                            Adaugă între 1 și 10 fotografii. Prima fotografie va fi coperta anunțului.
                         </p>
 
                         <label
@@ -1328,12 +1248,8 @@ export default function AdaugaProprietatePage() {
                                         "7px",
                                 }}
                             >
-                                {
-                                    images.length
-                                }
-                                /10
-                                fotografii
-                                selectate
+                                {images.length}
+                                /10 fotografii selectate
                             </div>
                         </label>
 
@@ -1375,10 +1291,7 @@ export default function AdaugaProprietatePage() {
                                                 src={
                                                     image.preview
                                                 }
-                                                alt={`Fotografie ${
-                                                    index +
-                                                    1
-                                                }`}
+                                                alt={`Fotografie ${index + 1}`}
                                                 style={{
                                                     width:
                                                         "100%",
@@ -1445,16 +1358,12 @@ export default function AdaugaProprietatePage() {
                                                         "#ffffff",
                                                     color:
                                                         "#111827",
-                                                    fontFamily:
-                                                        "inherit",
                                                     fontSize:
                                                         "17px",
                                                     fontWeight:
                                                         "800",
                                                     cursor:
                                                         "pointer",
-                                                    boxShadow:
-                                                        "0 2px 8px rgba(0,0,0,0.18)",
                                                 }}
                                             >
                                                 ×
@@ -1465,7 +1374,8 @@ export default function AdaugaProprietatePage() {
                             </div>
                         )}
                     </div>
-                    {/* DETALII PROPRIETATE */}
+
+                    {/* DETALII */}
 
                     <div
                         style={{
@@ -1493,8 +1403,7 @@ export default function AdaugaProprietatePage() {
                                     "800",
                             }}
                         >
-                            Detalii
-                            proprietate
+                            Detalii proprietate
                         </h2>
 
                         <div
@@ -1507,8 +1416,7 @@ export default function AdaugaProprietatePage() {
                                     labelStyle
                                 }
                             >
-                                Titlul
-                                anunțului
+                                Titlul anunțului
                             </label>
 
                             <input
@@ -1520,7 +1428,7 @@ export default function AdaugaProprietatePage() {
                                 onChange={
                                     updateField
                                 }
-                                placeholder="Ex: Apartament 2 camere aproape de UMFT"
+                                placeholder="Ex: Apartament 2 camere în Timișoara"
                                 style={
                                     inputStyle
                                 }
@@ -1537,8 +1445,7 @@ export default function AdaugaProprietatePage() {
                                     labelStyle
                                 }
                             >
-                                Tipul
-                                proprietății
+                                Tipul proprietății
                             </label>
 
                             <select
@@ -1556,22 +1463,17 @@ export default function AdaugaProprietatePage() {
                                 <option value="apartment">
                                     Apartament
                                 </option>
-
                                 <option value="studio">
                                     Garsonieră
                                 </option>
-
                                 <option value="room">
                                     Cameră
                                 </option>
-
                                 <option value="house">
                                     Casă
                                 </option>
                             </select>
                         </div>
-
-                        {/* ORAȘ + CARTIER */}
 
                         <div
                             style={{
@@ -1581,364 +1483,274 @@ export default function AdaugaProprietatePage() {
                                     "1fr 1fr",
                                 gap:
                                     "18px",
+                                alignItems:
+                                    "start",
                             }}
                         >
-                            <div
-                                style={
-                                    fieldStyle
-                                }
-                            >
-                                <label
+                            <div>
+                                <div
                                     style={
-                                        labelStyle
+                                        fieldStyle
                                     }
                                 >
-                                    Oraș
-                                </label>
+                                    <label
+                                        style={
+                                            labelStyle
+                                        }
+                                    >
+                                        Oraș
+                                    </label>
 
-                                <select
-                                    value={
-                                        form.city
-                                    }
-                                    onChange={
-                                        handleCityChange
-                                    }
-                                    disabled={
-                                        loadingLocations
-                                    }
-                                    style={{
-                                        ...inputStyle,
-                                        cursor:
+                                    <select
+                                        value={
+                                            form.city
+                                        }
+                                        onChange={
+                                            handleCityChange
+                                        }
+                                        disabled={
                                             loadingLocations
-                                                ? "wait"
-                                                : "pointer",
-                                        background:
-                                            loadingLocations
-                                                ? "#f9fafb"
-                                                : "#ffffff",
-                                    }}
-                                >
-                                    <option value="">
-                                        {loadingLocations
-                                            ? "Se încarcă orașele..."
-                                            : "Alege orașul"}
-                                    </option>
-
-                                    {cities.map(
-                                        (
-                                            city
-                                        ) => (
-                                            <option
-                                                key={
-                                                    city.id
-                                                }
-                                                value={
-                                                    city.name
-                                                }
-                                            >
-                                                {
-                                                    city.name
-                                                }
-                                            </option>
-                                        )
-                                    )}
-                                </select>
-                            </div>
-
-                            <div
-                                style={
-                                    fieldStyle
-                                }
-                            >
-                                <label
-                                    style={
-                                        labelStyle
-                                    }
-                                >
-                                    Zonă /
-                                    cartier
-                                </label>
-
-                                <select
-                                    name="neighborhood_id"
-                                    value={
-                                        form.neighborhood_id
-                                    }
-                                    onChange={
-                                        updateField
-                                    }
-                                    disabled={
-                                        !form.city ||
-                                        loadingLocations
-                                    }
-                                    style={{
-                                        ...inputStyle,
-                                        cursor:
-                                            !form.city ||
-                                            loadingLocations
-                                                ? "not-allowed"
-                                                : "pointer",
-                                        background:
-                                            !form.city ||
-                                            loadingLocations
-                                                ? "#f9fafb"
-                                                : "#ffffff",
-                                    }}
-                                >
-                                    <option value="">
-                                        {!form.city
-                                            ? "Alege mai întâi orașul"
-                                            : loadingLocations
-                                            ? "Se încarcă zonele..."
-                                            : "Alege zona / cartierul"}
-                                    </option>
-
-                                    {neighborhoodsForCity.map(
-                                        (
-                                            neighborhood
-                                        ) => (
-                                            <option
-                                                key={
-                                                    neighborhood.id
-                                                }
-                                                value={
-                                                    neighborhood.id
-                                                }
-                                            >
-                                                {
-                                                    neighborhood.name
-                                                }
-                                            </option>
-                                        )
-                                    )}
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* ADRESA */}
-
-                        <div
-                            style={
-                                fieldStyle
-                            }
-                        >
-                            <label
-                                style={
-                                    labelStyle
-                                }
-                            >
-                                Adresa
-                                proprietății
-                            </label>
-
-                            <input
-                                name="address"
-                                type="text"
-                                value={
-                                    form.address
-                                }
-                                onChange={
-                                    updateField
-                                }
-                                placeholder="Strada, număr"
-                                style={
-                                    inputStyle
-                                }
-                            />
-                        </div>
-
-                        {/* UNIVERSITĂȚI */}
-
-                        <div
-                            style={
-                                fieldStyle
-                            }
-                        >
-                            <label
-                                style={
-                                    labelStyle
-                                }
-                            >
-                                Universități
-                                apropiate
-                                (opțional)
-                            </label>
-
-                            <div
-                                style={{
-                                    border:
-                                        "1px solid #d1d5db",
-                                    borderRadius:
-                                        "11px",
-                                    background:
-                                        form.city
-                                            ? "#ffffff"
-                                            : "#f9fafb",
-                                    maxHeight:
-                                        "230px",
-                                    overflowY:
-                                        "auto",
-                                    padding:
-                                        "8px",
-                                    opacity:
-                                        form.city
-                                            ? 1
-                                            : 0.65,
-                                }}
-                            >
-                                {!form.city ? (
-                                    <div
+                                        }
                                         style={{
-                                            padding:
-                                                "8px",
-                                            color:
-                                                "#6b7280",
-                                            fontSize:
-                                                "14px",
+                                            ...inputStyle,
+                                            cursor:
+                                                loadingLocations
+                                                    ? "wait"
+                                                    : "pointer",
                                         }}
                                     >
-                                        Alege
-                                        mai
-                                        întâi
-                                        orașul
-                                    </div>
-                                ) : universitiesForCity.length ===
-                                  0 ? (
-                                    <div
-                                        style={{
-                                            padding:
-                                                "8px",
-                                            color:
-                                                "#6b7280",
-                                            fontSize:
-                                                "14px",
-                                        }}
-                                    >
-                                        Nu există
-                                        universități
-                                        disponibile
-                                        pentru
-                                        acest
-                                        oraș.
-                                    </div>
-                                ) : (
-                                    universitiesForCity.map(
-                                        (
-                                            university
-                                        ) => {
-                                            const checked =
-                                                selectedUniversityIds.includes(
-                                                    university.id
-                                                );
+                                        <option value="">
+                                            {loadingLocations
+                                                ? "Se încarcă orașele..."
+                                                : "Alege orașul"}
+                                        </option>
 
-                                            return (
-                                                <label
+                                        {cities.map(
+                                            (
+                                                city
+                                            ) => (
+                                                <option
                                                     key={
-                                                        university.id
+                                                        city.id
                                                     }
-                                                    style={{
-                                                        display:
-                                                            "flex",
-                                                        alignItems:
-                                                            "flex-start",
-                                                        gap:
-                                                            "10px",
-                                                        padding:
-                                                            "10px",
-                                                        borderRadius:
-                                                            "9px",
-                                                        cursor:
-                                                            "pointer",
-                                                        background:
-                                                            checked
-                                                                ? "#eff6ff"
-                                                                : "transparent",
-                                                    }}
+                                                    value={
+                                                        city.name
+                                                    }
                                                 >
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={
-                                                            checked
+                                                    {
+                                                        city.name
+                                                    }
+                                                </option>
+                                            )
+                                        )}
+                                    </select>
+                                </div>
+
+                                <div
+                                    style={
+                                        fieldStyle
+                                    }
+                                >
+                                    <label
+                                        style={
+                                            labelStyle
+                                        }
+                                    >
+                                        Zonă / cartier
+                                    </label>
+
+                                    <select
+                                        name="neighborhood_id"
+                                        value={
+                                            form.neighborhood_id
+                                        }
+                                        onChange={
+                                            updateField
+                                        }
+                                        disabled={
+                                            !form.city ||
+                                            loadingLocations ||
+                                            !neighborhoodsForCity.length
+                                        }
+                                        style={{
+                                            ...inputStyle,
+                                            cursor:
+                                                !form.city ||
+                                                loadingLocations ||
+                                                !neighborhoodsForCity.length
+                                                    ? "not-allowed"
+                                                    : "pointer",
+                                        }}
+                                    >
+                                        <option value="">
+                                            {!form.city
+                                                ? "Alege mai întâi orașul"
+                                                : loadingLocations
+                                                  ? "Se încarcă zonele..."
+                                                  : "Alege zona / cartierul"}
+                                        </option>
+
+                                        {neighborhoodsForCity.map(
+                                            (
+                                                neighborhood
+                                            ) => (
+                                                <option
+                                                    key={
+                                                        neighborhood.id
+                                                    }
+                                                    value={
+                                                        neighborhood.id
+                                                    }
+                                                >
+                                                    {
+                                                        neighborhood.name
+                                                    }
+                                                </option>
+                                            )
+                                        )}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div
+                                style={
+                                    fieldStyle
+                                }
+                            >
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Universități apropiate (opțional)
+                                </label>
+
+                                <div
+                                    style={{
+                                        border:
+                                            "1px solid #d1d5db",
+                                        borderRadius:
+                                            "11px",
+                                        maxHeight:
+                                            "230px",
+                                        overflowY:
+                                            "auto",
+                                        padding:
+                                            "8px",
+                                        background:
+                                            form.city
+                                                ? "#ffffff"
+                                                : "#f9fafb",
+                                    }}
+                                >
+                                    {!form.city ? (
+                                        <div
+                                            style={{
+                                                padding:
+                                                    "8px",
+                                                color:
+                                                    "#6b7280",
+                                                fontSize:
+                                                    "14px",
+                                            }}
+                                        >
+                                            Alege mai întâi orașul
+                                        </div>
+                                    ) : universitiesForCity.length ===
+                                      0 ? (
+                                        <div
+                                            style={{
+                                                padding:
+                                                    "8px",
+                                                color:
+                                                    "#6b7280",
+                                                fontSize:
+                                                    "14px",
+                                            }}
+                                        >
+                                            Nu există universități disponibile pentru acest oraș.
+                                        </div>
+                                    ) : (
+                                        universitiesForCity.map(
+                                            (
+                                                university
+                                            ) => {
+                                                const checked =
+                                                    selectedUniversityIds.includes(
+                                                        university.id
+                                                    );
+
+                                                return (
+                                                    <label
+                                                        key={
+                                                            university.id
                                                         }
-                                                        onChange={() => {
-                                                            setSelectedUniversityIds(
-                                                                (
-                                                                    current
-                                                                ) =>
-                                                                    current.includes(
-                                                                        university.id
-                                                                    )
-                                                                        ? current.filter(
-                                                                              (
-                                                                                  id
-                                                                              ) =>
-                                                                                  id !==
-                                                                                  university.id
-                                                                          )
-                                                                        : [
-                                                                              ...current,
-                                                                              university.id,
-                                                                          ]
-                                                            );
-                                                        }}
                                                         style={{
-                                                            marginTop:
-                                                                "2px",
-                                                            width:
-                                                                "16px",
-                                                            height:
-                                                                "16px",
+                                                            display:
+                                                                "flex",
+                                                            gap:
+                                                                "10px",
+                                                            padding:
+                                                                "10px",
+                                                            borderRadius:
+                                                                "9px",
                                                             cursor:
                                                                 "pointer",
-                                                        }}
-                                                    />
-
-                                                    <span
-                                                        style={{
-                                                            fontSize:
-                                                                "14px",
-                                                            lineHeight:
-                                                                "1.4",
-                                                            color:
-                                                                "#111827",
-                                                            fontWeight:
+                                                            background:
                                                                 checked
-                                                                    ? "700"
-                                                                    : "500",
+                                                                    ? "#eff6ff"
+                                                                    : "transparent",
                                                         }}
                                                     >
-                                                        {university.short_name
-                                                            ? `${university.short_name} — ${university.name}`
-                                                            : university.name}
-                                                    </span>
-                                                </label>
-                                            );
-                                        }
-                                    )
-                                )}
-                            </div>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={
+                                                                checked
+                                                            }
+                                                            onChange={() => {
+                                                                setSelectedUniversityIds(
+                                                                    (
+                                                                        current
+                                                                    ) =>
+                                                                        current.includes(
+                                                                            university.id
+                                                                        )
+                                                                            ? current.filter(
+                                                                                  (
+                                                                                      id
+                                                                                  ) =>
+                                                                                      id !==
+                                                                                      university.id
+                                                                              )
+                                                                            : [
+                                                                                  ...current,
+                                                                                  university.id,
+                                                                              ]
+                                                                );
+                                                            }}
+                                                        />
 
-                            {form.city &&
-                                selectedUniversityIds.length >
-                                    0 && (
-                                    <div
-                                        style={{
-                                            marginTop:
-                                                "8px",
-                                            color:
-                                                "#2563eb",
-                                            fontSize:
-                                                "12px",
-                                            fontWeight:
-                                                "700",
-                                        }}
-                                    >
-                                        {selectedUniversityIds.length ===
-                                        1
-                                            ? "1 universitate selectată"
-                                            : `${selectedUniversityIds.length} universități selectate`}
-                                    </div>
-                                )}
+                                                        <span
+                                                            style={{
+                                                                fontSize:
+                                                                    "14px",
+                                                                fontWeight:
+                                                                    checked
+                                                                        ? "700"
+                                                                        : "500",
+                                                            }}
+                                                        >
+                                                            {university.short_name
+                                                                ? `${university.short_name} — ${university.name}`
+                                                                : university.name}
+                                                        </span>
+                                                    </label>
+                                                );
+                                            }
+                                        )
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
                         <div
@@ -1961,16 +1773,8 @@ export default function AdaugaProprietatePage() {
                                     "22px",
                             }}
                         >
-                            Poți selecta una sau
-                            mai multe universități
-                            apropiate dacă dorești.
-                            Este opțional. Anunțul
-                            va apărea oricum în
-                            căutările generale
-                            pentru orașul selectat.
+                            Poți selecta una sau mai multe universități apropiate dacă dorești. Este opțional. Anunțul va apărea oricum în căutările generale pentru orașul selectat.
                         </div>
-
-                        {/* PREȚ + ADRESĂ */}
 
                         <div
                             style={{
@@ -1992,8 +1796,7 @@ export default function AdaugaProprietatePage() {
                                         labelStyle
                                     }
                                 >
-                                    Preț /
-                                    lună (€)
+                                    Preț / lună (€)
                                 </label>
 
                                 <input
@@ -2024,49 +1827,32 @@ export default function AdaugaProprietatePage() {
                                         labelStyle
                                     }
                                 >
-                                    Tip
-                                    proprietate
+                                    Adresa proprietății
                                 </label>
 
-                                <select
-                                    name="property_type"
+                                <input
+                                    name="address"
+                                    type="text"
                                     value={
-                                        form.property_type
+                                        form.address
                                     }
                                     onChange={
                                         updateField
                                     }
+                                    placeholder="Strada, număr"
                                     style={
                                         inputStyle
                                     }
-                                >
-                                    <option value="apartment">
-                                        Apartament
-                                    </option>
-
-                                    <option value="studio">
-                                        Garsonieră
-                                    </option>
-
-                                    <option value="room">
-                                        Cameră
-                                    </option>
-
-                                    <option value="house">
-                                        Casă
-                                    </option>
-                                </select>
+                                />
                             </div>
                         </div>
-
-                        {/* CAMERE / DORMITOARE / BĂI / SUPRAFAȚĂ */}
 
                         <div
                             style={{
                                 display:
                                     "grid",
                                 gridTemplateColumns:
-                                    "repeat(2, minmax(0, 1fr))",
+                                    "1fr 1fr",
                                 gap:
                                     "18px",
                             }}
@@ -2088,7 +1874,6 @@ export default function AdaugaProprietatePage() {
                                     name="rooms"
                                     type="number"
                                     min="1"
-                                    step="1"
                                     value={
                                         form.rooms
                                     }
@@ -2119,7 +1904,6 @@ export default function AdaugaProprietatePage() {
                                     name="bedrooms"
                                     type="number"
                                     min="0"
-                                    step="1"
                                     value={
                                         form.bedrooms
                                     }
@@ -2150,7 +1934,6 @@ export default function AdaugaProprietatePage() {
                                     name="bathrooms"
                                     type="number"
                                     min="0"
-                                    step="1"
                                     value={
                                         form.bathrooms
                                     }
@@ -2174,15 +1957,14 @@ export default function AdaugaProprietatePage() {
                                         labelStyle
                                     }
                                 >
-                                    Suprafață
-                                    (m²)
+                                    Suprafață (m²)
                                 </label>
 
                                 <input
                                     name="surface_m2"
                                     type="number"
                                     min="1"
-                                    step="1"
+                                    step="0.1"
                                     value={
                                         form.surface_m2
                                     }
@@ -2196,8 +1978,6 @@ export default function AdaugaProprietatePage() {
                                 />
                             </div>
                         </div>
-
-                        {/* MOBILAT + DATA */}
 
                         <div
                             style={{
@@ -2237,12 +2017,15 @@ export default function AdaugaProprietatePage() {
                                     <option value="true">
                                         Da
                                     </option>
-
                                     <option value="false">
                                         Nu
                                     </option>
                                 </select>
                             </div>
+
+                            {/* =========================
+                                DATA
+                            ========================= */}
 
                             <div
                                 style={
@@ -2254,28 +2037,320 @@ export default function AdaugaProprietatePage() {
                                         labelStyle
                                     }
                                 >
-                                    Disponibil
-                                    de la
+                                    Disponibil de la
                                 </label>
 
-                                <input
-                                    name="available_from"
-                                    type="date"
-                                    lang="ro"
-                                    value={
-                                        form.available_from
-                                    }
-                                    onChange={
-                                        updateField
-                                    }
-                                    style={
-                                        inputStyle
-                                    }
-                                />
+                                <div
+                                    style={{
+                                        position:
+                                            "relative",
+                                    }}
+                                >
+                                    <button
+                                        type="button"
+                                        onClick={
+                                            openCalendar
+                                        }
+                                        style={{
+                                            ...inputStyle,
+                                            textAlign:
+                                                "left",
+                                            cursor:
+                                                "pointer",
+                                            display:
+                                                "flex",
+                                            alignItems:
+                                                "center",
+                                            justifyContent:
+                                                "space-between",
+                                        }}
+                                    >
+                                        <span
+                                            style={{
+                                                color:
+                                                    form.available_from
+                                                        ? "#111827"
+                                                        : "#9ca3af",
+                                            }}
+                                        >
+                                            {form.available_from
+                                                ? formatRomanianDate(
+                                                      form.available_from
+                                                  )
+                                                : "ZZ/LL/AAAA"}
+                                        </span>
+
+                                        <span
+                                            style={{
+                                                fontSize:
+                                                    "17px",
+                                                color:
+                                                    "#6b7280",
+                                            }}
+                                        >
+                                            📅
+                                        </span>
+                                    </button>
+
+                                    {calendarOpen && (
+                                        <div
+                                            style={{
+                                                position:
+                                                    "absolute",
+                                                zIndex:
+                                                    1000,
+                                                top:
+                                                    "calc(100% + 8px)",
+                                                right:
+                                                    0,
+                                                width:
+                                                    "310px",
+                                                background:
+                                                    "#ffffff",
+                                                border:
+                                                    "1px solid #e5e7eb",
+                                                borderRadius:
+                                                    "14px",
+                                                padding:
+                                                    "16px",
+                                                boxShadow:
+                                                    "0 15px 40px rgba(0,0,0,0.15)",
+                                            }}
+                                        >
+                                            <div
+                                                style={{
+                                                    display:
+                                                        "flex",
+                                                    alignItems:
+                                                        "center",
+                                                    justifyContent:
+                                                        "space-between",
+                                                    marginBottom:
+                                                        "14px",
+                                                }}
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={
+                                                        previousCalendarMonth
+                                                    }
+                                                    style={{
+                                                        border:
+                                                            "none",
+                                                        background:
+                                                            "#f3f4f6",
+                                                        borderRadius:
+                                                            "8px",
+                                                        width:
+                                                            "34px",
+                                                        height:
+                                                            "34px",
+                                                        cursor:
+                                                            "pointer",
+                                                        fontSize:
+                                                            "20px",
+                                                    }}
+                                                >
+                                                    ‹
+                                                </button>
+
+                                                <strong
+                                                    style={{
+                                                        fontSize:
+                                                            "15px",
+                                                    }}
+                                                >
+                                                    {
+                                                        romanianMonths[
+                                                            calendarMonthIndex
+                                                        ]
+                                                    }{" "}
+                                                    {
+                                                        calendarYear
+                                                    }
+                                                </strong>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={
+                                                        nextCalendarMonth
+                                                    }
+                                                    style={{
+                                                        border:
+                                                            "none",
+                                                        background:
+                                                            "#f3f4f6",
+                                                        borderRadius:
+                                                            "8px",
+                                                        width:
+                                                            "34px",
+                                                        height:
+                                                            "34px",
+                                                        cursor:
+                                                            "pointer",
+                                                        fontSize:
+                                                            "20px",
+                                                    }}
+                                                >
+                                                    ›
+                                                </button>
+                                            </div>
+
+                                            <div
+                                                style={{
+                                                    display:
+                                                        "grid",
+                                                    gridTemplateColumns:
+                                                        "repeat(7, 1fr)",
+                                                    gap:
+                                                        "4px",
+                                                    marginBottom:
+                                                        "5px",
+                                                }}
+                                            >
+                                                {[
+                                                    "Lu",
+                                                    "Ma",
+                                                    "Mi",
+                                                    "Jo",
+                                                    "Vi",
+                                                    "Sâ",
+                                                    "Du",
+                                                ].map(
+                                                    (
+                                                        day
+                                                    ) => (
+                                                        <div
+                                                            key={
+                                                                day
+                                                            }
+                                                            style={{
+                                                                textAlign:
+                                                                    "center",
+                                                                fontSize:
+                                                                    "11px",
+                                                                fontWeight:
+                                                                    "800",
+                                                                color:
+                                                                    "#6b7280",
+                                                                padding:
+                                                                    "5px 0",
+                                                            }}
+                                                        >
+                                                            {
+                                                                day
+                                                            }
+                                                        </div>
+                                                    )
+                                                )}
+                                            </div>
+
+                                            <div
+                                                style={{
+                                                    display:
+                                                        "grid",
+                                                    gridTemplateColumns:
+                                                        "repeat(7, 1fr)",
+                                                    gap:
+                                                        "4px",
+                                                }}
+                                            >
+                                                {Array.from(
+                                                    {
+                                                        length:
+                                                            mondayOffset,
+                                                    }
+                                                ).map(
+                                                    (
+                                                        _,
+                                                        index
+                                                    ) => (
+                                                        <div
+                                                            key={`empty-${index}`}
+                                                        />
+                                                    )
+                                                )}
+
+                                                {Array.from(
+                                                    {
+                                                        length:
+                                                            daysInMonth,
+                                                    },
+                                                    (
+                                                        _,
+                                                        index
+                                                    ) => {
+                                                        const day =
+                                                            index +
+                                                            1;
+
+                                                        const isoDate =
+                                                            `${calendarYear}-${String(
+                                                                calendarMonthIndex +
+                                                                    1
+                                                            ).padStart(
+                                                                2,
+                                                                "0"
+                                                            )}-${String(
+                                                                day
+                                                            ).padStart(
+                                                                2,
+                                                                "0"
+                                                            )}`;
+
+                                                        const selected =
+                                                            form.available_from ===
+                                                            isoDate;
+
+                                                        return (
+                                                            <button
+                                                                key={
+                                                                    isoDate
+                                                                }
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    selectCalendarDate(
+                                                                        calendarYear,
+                                                                        calendarMonthIndex,
+                                                                        day
+                                                                    )
+                                                                }
+                                                                style={{
+                                                                    border:
+                                                                        "none",
+                                                                    borderRadius:
+                                                                        "8px",
+                                                                    padding:
+                                                                        "8px 0",
+                                                                    cursor:
+                                                                        "pointer",
+                                                                    background:
+                                                                        selected
+                                                                            ? "#2563eb"
+                                                                            : "#ffffff",
+                                                                    color:
+                                                                        selected
+                                                                            ? "#ffffff"
+                                                                            : "#111827",
+                                                                    fontWeight:
+                                                                        selected
+                                                                            ? "800"
+                                                                            : "500",
+                                                                }}
+                                                            >
+                                                                {
+                                                                    day
+                                                                }
+                                                            </button>
+                                                        );
+                                                    }
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
-
-                        {/* DESCRIERE */}
 
                         <div>
                             <label
@@ -2307,7 +2382,7 @@ export default function AdaugaProprietatePage() {
                         </div>
                     </div>
 
-                    {/* DATE CONTACT */}
+                    {/* CONTACT */}
 
                     <div
                         style={{
@@ -2335,8 +2410,7 @@ export default function AdaugaProprietatePage() {
                                     "800",
                             }}
                         >
-                            Date de
-                            contact
+                            Date de contact
                         </h2>
 
                         <p
@@ -2351,13 +2425,7 @@ export default function AdaugaProprietatePage() {
                                     "1.6",
                             }}
                         >
-                            Aceste
-                            informații
-                            vor permite
-                            persoanelor
-                            interesate
-                            să contacteze
-                            proprietarul.
+                            Aceste informații vor permite persoanelor interesate să contacteze proprietarul.
                         </p>
 
                         <div
@@ -2450,7 +2518,6 @@ export default function AdaugaProprietatePage() {
                             </div>
                         </div>
                     </div>
-                    {/* MESAJE */}
 
                     {error && (
                         <div
@@ -2494,8 +2561,6 @@ export default function AdaugaProprietatePage() {
                                     "14px",
                                 fontWeight:
                                     "600",
-                                lineHeight:
-                                    "1.5",
                                 marginBottom:
                                     "18px",
                             }}
@@ -2503,8 +2568,6 @@ export default function AdaugaProprietatePage() {
                             {success}
                         </div>
                     )}
-
-                    {/* PUBLICARE */}
 
                     <div
                         style={{
@@ -2535,8 +2598,7 @@ export default function AdaugaProprietatePage() {
                                         "800",
                                 }}
                             >
-                                Gata de
-                                publicare?
+                                Gata de publicare?
                             </div>
 
                             <div
@@ -2549,12 +2611,7 @@ export default function AdaugaProprietatePage() {
                                         "5px",
                                 }}
                             >
-                                Verifică
-                                informațiile
-                                și
-                                fotografiile
-                                înainte de
-                                publicare.
+                                Verifică informațiile și fotografiile înainte de publicare. Asocierea cu universități este opțională.
                             </div>
                         </div>
 
@@ -2597,35 +2654,6 @@ export default function AdaugaProprietatePage() {
                     </div>
                 </form>
             </section>
-
-            {/* RESPONSIVE */}
-
-            <style>{`
-                @media (max-width: 760px) {
-                    header {
-                        padding: 0 20px !important;
-                    }
-
-                    section {
-                        padding: 40px 18px 70px !important;
-                    }
-
-                    form > div > div {
-                        grid-template-columns: 1fr !important;
-                    }
-
-                    h1 {
-                        font-size: 32px !important;
-                    }
-                }
-
-                input:focus,
-                select:focus,
-                textarea:focus {
-                    border-color: #93c5fd !important;
-                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
-                }
-            `}</style>
         </main>
     );
 }
