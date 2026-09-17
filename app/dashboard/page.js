@@ -28,6 +28,7 @@ export default function DashboardPage() {
   const [profilePhone, setProfilePhone] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState("");
+  const [phoneRequired, setPhoneRequired] = useState(false);
 
   /*
     ÎNCĂRCARE DASHBOARD
@@ -179,6 +180,13 @@ export default function DashboardPage() {
 
     const conversationFromUrl =
       params.get("conversation");
+
+    const requiredFromUrl =
+      params.get("required");
+
+    if (requiredFromUrl === "phone") {
+      setPhoneRequired(true);
+    }
 
     if (sectionFromUrl === "messages") {
       setActiveSection("messages");
@@ -1001,6 +1009,22 @@ export default function DashboardPage() {
         "Profilul a fost actualizat."
       );
 
+      if (cleanPhone) {
+        setPhoneRequired(false);
+
+        if (typeof window !== "undefined") {
+          const params = new URLSearchParams(
+            window.location.search
+          );
+
+          if (params.get("required") === "phone") {
+            router.replace(
+              "/dashboard?section=profile"
+            );
+          }
+        }
+      }
+
       setProfileSaving(
         false
       );
@@ -1346,6 +1370,8 @@ export default function DashboardPage() {
                 setActiveSection(
                   "profile"
                 );
+
+                setPhoneRequired(false);
 
                 router.replace(
                   "/dashboard?section=profile"
@@ -1742,6 +1768,42 @@ export default function DashboardPage() {
                 </p>
               </div>
 
+              {phoneRequired && (
+                <div
+                  style={{
+                    maxWidth: "620px",
+                    marginBottom: "18px",
+                    background: "#FFF7ED",
+                    border:
+                      "1px solid #FED7AA",
+                    color: "#9A3412",
+                    borderRadius: "12px",
+                    padding: "15px 17px",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: "800",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Număr de telefon necesar
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      lineHeight: "1.55",
+                      fontWeight: "600",
+                    }}
+                  >
+                    Actualizează-ți profilul cu un număr de telefon pentru a putea publica un anunț.
+                  </div>
+                </div>
+              )}
+
               <div
                 style={{
                   maxWidth: "620px",
@@ -2015,7 +2077,6 @@ export default function DashboardPage() {
               </div>
             </>
           )}
-
           {activeSection ===
             "messages" && (
             <>
@@ -2381,6 +2442,7 @@ export default function DashboardPage() {
                       }
                     )}
                   </div>
+
                   <div
                     className="chat-panel"
                     style={{
@@ -2999,9 +3061,32 @@ function ListingsList({
             marginTop: "7px",
           }}
         >
-          Primul tău anunț va apărea aici
-          după publicare.
+          Publică primul tău anunț pentru
+          a începe.
         </div>
+
+        <button
+          type="button"
+          onClick={() =>
+            router.push(
+              "/adaugaproprietate"
+            )
+          }
+          style={{
+            marginTop: "18px",
+            border: "none",
+            borderRadius: "9px",
+            padding: "11px 15px",
+            background: "#172554",
+            color: "#FFFFFF",
+            fontFamily: "inherit",
+            fontSize: "12px",
+            fontWeight: "800",
+            cursor: "pointer",
+          }}
+        >
+          + Adaugă anunț
+        </button>
       </div>
     );
   }
@@ -3019,27 +3104,25 @@ function ListingsList({
           key={listing.id}
           className="dashboard-listing-card"
           style={{
+            display: "grid",
+            gridTemplateColumns:
+              "150px minmax(0, 1fr)",
+            minHeight: "145px",
             background: "#FFFFFF",
             border:
               "1px solid #E2E8F0",
+            borderRadius: "14px",
+            overflow: "hidden",
             boxShadow:
-              "0 8px 24px rgba(15, 23, 42, 0.04)",
-            borderRadius: "15px",
-            padding: "14px",
-            display: "grid",
-            gridTemplateColumns:
-              "135px minmax(0, 1fr)",
-            gap: "18px",
-            maxWidth: "850px",
+              "0 6px 18px rgba(15, 23, 42, 0.04)",
           }}
         >
           <div
             className="dashboard-listing-image"
             style={{
-              width: "135px",
-              height: "105px",
-              background: "#F8FAFC",
-              borderRadius: "10px",
+              width: "150px",
+              minHeight: "145px",
+              background: "#F1F5F9",
               overflow: "hidden",
             }}
           >
@@ -3059,20 +3142,25 @@ function ListingsList({
                 style={{
                   width: "100%",
                   height: "100%",
+                  minHeight: "145px",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent:
-                    "center",
+                  justifyContent: "center",
                   color: "#94A3B8",
                   fontSize: "11px",
                 }}
               >
-                Fără fotografie
+                Fără imagine
               </div>
             )}
           </div>
 
-          <div style={{ minWidth: 0 }}>
+          <div
+            style={{
+              padding: "18px 20px",
+              minWidth: 0,
+            }}
+          >
             <div
               className="listing-header"
               style={{
@@ -3084,23 +3172,64 @@ function ListingsList({
                 gap: "15px",
               }}
             >
-              <div style={{ minWidth: 0 }}>
-                <h3
+              <div
+                style={{
+                  minWidth: 0,
+                }}
+              >
+                <div
                   style={{
-                    margin: 0,
-                    fontSize: "16px",
-                    fontWeight: "800",
-                    color: "#172554",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    flexWrap: "wrap",
                   }}
                 >
-                  {listing.title}
-                </h3>
+                  <div
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: "800",
+                      color: "#172554",
+                    }}
+                  >
+                    {listing.title}
+                  </div>
+
+                  <span
+                    style={{
+                      display:
+                        "inline-flex",
+                      alignItems:
+                        "center",
+                      borderRadius:
+                        "999px",
+                      padding:
+                        "4px 8px",
+                      background:
+                        listing.active
+                          ? "#ECFDF5"
+                          : "#F1F5F9",
+                      color:
+                        listing.active
+                          ? "#047857"
+                          : "#64748B",
+                      fontSize:
+                        "9px",
+                      fontWeight:
+                        "800",
+                    }}
+                  >
+                    {listing.active
+                      ? "ACTIV"
+                      : "INACTIV"}
+                  </span>
+                </div>
 
                 <div
                   style={{
+                    marginTop: "7px",
                     color: "#64748B",
                     fontSize: "12px",
-                    marginTop: "5px",
                   }}
                 >
                   {listing.city}
@@ -3108,89 +3237,58 @@ function ListingsList({
                     ? ` · ${listing.address}`
                     : ""}
                 </div>
+
+                <div
+                  style={{
+                    marginTop: "12px",
+                    display: "flex",
+                    gap: "14px",
+                    flexWrap: "wrap",
+                    color: "#475569",
+                    fontSize: "11px",
+                    fontWeight: "600",
+                  }}
+                >
+                  {listing.rooms ? (
+                    <span>
+                      {listing.rooms} camere
+                    </span>
+                  ) : null}
+
+                  {listing.surface_m2 ? (
+                    <span>
+                      {listing.surface_m2} m²
+                    </span>
+                  ) : null}
+                </div>
               </div>
 
               <div
                 style={{
-                  fontSize: "18px",
-                  fontWeight: "800",
-                  color: "#172554",
-                  whiteSpace: "nowrap",
+                  textAlign: "right",
+                  flexShrink: 0,
                 }}
               >
-                {Number(
-                  listing.price_monthly
-                ).toLocaleString(
-                  "ro-RO"
-                )}{" "}
-                €
+                <div
+                  style={{
+                    fontSize: "17px",
+                    fontWeight: "800",
+                    color: "#172554",
+                  }}
+                >
+                  {listing.price_monthly} €
+                </div>
 
-                <span
+                <div
                   style={{
                     color: "#94A3B8",
-                    fontSize: "11px",
-                    fontWeight: "600",
+                    fontSize: "10px",
+                    marginTop: "2px",
                   }}
                 >
-                  {" "}
                   / lună
-                </span>
+                </div>
               </div>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: "10px",
-                marginTop: "11px",
-              }}
-            >
-              <span
-                style={{
-                  background:
-                    listing.active
-                      ? "#DCFCE7"
-                      : "#F1F5F9",
-                  color: listing.active
-                    ? "#15803D"
-                    : "#64748B",
-                  borderRadius:
-                    "100px",
-                  padding: "5px 8px",
-                  fontSize: "10px",
-                  fontWeight: "800",
-                }}
-              >
-                {listing.active
-                  ? "Activ"
-                  : "Inactiv"}
-              </span>
-
-              {listing.rooms && (
-                <span
-                  style={{
-                    color: "#64748B",
-                    fontSize: "11px",
-                    fontWeight: "600",
-                  }}
-                >
-                  {listing.rooms} camere
-                </span>
-              )}
-
-              {listing.surface_m2 && (
-                <span
-                  style={{
-                    color: "#64748B",
-                    fontSize: "11px",
-                    fontWeight: "600",
-                  }}
-                >
-                  {listing.surface_m2} m²
-                </span>
-              )}
             </div>
 
             <div
@@ -3198,7 +3296,7 @@ function ListingsList({
                 display: "flex",
                 gap: "8px",
                 flexWrap: "wrap",
-                marginTop: "14px",
+                marginTop: "16px",
               }}
             >
               <button
@@ -3214,7 +3312,7 @@ function ListingsList({
                   background: "#EFF6FF",
                   color: "#2563EB",
                   borderRadius: "8px",
-                  padding: "7px 10px",
+                  padding: "8px 11px",
                   fontFamily: "inherit",
                   fontSize: "10px",
                   fontWeight: "800",
@@ -3235,7 +3333,7 @@ function ListingsList({
                   background: "#FFFFFF",
                   color: "#475569",
                   borderRadius: "8px",
-                  padding: "7px 10px",
+                  padding: "8px 11px",
                   fontFamily: "inherit",
                   fontSize: "10px",
                   fontWeight: "800",
@@ -3253,11 +3351,6 @@ function ListingsList({
     </div>
   );
 }
-
-/*
-  FAVORITE
-*/
-
 function FavoritesList({
   favorites,
   router,
@@ -3555,3 +3648,4 @@ function EmptyCard({
     </div>
   );
 }
+          
