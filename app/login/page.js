@@ -8,6 +8,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   const [mode, setMode] = useState("login");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -19,13 +20,6 @@ export default function LoginPage() {
 
   /*
     VERIFICĂM DACĂ UTILIZATORUL ESTE DEJA LOGAT
-
-    Dacă există deja o sesiune activă când intrăm
-    pe pagina /login, trimitem utilizatorul în dashboard.
-
-    IMPORTANT:
-    Nu mai folosim onAuthStateChange pentru redirect.
-    Redirect-ul după login este făcut direct în handleSubmit.
   */
 
   useEffect(() => {
@@ -91,7 +85,13 @@ export default function LoginPage() {
     setError("");
     setMessage("");
 
+    const cleanName = name.trim();
     const cleanEmail = email.trim();
+
+    if (mode === "register" && !cleanName) {
+      setError("Completează numele.");
+      return;
+    }
 
     if (!cleanEmail || !password) {
       setError("Completează adresa de email și parola.");
@@ -125,6 +125,11 @@ export default function LoginPage() {
         } = await supabase.auth.signUp({
           email: cleanEmail,
           password,
+          options: {
+            data: {
+              name: cleanName,
+            },
+          },
         });
 
         if (signUpError) {
@@ -133,11 +138,35 @@ export default function LoginPage() {
         }
 
         /*
-          Dacă Supabase creează direct sesiunea,
-          utilizatorul intră imediat în dashboard.
+          Dacă avem sesiune imediat după creare,
+          salvăm profilul utilizatorului.
         */
 
-        if (data?.session?.user) {
+        if (data?.user && data?.session) {
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .upsert(
+              {
+                id: data.user.id,
+                name: cleanName,
+              },
+              {
+                onConflict: "id",
+              }
+            );
+
+          if (profileError) {
+            console.error(
+              "Eroare la salvarea profilului:",
+              profileError
+            );
+
+            setError(
+              "Contul a fost creat, dar numele nu a putut fi salvat."
+            );
+            return;
+          }
+
           router.replace("/dashboard");
           return;
         }
@@ -149,6 +178,11 @@ export default function LoginPage() {
         setMessage(
           "Contul a fost creat. Verifică emailul pentru confirmarea contului, apoi autentifică-te."
         );
+
+        setName("");
+        setEmail("");
+        setPassword("");
+        setConfirmPassword("");
 
         return;
       }
@@ -170,19 +204,43 @@ export default function LoginPage() {
         return;
       }
 
-      /*
-        Verificăm direct răspunsul Supabase.
-
-        Nu așteptăm un onAuthStateChange separat.
-        Dacă avem user + session, login-ul este terminat
-        și mergem direct în dashboard.
-      */
-
       if (!data?.session || !data?.user) {
         setError(
           "Autentificarea a reușit, dar sesiunea nu a putut fi inițializată. Încearcă din nou."
         );
         return;
+      }
+
+      /*
+        Dacă utilizatorul a fost creat cu confirmare email,
+        ne asigurăm la primul login că profilul există.
+      */
+
+      const metadataName =
+        data.user.user_metadata?.name?.trim();
+
+      if (metadataName) {
+        const { data: existingProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("id", data.user.id)
+          .maybeSingle();
+
+        if (!existingProfile) {
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .insert({
+              id: data.user.id,
+              name: metadataName,
+            });
+
+          if (profileError) {
+            console.error(
+              "Eroare la crearea profilului:",
+              profileError
+            );
+          }
+        }
       }
 
       router.replace("/dashboard");
@@ -208,6 +266,7 @@ export default function LoginPage() {
     setMode(newMode);
     setError("");
     setMessage("");
+    setName("");
     setPassword("");
     setConfirmPassword("");
   };
@@ -403,6 +462,46 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit}>
+            {/* NAME */}
+
+            {mode === "register" && (
+              <>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "14px",
+                    fontWeight: "700",
+                    marginBottom: "8px",
+                  }}
+                >
+                  Nume
+                </label>
+
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(event) =>
+                    setName(event.target.value)
+                  }
+                  placeholder="Numele tău"
+                  autoComplete="name"
+                  disabled={loading}
+                  maxLength={80}
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "11px",
+                    padding: "14px 15px",
+                    fontFamily: "inherit",
+                    fontSize: "15px",
+                    outline: "none",
+                    marginBottom: "19px",
+                  }}
+                />
+              </>
+            )}
+
             {/* EMAIL */}
 
             <label
