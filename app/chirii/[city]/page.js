@@ -3,17 +3,6 @@ import FavoriteButton from "../../components/FavoriteButton";
 
 export const dynamic = "force-dynamic";
 
-/*
-  Normalizăm numele orașului DOAR intern.
-
-  Exemple:
-  Timișoara    -> timisoara
-  București    -> bucuresti
-  Iași         -> iasi
-  Brașov       -> brasov
-  Constanța    -> constanta
-  Târgu Mureș  -> targu-mures
-*/
 function normalizeCity(value = "") {
   return decodeURIComponent(value)
     .normalize("NFD")
@@ -43,15 +32,57 @@ function formatDate(date) {
   }
 }
 
-export default async function CityListingsPage({ params }) {
-  const resolvedParams = await params;
-  const citySlug = resolvedParams.city;
+function numberValue(value) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
 
-  const normalizedRequestedCity = normalizeCity(citySlug);
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+export default async function CityListingsPage({
+  params,
+  searchParams,
+}) {
+  const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
+
+  const citySlug = resolvedParams.city;
+  const normalizedRequestedCity =
+    normalizeCity(citySlug);
+
+  const getParam = (name) => {
+    const value = resolvedSearchParams?.[name];
+
+    if (Array.isArray(value)) {
+      return value[0] || "";
+    }
+
+    return value || "";
+  };
+
+  const filters = {
+    minPrice: getParam("minPrice"),
+    maxPrice: getParam("maxPrice"),
+    rooms: getParam("rooms"),
+    bedrooms: getParam("bedrooms"),
+    bathrooms: getParam("bathrooms"),
+    minSurface: getParam("minSurface"),
+    maxSurface: getParam("maxSurface"),
+    propertyType: getParam("propertyType"),
+    furnished: getParam("furnished"),
+    listingType: getParam("listingType"),
+    availableFrom: getParam("availableFrom"),
+    sort: getParam("sort") || "newest",
+  };
 
   /*
     Luăm toate anunțurile active.
+    Filtrarea după oraș se face mai jos pentru a păstra
+    compatibilitatea cu diacriticele din baza de date.
   */
+
   const { data: listings, error } = await supabase
     .from("listings")
     .select(`
@@ -65,6 +96,8 @@ export default async function CityListingsPage({ params }) {
       bedrooms,
       bathrooms,
       surface_m2,
+      property_type,
+      listing_type,
       furnished,
       available_from,
       image_url,
@@ -82,32 +115,191 @@ export default async function CityListingsPage({ params }) {
   }
 
   /*
-    Filtrăm după oraș ignorând diacriticele.
-
-    URL: timisoara
-    DB: Timișoara
-    => MATCH
+    Mai întâi filtrăm după oraș.
   */
-  const cityListings = (listings || []).filter(
+
+  let cityListings = (listings || []).filter(
     (listing) =>
       normalizeCity(listing.city) ===
       normalizedRequestedCity
   );
 
   /*
-    Pentru afișare folosim numele real din baza de date,
-    cu diacritice.
+    FILTRE
   */
-  const cityName =
-    cityListings.length > 0
-      ? cityListings[0].city
-      : formatFallbackCityName(citySlug);
+
+  const minPrice = numberValue(filters.minPrice);
+  const maxPrice = numberValue(filters.maxPrice);
+  const rooms = numberValue(filters.rooms);
+  const bedrooms = numberValue(filters.bedrooms);
+  const bathrooms = numberValue(filters.bathrooms);
+  const minSurface = numberValue(filters.minSurface);
+  const maxSurface = numberValue(filters.maxSurface);
+
+  if (minPrice !== null) {
+    cityListings = cityListings.filter(
+      (listing) =>
+        Number(listing.price_monthly) >= minPrice
+    );
+  }
+
+  if (maxPrice !== null) {
+    cityListings = cityListings.filter(
+      (listing) =>
+        Number(listing.price_monthly) <= maxPrice
+    );
+  }
+
+  if (rooms !== null) {
+    cityListings = cityListings.filter(
+      (listing) =>
+        Number(listing.rooms) === rooms
+    );
+  }
+
+  if (bedrooms !== null) {
+    cityListings = cityListings.filter(
+      (listing) =>
+        Number(listing.bedrooms) === bedrooms
+    );
+  }
+
+  if (bathrooms !== null) {
+    cityListings = cityListings.filter(
+      (listing) =>
+        Number(listing.bathrooms) === bathrooms
+    );
+  }
+
+  if (minSurface !== null) {
+    cityListings = cityListings.filter(
+      (listing) =>
+        Number(listing.surface_m2) >= minSurface
+    );
+  }
+
+  if (maxSurface !== null) {
+    cityListings = cityListings.filter(
+      (listing) =>
+        Number(listing.surface_m2) <= maxSurface
+    );
+  }
+
+  if (filters.propertyType) {
+    cityListings = cityListings.filter(
+      (listing) =>
+        listing.property_type ===
+        filters.propertyType
+    );
+  }
+
+  if (filters.listingType) {
+    cityListings = cityListings.filter(
+      (listing) =>
+        listing.listing_type ===
+        filters.listingType
+    );
+  }
+
+  if (filters.furnished === "yes") {
+    cityListings = cityListings.filter(
+      (listing) =>
+        listing.furnished === true
+    );
+  }
+
+  if (filters.furnished === "no") {
+    cityListings = cityListings.filter(
+      (listing) =>
+        listing.furnished === false
+    );
+  }
+
+  if (filters.availableFrom) {
+    cityListings = cityListings.filter(
+      (listing) =>
+        listing.available_from &&
+        listing.available_from <=
+          filters.availableFrom
+    );
+  }
 
   /*
-    Pagina la care trebuie să revenim după ce utilizatorul
-    deschide un anunț.
+    SORTARE
   */
-  const returnUrl = `/chirii/${citySlug}`;
+
+  if (filters.sort === "price_asc") {
+    cityListings.sort(
+      (a, b) =>
+        Number(a.price_monthly) -
+        Number(b.price_monthly)
+    );
+  }
+
+  if (filters.sort === "price_desc") {
+    cityListings.sort(
+      (a, b) =>
+        Number(b.price_monthly) -
+        Number(a.price_monthly)
+    );
+  }
+
+  if (filters.sort === "surface_desc") {
+    cityListings.sort(
+      (a, b) =>
+        Number(b.surface_m2 || 0) -
+        Number(a.surface_m2 || 0)
+    );
+  }
+
+  if (filters.sort === "newest") {
+    cityListings.sort(
+      (a, b) =>
+        new Date(b.created_at) -
+        new Date(a.created_at)
+    );
+  }
+
+  const cityName =
+    (listings || []).find(
+      (listing) =>
+        normalizeCity(listing.city) ===
+        normalizedRequestedCity
+    )?.city ||
+    formatFallbackCityName(citySlug);
+
+  /*
+    Păstrăm pagina actuală pentru revenirea din anunț.
+  */
+
+  const currentParams = new URLSearchParams();
+
+  Object.entries(filters).forEach(
+    ([key, value]) => {
+      if (value) {
+        currentParams.set(key, value);
+      }
+    }
+  );
+
+  const queryString =
+    currentParams.toString();
+
+  const returnUrl =
+    `/chirii/${citySlug}` +
+    (queryString
+      ? `?${queryString}`
+      : "");
+
+  const hasFilters =
+    Object.entries(filters).some(
+      ([key, value]) =>
+        key !== "sort" &&
+        value
+    );
+
+  const clearFiltersUrl =
+    `/chirii/${citySlug}`;
 
   return (
     <main
@@ -123,10 +315,12 @@ export default async function CityListingsPage({ params }) {
         style={{
           height: "72px",
           background: "#FFFFFF",
-          borderBottom: "1px solid #E2E8F0",
+          borderBottom:
+            "1px solid #E2E8F0",
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent:
+            "space-between",
           padding: "0 6%",
           boxSizing: "border-box",
         }}
@@ -140,11 +334,19 @@ export default async function CityListingsPage({ params }) {
             letterSpacing: "-1px",
           }}
         >
-          <span style={{ color: "#172554" }}>
+          <span
+            style={{
+              color: "#172554",
+            }}
+          >
             Student
           </span>
 
-          <span style={{ color: "#3B82F6" }}>
+          <span
+            style={{
+              color: "#3B82F6",
+            }}
+          >
             Housing
           </span>
         </a>
@@ -176,7 +378,7 @@ export default async function CityListingsPage({ params }) {
 
         <div
           style={{
-            marginBottom: "28px",
+            marginBottom: "25px",
           }}
         >
           <div
@@ -216,11 +418,417 @@ export default async function CityListingsPage({ params }) {
               lineHeight: "1.6",
             }}
           >
-            Descoperă locuințele disponibile pentru
-            închiriere în {cityName}, indiferent de
-            universitatea la care studiezi.
+            Descoperă locuințele disponibile
+            pentru închiriere în {cityName},
+            indiferent de universitatea la care
+            studiezi.
           </p>
         </div>
+
+        {/* FILTRE */}
+
+        <form
+          method="GET"
+          style={{
+            background: "#FFFFFF",
+            border: "1px solid #E2E8F0",
+            borderRadius: "16px",
+            padding: "20px",
+            marginBottom: "15px",
+            boxShadow:
+              "0 5px 18px rgba(15, 23, 42, 0.04)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent:
+                "space-between",
+              gap: "15px",
+              marginBottom: "17px",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  color: "#172554",
+                  fontSize: "16px",
+                  fontWeight: "800",
+                }}
+              >
+                Filtre
+              </div>
+
+              <div
+                style={{
+                  color: "#94A3B8",
+                  fontSize: "11px",
+                  marginTop: "3px",
+                }}
+              >
+                Găsește proprietatea potrivită
+              </div>
+            </div>
+
+            {hasFilters && (
+              <a
+                href={clearFiltersUrl}
+                style={{
+                  color: "#64748B",
+                  textDecoration: "none",
+                  fontSize: "11px",
+                  fontWeight: "700",
+                }}
+              >
+                Resetează filtrele
+              </a>
+            )}
+          </div>
+
+          {/* RÂND 1 */}
+
+          <div
+            className="filters-grid"
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(4, minmax(0, 1fr))",
+              gap: "10px",
+            }}
+          >
+            <div>
+              <label style={labelStyle}>
+                Preț minim
+              </label>
+
+              <input
+                name="minPrice"
+                type="number"
+                min="0"
+                placeholder="De la €"
+                defaultValue={
+                  filters.minPrice
+                }
+                style={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>
+                Preț maxim
+              </label>
+
+              <input
+                name="maxPrice"
+                type="number"
+                min="0"
+                placeholder="Până la €"
+                defaultValue={
+                  filters.maxPrice
+                }
+                style={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>
+                Camere
+              </label>
+
+              <select
+                name="rooms"
+                defaultValue={
+                  filters.rooms
+                }
+                style={inputStyle}
+              >
+                <option value="">
+                  Oricare
+                </option>
+                <option value="1">
+                  1 cameră
+                </option>
+                <option value="2">
+                  2 camere
+                </option>
+                <option value="3">
+                  3 camere
+                </option>
+                <option value="4">
+                  4 camere
+                </option>
+                <option value="5">
+                  5+ camere
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label style={labelStyle}>
+                Tip proprietate
+              </label>
+
+              <select
+                name="propertyType"
+                defaultValue={
+                  filters.propertyType
+                }
+                style={inputStyle}
+              >
+                <option value="">
+                  Oricare
+                </option>
+                <option value="Apartament">
+                  Apartament
+                </option>
+                <option value="Garsonieră">
+                  Garsonieră
+                </option>
+                <option value="Casă">
+                  Casă
+                </option>
+                <option value="Cameră">
+                  Cameră
+                </option>
+              </select>
+            </div>
+          </div>
+
+          {/* RÂND 2 */}
+
+          <div
+            className="filters-grid"
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(4, minmax(0, 1fr))",
+              gap: "10px",
+              marginTop: "10px",
+            }}
+          >
+            <div>
+              <label style={labelStyle}>
+                Dormitoare
+              </label>
+
+              <select
+                name="bedrooms"
+                defaultValue={
+                  filters.bedrooms
+                }
+                style={inputStyle}
+              >
+                <option value="">
+                  Oricare
+                </option>
+                <option value="1">
+                  1 dormitor
+                </option>
+                <option value="2">
+                  2 dormitoare
+                </option>
+                <option value="3">
+                  3 dormitoare
+                </option>
+                <option value="4">
+                  4+ dormitoare
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label style={labelStyle}>
+                Băi
+              </label>
+
+              <select
+                name="bathrooms"
+                defaultValue={
+                  filters.bathrooms
+                }
+                style={inputStyle}
+              >
+                <option value="">
+                  Oricare
+                </option>
+                <option value="1">
+                  1 baie
+                </option>
+                <option value="2">
+                  2 băi
+                </option>
+                <option value="3">
+                  3+ băi
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label style={labelStyle}>
+                Suprafață minimă
+              </label>
+
+              <input
+                name="minSurface"
+                type="number"
+                min="0"
+                placeholder="De la m²"
+                defaultValue={
+                  filters.minSurface
+                }
+                style={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>
+                Suprafață maximă
+              </label>
+
+              <input
+                name="maxSurface"
+                type="number"
+                min="0"
+                placeholder="Până la m²"
+                defaultValue={
+                  filters.maxSurface
+                }
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
+          {/* RÂND 3 */}
+
+          <div
+            className="filters-grid"
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(4, minmax(0, 1fr))",
+              gap: "10px",
+              marginTop: "10px",
+            }}
+          >
+            <div>
+              <label style={labelStyle}>
+                Mobilat
+              </label>
+
+              <select
+                name="furnished"
+                defaultValue={
+                  filters.furnished
+                }
+                style={inputStyle}
+              >
+                <option value="">
+                  Oricare
+                </option>
+                <option value="yes">
+                  Da
+                </option>
+                <option value="no">
+                  Nu
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label style={labelStyle}>
+                Tip anunț
+              </label>
+
+              <select
+                name="listingType"
+                defaultValue={
+                  filters.listingType
+                }
+                style={inputStyle}
+              >
+                <option value="">
+                  Oricare
+                </option>
+                <option value="rent">
+                  Închiriere
+                </option>
+                <option value="room">
+                  Cameră
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label style={labelStyle}>
+                Disponibil până la
+              </label>
+
+              <input
+                name="availableFrom"
+                type="date"
+                defaultValue={
+                  filters.availableFrom
+                }
+                style={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>
+                Sortare
+              </label>
+
+              <select
+                name="sort"
+                defaultValue={
+                  filters.sort
+                }
+                style={inputStyle}
+              >
+                <option value="newest">
+                  Cele mai noi
+                </option>
+                <option value="price_asc">
+                  Preț crescător
+                </option>
+                <option value="price_desc">
+                  Preț descrescător
+                </option>
+                <option value="surface_desc">
+                  Suprafață descrescător
+                </option>
+              </select>
+            </div>
+          </div>
+
+          {/* BUTON */}
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              marginTop: "15px",
+            }}
+          >
+            <button
+              type="submit"
+              style={{
+                border: "none",
+                borderRadius: "10px",
+                background: "#172554",
+                color: "#FFFFFF",
+                padding: "12px 23px",
+                fontFamily: "inherit",
+                fontSize: "13px",
+                fontWeight: "800",
+                cursor: "pointer",
+              }}
+            >
+              Aplică filtrele
+            </button>
+          </div>
+        </form>
 
         {/* BARĂ REZULTATE */}
 
@@ -256,7 +864,9 @@ export default async function CityListingsPage({ params }) {
               fontWeight: "600",
             }}
           >
-            Cele mai noi
+            {hasFilters
+              ? "Filtre aplicate"
+              : "Cele mai noi"}
           </div>
         </div>
 
@@ -279,7 +889,9 @@ export default async function CityListingsPage({ params }) {
                 fontWeight: "800",
               }}
             >
-              Momentan nu există chirii în {cityName}
+              {hasFilters
+                ? "Nu există anunțuri care corespund filtrelor"
+                : `Momentan nu există chirii în ${cityName}`}
             </div>
 
             <p
@@ -290,9 +902,26 @@ export default async function CityListingsPage({ params }) {
                 lineHeight: "1.6",
               }}
             >
-              Încearcă din nou mai târziu sau caută într-un
-              alt oraș.
+              {hasFilters
+                ? "Încearcă să modifici sau să elimini câteva filtre."
+                : "Încearcă din nou mai târziu sau caută într-un alt oraș."}
             </p>
+
+            {hasFilters && (
+              <a
+                href={clearFiltersUrl}
+                style={{
+                  display: "inline-block",
+                  marginTop: "16px",
+                  color: "#2563EB",
+                  textDecoration: "none",
+                  fontSize: "12px",
+                  fontWeight: "800",
+                }}
+              >
+                Resetează filtrele
+              </a>
+            )}
           </div>
         )}
 
@@ -307,17 +936,21 @@ export default async function CityListingsPage({ params }) {
             }}
           >
             {cityListings.map((listing) => {
-              const availableDate = formatDate(
-                listing.available_from
-              );
+              const availableDate =
+                formatDate(
+                  listing.available_from
+                );
 
-              const createdDate = formatDate(
-                listing.created_at
-              );
+              const createdDate =
+                formatDate(
+                  listing.created_at
+                );
 
               const propertyUrl =
                 `/proprietate/${listing.id}` +
-                `?from=${encodeURIComponent(returnUrl)}`;
+                `?from=${encodeURIComponent(
+                  returnUrl
+                )}`;
 
               return (
                 <div
@@ -325,7 +958,8 @@ export default async function CityListingsPage({ params }) {
                   className="listing-card"
                   style={{
                     background: "#FFFFFF",
-                    border: "1px solid #E2E8F0",
+                    border:
+                      "1px solid #E2E8F0",
                     borderRadius: "14px",
                     overflow: "hidden",
                     color: "inherit",
@@ -366,8 +1000,10 @@ export default async function CityListingsPage({ params }) {
                           width: "100%",
                           height: "100%",
                           display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
+                          alignItems:
+                            "center",
+                          justifyContent:
+                            "center",
                           color: "#94A3B8",
                           fontSize: "12px",
                           fontWeight: "700",
@@ -377,11 +1013,12 @@ export default async function CityListingsPage({ params }) {
                       </div>
                     )}
 
-                    {/* FAVORITE */}
-                    <FavoriteButton listingId={listing.id} />
+                    <FavoriteButton
+                      listingId={listing.id}
+                    />
                   </div>
 
-                  {/* LINK PESTE CONȚINUTUL ANUNȚULUI */}
+                  {/* LINK ANUNȚ */}
 
                   <a
                     href={propertyUrl}
@@ -390,116 +1027,164 @@ export default async function CityListingsPage({ params }) {
                       flex: 1,
                       minWidth: 0,
                       display: "flex",
-                      textDecoration: "none",
+                      textDecoration:
+                        "none",
                       color: "inherit",
                     }}
                   >
-                    {/* INFORMAȚII PRINCIPALE */}
-
                     <div
                       className="listing-content"
                       style={{
                         flex: 1,
                         minWidth: 0,
-                        padding: "17px 19px",
+                        padding:
+                          "17px 19px",
                         display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between",
+                        flexDirection:
+                          "column",
+                        justifyContent:
+                          "space-between",
                       }}
                     >
                       <div>
-                        {/* TITLU */}
-
                         <h2
                           style={{
                             margin: 0,
-                            color: "#172554",
-                            fontSize: "17px",
-                            lineHeight: "1.35",
-                            fontWeight: "800",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
+                            color:
+                              "#172554",
+                            fontSize:
+                              "17px",
+                            lineHeight:
+                              "1.35",
+                            fontWeight:
+                              "800",
+                            overflow:
+                              "hidden",
+                            textOverflow:
+                              "ellipsis",
+                            whiteSpace:
+                              "nowrap",
                           }}
                         >
                           {listing.title}
                         </h2>
 
-                        {/* LOCAȚIE */}
-
                         <div
                           style={{
-                            color: "#64748B",
-                            fontSize: "12px",
-                            lineHeight: "1.5",
-                            marginTop: "6px",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
+                            color:
+                              "#64748B",
+                            fontSize:
+                              "12px",
+                            lineHeight:
+                              "1.5",
+                            marginTop:
+                              "6px",
+                            overflow:
+                              "hidden",
+                            textOverflow:
+                              "ellipsis",
+                            whiteSpace:
+                              "nowrap",
                           }}
                         >
-                          📍 {listing.city}
+                          {listing.city}
 
                           {listing.address
                             ? ` · ${listing.address}`
                             : ""}
                         </div>
 
-                        {/* CARACTERISTICI */}
-
                         <div
                           style={{
-                            display: "flex",
-                            alignItems: "center",
-                            flexWrap: "wrap",
+                            display:
+                              "flex",
+                            alignItems:
+                              "center",
+                            flexWrap:
+                              "wrap",
                             gap: "7px",
-                            marginTop: "13px",
+                            marginTop:
+                              "13px",
                           }}
                         >
-                          {/* CAMERE */}
-
-                          {Number(listing.rooms) > 0 && (
-                            <span style={detailBadge}>
-                              {listing.rooms}{" "}
-                              {Number(listing.rooms) === 1
+                          {Number(
+                            listing.rooms
+                          ) > 0 && (
+                            <span
+                              style={
+                                detailBadge
+                              }
+                            >
+                              {
+                                listing.rooms
+                              }{" "}
+                              {Number(
+                                listing.rooms
+                              ) === 1
                                 ? "cameră"
                                 : "camere"}
                             </span>
                           )}
 
-                          {/* SUPRAFAȚĂ */}
-
-                          {Number(listing.surface_m2) > 0 && (
-                            <span style={detailBadge}>
-                              {listing.surface_m2} m²
+                          {Number(
+                            listing.surface_m2
+                          ) > 0 && (
+                            <span
+                              style={
+                                detailBadge
+                              }
+                            >
+                              {
+                                listing.surface_m2
+                              }{" "}
+                              m²
                             </span>
                           )}
 
-                          {/* MOBILAT */}
-
-                          {listing.furnished === true && (
-                            <span style={detailBadge}>
+                          {listing.furnished ===
+                            true && (
+                            <span
+                              style={
+                                detailBadge
+                              }
+                            >
                               Mobilat
                             </span>
                           )}
 
-                          {/* BĂI */}
-
-                          {Number(listing.bathrooms) > 0 && (
-                            <span style={detailBadge}>
-                              {listing.bathrooms}{" "}
-                              {Number(listing.bathrooms) === 1
+                          {Number(
+                            listing.bathrooms
+                          ) > 0 && (
+                            <span
+                              style={
+                                detailBadge
+                              }
+                            >
+                              {
+                                listing.bathrooms
+                              }{" "}
+                              {Number(
+                                listing.bathrooms
+                              ) === 1
                                 ? "baie"
                                 : "băi"}
                             </span>
                           )}
 
-                          {/* DORMITOARE */}
-
-                          {Number(listing.bedrooms) > 0 && (
-                            <span style={detailBadge}>
-                              {listing.bedrooms}{" "}
-                              {Number(listing.bedrooms) === 1
+                          {Number(
+                            listing.bedrooms
+                          ) > 0 && (
+                            <span
+                              style={
+                                detailBadge
+                              }
+                            >
+                              {
+                                listing.bedrooms
+                              }{" "}
+                              {Number(
+                                listing.bedrooms
+                              ) === 1
                                 ? "dormitor"
                                 : "dormitoare"}
                             </span>
@@ -507,38 +1192,52 @@ export default async function CityListingsPage({ params }) {
                         </div>
                       </div>
 
-                      {/* DATE */}
-
                       <div
                         style={{
-                          display: "flex",
-                          alignItems: "center",
-                          flexWrap: "wrap",
+                          display:
+                            "flex",
+                          alignItems:
+                            "center",
+                          flexWrap:
+                            "wrap",
                           gap: "15px",
-                          marginTop: "13px",
+                          marginTop:
+                            "13px",
                         }}
                       >
                         {availableDate && (
                           <span
                             style={{
-                              color: "#64748B",
-                              fontSize: "11px",
-                              fontWeight: "600",
+                              color:
+                                "#64748B",
+                              fontSize:
+                                "11px",
+                              fontWeight:
+                                "600",
                             }}
                           >
-                            Disponibil din {availableDate}
+                            Disponibil din{" "}
+                            {
+                              availableDate
+                            }
                           </span>
                         )}
 
                         {createdDate && (
                           <span
                             style={{
-                              color: "#94A3B8",
-                              fontSize: "11px",
-                              fontWeight: "600",
+                              color:
+                                "#94A3B8",
+                              fontSize:
+                                "11px",
+                              fontWeight:
+                                "600",
                             }}
                           >
-                            Publicat la {createdDate}
+                            Publicat la{" "}
+                            {
+                              createdDate
+                            }
                           </span>
                         )}
                       </div>
@@ -551,41 +1250,59 @@ export default async function CityListingsPage({ params }) {
                       style={{
                         width: "155px",
                         minWidth: "155px",
-                        padding: "18px 18px 16px 5px",
+                        padding:
+                          "18px 18px 16px 5px",
                         display: "flex",
-                        flexDirection: "column",
-                        alignItems: "flex-end",
-                        justifyContent: "space-between",
-                        boxSizing: "border-box",
+                        flexDirection:
+                          "column",
+                        alignItems:
+                          "flex-end",
+                        justifyContent:
+                          "space-between",
+                        boxSizing:
+                          "border-box",
                       }}
                     >
                       <div
                         style={{
-                          textAlign: "right",
+                          textAlign:
+                            "right",
                         }}
                       >
                         <div
                           style={{
-                            color: "#172554",
-                            fontSize: "21px",
-                            lineHeight: "1",
-                            fontWeight: "900",
-                            letterSpacing: "-0.5px",
-                            whiteSpace: "nowrap",
+                            color:
+                              "#172554",
+                            fontSize:
+                              "21px",
+                            lineHeight:
+                              "1",
+                            fontWeight:
+                              "900",
+                            letterSpacing:
+                              "-0.5px",
+                            whiteSpace:
+                              "nowrap",
                           }}
                         >
                           {Number(
                             listing.price_monthly
-                          ).toLocaleString("ro-RO")}
+                          ).toLocaleString(
+                            "ro-RO"
+                          )}
                           €
                         </div>
 
                         <div
                           style={{
-                            color: "#94A3B8",
-                            fontSize: "10px",
-                            fontWeight: "600",
-                            marginTop: "5px",
+                            color:
+                              "#94A3B8",
+                            fontSize:
+                              "10px",
+                            fontWeight:
+                              "600",
+                            marginTop:
+                              "5px",
                           }}
                         >
                           pe lună
@@ -594,10 +1311,14 @@ export default async function CityListingsPage({ params }) {
 
                       <span
                         style={{
-                          color: "#3B82F6",
-                          fontSize: "11px",
-                          fontWeight: "800",
-                          whiteSpace: "nowrap",
+                          color:
+                            "#3B82F6",
+                          fontSize:
+                            "11px",
+                          fontWeight:
+                            "800",
+                          whiteSpace:
+                            "nowrap",
                         }}
                       >
                         Vezi anunțul →
@@ -611,8 +1332,6 @@ export default async function CityListingsPage({ params }) {
         )}
       </section>
 
-      {/* RESPONSIVE + HOVER */}
-
       <style>{`
         .listing-card:hover {
           border-color: #BFDBFE !important;
@@ -623,6 +1342,12 @@ export default async function CityListingsPage({ params }) {
         .listing-main-link {
           flex: 1;
           min-width: 0;
+        }
+
+        @media (max-width: 850px) {
+          .filters-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
         }
 
         @media (max-width: 760px) {
@@ -654,7 +1379,11 @@ export default async function CityListingsPage({ params }) {
           }
         }
 
-        @media (max-width: 480px) {
+        @media (max-width: 520px) {
+          .filters-grid {
+            grid-template-columns: 1fr !important;
+          }
+
           .listing-image {
             height: 190px !important;
           }
@@ -667,6 +1396,28 @@ export default async function CityListingsPage({ params }) {
     </main>
   );
 }
+
+const labelStyle = {
+  display: "block",
+  color: "#475569",
+  fontSize: "10px",
+  fontWeight: "800",
+  marginBottom: "5px",
+};
+
+const inputStyle = {
+  width: "100%",
+  height: "42px",
+  border: "1px solid #CBD5E1",
+  borderRadius: "9px",
+  background: "#FFFFFF",
+  color: "#172554",
+  padding: "0 11px",
+  boxSizing: "border-box",
+  fontFamily: "inherit",
+  fontSize: "12px",
+  outline: "none",
+};
 
 const detailBadge = {
   background: "#F8FAFC",
