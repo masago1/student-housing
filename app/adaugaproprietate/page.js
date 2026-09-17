@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
@@ -21,6 +21,30 @@ export default function AdaugaProprietatePage() {
     const [cities, setCities] = useState([]);
     const [neighborhoods, setNeighborhoods] = useState([]);
     const [loadingLocations, setLoadingLocations] = useState(true);
+
+    /* =========================
+       MAPBOX AUTOCOMPLETE
+    ========================= */
+
+    const [addressSuggestions, setAddressSuggestions] = useState([]);
+    const [loadingAddressSuggestions, setLoadingAddressSuggestions] =
+        useState(false);
+    const [addressSuggestionsOpen, setAddressSuggestionsOpen] =
+        useState(false);
+    const [selectedAddressCoordinates, setSelectedAddressCoordinates] =
+        useState(null);
+
+    const addressRequestIdRef = useRef(0);
+    const mapboxSessionTokenRef = useRef(null);
+
+    const getMapboxSessionToken = () => {
+        if (!mapboxSessionTokenRef.current) {
+            mapboxSessionTokenRef.current =
+                crypto.randomUUID();
+        }
+
+        return mapboxSessionTokenRef.current;
+    };
 
     /* =========================
        CALENDAR
@@ -367,7 +391,412 @@ export default function AdaugaProprietatePage() {
         }));
 
         setSelectedUniversityIds([]);
+
+        setAddressSuggestions([]);
+        setAddressSuggestionsOpen(false);
+        setSelectedAddressCoordinates(null);
+
+        mapboxSessionTokenRef.current =
+            null;
     };
+
+    /* =========================
+       MAPBOX - SCRIERE ADRESĂ
+    ========================= */
+
+    const handleAddressChange = (
+        event
+    ) => {
+        const value =
+            event.target.value;
+
+        setForm((current) => ({
+            ...current,
+            address: value,
+        }));
+
+        /*
+            Dacă proprietarul modifică textul
+            după ce a selectat o adresă,
+            coordonatele vechi nu mai sunt valide.
+        */
+
+        setSelectedAddressCoordinates(
+            null
+        );
+
+        if (
+            value.trim().length < 3
+        ) {
+            setAddressSuggestions([]);
+            setAddressSuggestionsOpen(
+                false
+            );
+            setLoadingAddressSuggestions(
+                false
+            );
+        } else {
+            setAddressSuggestionsOpen(
+                true
+            );
+        }
+    };
+
+    /* =========================
+       MAPBOX - AUTOCOMPLETE
+    ========================= */
+
+    useEffect(() => {
+        const address =
+            form.address.trim();
+
+        const city =
+            form.city.trim();
+
+        const mapboxToken =
+            process.env
+                .NEXT_PUBLIC_MAPBOX_TOKEN;
+
+        /*
+            Nu căutăm până nu:
+            - avem oraș
+            - sunt minimum 3 caractere
+            - utilizatorul nu a selectat deja
+              o adresă validă
+        */
+
+        if (
+            !city ||
+            address.length < 3 ||
+            selectedAddressCoordinates
+        ) {
+            return;
+        }
+
+        if (!mapboxToken) {
+            console.error(
+                "Lipsește NEXT_PUBLIC_MAPBOX_TOKEN."
+            );
+
+            return;
+        }
+
+        /*
+            ID pentru request.
+
+            Dacă utilizatorul scrie foarte repede,
+            ignorăm rezultatele request-urilor vechi.
+        */
+
+        const requestId =
+            ++addressRequestIdRef.current;
+
+        /*
+            Debounce 350ms.
+            Nu trimitem request la fiecare tastă
+            instantaneu.
+        */
+
+        const timer =
+            setTimeout(
+                async () => {
+                    try {
+                        setLoadingAddressSuggestions(
+                            true
+                        );
+
+                        const sessionToken =
+                            getMapboxSessionToken();
+
+                        /*
+                            Punem și orașul în query
+                            pentru rezultate mai relevante.
+                        */
+
+                        const searchText =
+                            `${address}, ${city}`;
+
+                        const params =
+                            new URLSearchParams(
+                                {
+                                    q:
+                                        searchText,
+
+                                    access_token:
+                                        mapboxToken,
+
+                                    session_token:
+                                        sessionToken,
+
+                                    country:
+                                        "RO",
+
+                                    language:
+                                        "ro",
+
+                                    limit:
+                                        "6",
+                                }
+                            );
+
+                        const response =
+                            await fetch(
+                                `https://api.mapbox.com/search/searchbox/v1/suggest?${params.toString()}`,
+                                {
+                                    method:
+                                        "GET",
+
+                                    cache:
+                                        "no-store",
+                                }
+                            );
+
+                        if (
+                            !response.ok
+                        ) {
+                            throw new Error(
+                                `Mapbox suggest: ${response.status}`
+                            );
+                        }
+
+                        const data =
+                            await response.json();
+
+                        /*
+                            Dacă între timp s-a făcut
+                            un request mai nou,
+                            nu folosim rezultatele vechi.
+                        */
+
+                        if (
+                            requestId !==
+                            addressRequestIdRef.current
+                        ) {
+                            return;
+                        }
+
+                        setAddressSuggestions(
+                            Array.isArray(
+                                data?.suggestions
+                            )
+                                ? data.suggestions
+                                : []
+                        );
+
+                        setAddressSuggestionsOpen(
+                            true
+                        );
+                    } catch (
+                        addressError
+                    ) {
+                        console.error(
+                            "Eroare autocomplete adresă:",
+                            addressError
+                        );
+
+                        if (
+                            requestId ===
+                            addressRequestIdRef.current
+                        ) {
+                            setAddressSuggestions(
+                                []
+                            );
+                        }
+                    } finally {
+                        if (
+                            requestId ===
+                            addressRequestIdRef.current
+                        ) {
+                            setLoadingAddressSuggestions(
+                                false
+                            );
+                        }
+                    }
+                },
+                350
+            );
+
+        return () => {
+            clearTimeout(timer);
+        };
+    }, [
+        form.address,
+        form.city,
+        selectedAddressCoordinates,
+    ]);
+
+    /* =========================
+       MAPBOX - SELECTARE ADRESĂ
+    ========================= */
+
+    const selectAddressSuggestion =
+        async (suggestion) => {
+            const mapboxToken =
+                process.env
+                    .NEXT_PUBLIC_MAPBOX_TOKEN;
+
+            if (
+                !mapboxToken ||
+                !suggestion?.mapbox_id
+            ) {
+                return;
+            }
+
+            try {
+                setLoadingAddressSuggestions(
+                    true
+                );
+
+                const sessionToken =
+                    getMapboxSessionToken();
+
+                const params =
+                    new URLSearchParams(
+                        {
+                            access_token:
+                                mapboxToken,
+
+                            session_token:
+                                sessionToken,
+                        }
+                    );
+
+                /*
+                    /retrieve ne dă rezultatul complet
+                    și coordonatele adresei selectate.
+                */
+
+                const response =
+                    await fetch(
+                        `https://api.mapbox.com/search/searchbox/v1/retrieve/${encodeURIComponent(
+                            suggestion.mapbox_id
+                        )}?${params.toString()}`,
+                        {
+                            method:
+                                "GET",
+
+                            cache:
+                                "no-store",
+                        }
+                    );
+
+                if (
+                    !response.ok
+                ) {
+                    throw new Error(
+                        `Mapbox retrieve: ${response.status}`
+                    );
+                }
+
+                const data =
+                    await response.json();
+
+                const feature =
+                    data?.features?.[0];
+
+                const coordinates =
+                    feature?.geometry
+                        ?.coordinates;
+
+                /*
+                    GeoJSON / Mapbox:
+                    [longitude, latitude]
+                */
+
+                const longitude =
+                    Number(
+                        coordinates?.[0]
+                    );
+
+                const latitude =
+                    Number(
+                        coordinates?.[1]
+                    );
+
+                if (
+                    !Number.isFinite(
+                        latitude
+                    ) ||
+                    !Number.isFinite(
+                        longitude
+                    )
+                ) {
+                    throw new Error(
+                        "Coordonatele Mapbox nu sunt valide."
+                    );
+                }
+
+                const properties =
+                    feature?.properties ||
+                    {};
+
+                /*
+                    Preferăm adresa completă furnizată
+                    de Mapbox.
+                */
+
+                const selectedAddress =
+                    properties.full_address ||
+                    [
+                        properties.name ||
+                            suggestion.name,
+
+                        properties.place_formatted ||
+                            suggestion.place_formatted,
+                    ]
+                        .filter(Boolean)
+                        .join(", ");
+
+                setForm(
+                    (current) => ({
+                        ...current,
+
+                        address:
+                            selectedAddress ||
+                            current.address,
+                    })
+                );
+
+                setSelectedAddressCoordinates(
+                    {
+                        latitude,
+                        longitude,
+                    }
+                );
+
+                setAddressSuggestions(
+                    []
+                );
+
+                setAddressSuggestionsOpen(
+                    false
+                );
+
+                /*
+                    Căutarea s-a terminat.
+                    Următoarea adresă va primi
+                    un session token nou.
+                */
+
+                mapboxSessionTokenRef.current =
+                    null;
+            } catch (
+                addressError
+            ) {
+                console.error(
+                    "Eroare selectare adresă:",
+                    addressError
+                );
+
+                setError(
+                    "Adresa selectată nu a putut fi preluată. Încearcă din nou."
+                );
+            } finally {
+                setLoadingAddressSuggestions(
+                    false
+                );
+            }
+        };
 
     /* =========================
        POZE
@@ -1031,47 +1460,86 @@ export default function AdaugaProprietatePage() {
             const uploadedPaths = [];
 
             try {
-                const geocodeResponse =
-                    await fetch(
-                        "/api/geocode",
-                        {
-                            method: "POST",
-                            headers: {
-                                "Content-Type":
-                                    "application/json",
-                            },
-                            body: JSON.stringify({
-                                address:
-                                    form.address.trim(),
-                                city:
-                                    form.city.trim(),
-                            }),
-                        }
-                    );
+                let latitude =
+                    selectedAddressCoordinates
+                        ?.latitude;
 
-                const geocodeData =
-                    await geocodeResponse.json();
+                let longitude =
+                    selectedAddressCoordinates
+                        ?.longitude;
 
-                if (!geocodeResponse.ok) {
-                    throw new Error(
-                        geocodeData?.error ||
-                            "Adresa proprietății nu a putut fi localizată."
-                    );
-                }
+                /*
+                    Dacă proprietarul a ales o sugestie
+                    Mapbox, avem deja coordonatele.
 
-                const latitude =
-                    Number(
-                        geocodeData.latitude
-                    );
-
-                const longitude =
-                    Number(
-                        geocodeData.longitude
-                    );
+                    Dacă a scris manual fără să aleagă
+                    o sugestie, păstrăm /api/geocode
+                    ca fallback.
+                */
 
                 if (
-                    !Number.isFinite(latitude) ||
-                    !Number.isFinite(longitude)
+                    !Number.isFinite(
+                        latitude
+                    ) ||
+                    !Number.isFinite(
+                        longitude
+                    )
+                ) {
+                    const geocodeResponse =
+                        await fetch(
+                            "/api/geocode",
+                            {
+                                method:
+                                    "POST",
+
+                                headers: {
+                                    "Content-Type":
+                                        "application/json",
+                                },
+
+                                body:
+                                    JSON.stringify(
+                                        {
+                                            address:
+                                                form.address.trim(),
+
+                                            city:
+                                                form.city.trim(),
+                                        }
+                                    ),
+                            }
+                        );
+
+                    const geocodeData =
+                        await geocodeResponse.json();
+
+                    if (
+                        !geocodeResponse.ok
+                    ) {
+                        throw new Error(
+                            geocodeData?.error ||
+                                "Adresa proprietății nu a putut fi localizată."
+                        );
+                    }
+
+                    latitude =
+                        Number(
+                            geocodeData.latitude
+                        );
+
+                    longitude =
+                        Number(
+                            geocodeData.longitude
+                        );
+                }
+
+                if (
+                    !Number.isFinite(
+                        latitude
+                    ) ||
+                    !Number.isFinite(
+                        longitude
+                    )
                 ) {
                     throw new Error(
                         "Adresa proprietății nu a putut fi localizată corect."
@@ -2339,7 +2807,15 @@ export default function AdaugaProprietatePage() {
                                     </select>
                                 </div>
 
-                                <div style={fieldStyle}>
+                                {/* MAPBOX AUTOCOMPLETE */}
+
+                                <div
+                                    style={{
+                                        ...fieldStyle,
+                                        position:
+                                            "relative",
+                                    }}
+                                >
                                     <label style={labelStyle}>
                                         Adresa proprietății
                                     </label>
@@ -2347,11 +2823,201 @@ export default function AdaugaProprietatePage() {
                                     <input
                                         name="address"
                                         type="text"
+                                        autoComplete="off"
                                         value={form.address}
-                                        onChange={updateField}
-                                        placeholder="Strada, număr"
-                                        style={inputStyle}
+                                        onChange={
+                                            handleAddressChange
+                                        }
+                                        onFocus={() => {
+                                            if (
+                                                addressSuggestions.length >
+                                                0
+                                            ) {
+                                                setAddressSuggestionsOpen(
+                                                    true
+                                                );
+                                            }
+                                        }}
+                                        disabled={
+                                            !form.city
+                                        }
+                                        placeholder={
+                                            form.city
+                                                ? "Începe să scrii strada și numărul"
+                                                : "Alege mai întâi orașul"
+                                        }
+                                        style={{
+                                            ...inputStyle,
+
+                                            cursor:
+                                                form.city
+                                                    ? "text"
+                                                    : "not-allowed",
+                                        }}
                                     />
+
+                                    {loadingAddressSuggestions && (
+                                        <div
+                                            style={{
+                                                position:
+                                                    "absolute",
+
+                                                right:
+                                                    "14px",
+
+                                                top:
+                                                    "43px",
+
+                                                fontSize:
+                                                    "12px",
+
+                                                color:
+                                                    "#6b7280",
+
+                                                zIndex:
+                                                    20,
+                                            }}
+                                        >
+                                            Se caută...
+                                        </div>
+                                    )}
+
+                                    {addressSuggestionsOpen &&
+                                        addressSuggestions.length >
+                                            0 && (
+                                            <div
+                                                style={{
+                                                    position:
+                                                        "absolute",
+
+                                                    top:
+                                                        "78px",
+
+                                                    left:
+                                                        0,
+
+                                                    right:
+                                                        0,
+
+                                                    zIndex:
+                                                        100,
+
+                                                    background:
+                                                        "#ffffff",
+
+                                                    border:
+                                                        "1px solid #e5e7eb",
+
+                                                    borderRadius:
+                                                        "12px",
+
+                                                    overflow:
+                                                        "hidden",
+
+                                                    boxShadow:
+                                                        "0 12px 30px rgba(17,24,39,0.14)",
+
+                                                    maxHeight:
+                                                        "280px",
+
+                                                    overflowY:
+                                                        "auto",
+                                                }}
+                                            >
+                                                {addressSuggestions.map(
+                                                    (
+                                                        suggestion,
+                                                        index
+                                                    ) => (
+                                                        <button
+                                                            key={
+                                                                suggestion.mapbox_id ||
+                                                                index
+                                                            }
+                                                            type="button"
+                                                            onMouseDown={(
+                                                                event
+                                                            ) => {
+                                                                event.preventDefault();
+
+                                                                selectAddressSuggestion(
+                                                                    suggestion
+                                                                );
+                                                            }}
+                                                            style={{
+                                                                width:
+                                                                    "100%",
+
+                                                                border:
+                                                                    "none",
+
+                                                                borderBottom:
+                                                                    index ===
+                                                                    addressSuggestions.length -
+                                                                        1
+                                                                        ? "none"
+                                                                        : "1px solid #f3f4f6",
+
+                                                                background:
+                                                                    "#ffffff",
+
+                                                                padding:
+                                                                    "12px 14px",
+
+                                                                textAlign:
+                                                                    "left",
+
+                                                                cursor:
+                                                                    "pointer",
+
+                                                                fontFamily:
+                                                                    "inherit",
+                                                            }}
+                                                        >
+                                                            <div
+                                                                style={{
+                                                                    fontSize:
+                                                                        "14px",
+
+                                                                    fontWeight:
+                                                                        "700",
+
+                                                                    color:
+                                                                        "#111827",
+
+                                                                    lineHeight:
+                                                                        "1.35",
+                                                                }}
+                                                            >
+                                                                {suggestion.name}
+                                                            </div>
+
+                                                            {suggestion.place_formatted && (
+                                                                <div
+                                                                    style={{
+                                                                        marginTop:
+                                                                            "3px",
+
+                                                                        fontSize:
+                                                                            "12px",
+
+                                                                        color:
+                                                                            "#6b7280",
+
+                                                                        lineHeight:
+                                                                            "1.4",
+                                                                    }}
+                                                                >
+                                                                    {
+                                                                        suggestion.place_formatted
+                                                                    }
+                                                                </div>
+                                                            )}
+                                                        </button>
+                                                    )
+                                                )}
+                                            </div>
+                                        )}
                                 </div>
                             </div>
 
@@ -2564,8 +3230,8 @@ export default function AdaugaProprietatePage() {
                             Selectează orașul și zona / cartierul proprietății.
                             Universitățile apropiate sunt opționale.
                         </div>
-                        {/* PREȚ + DATA DISPONIBILITĂȚII */}
 
+                        {/* PREȚ + DATA DISPONIBILITĂȚII */}
                         <div
                             style={{
                                 display: "grid",
