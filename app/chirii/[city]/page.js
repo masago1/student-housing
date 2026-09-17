@@ -1827,8 +1827,6 @@ export default function CityListingsPage() {
         minHeight: "100vh",
         background: "#F8FAFC",
         color: "#0F172A",
-        fontFamily:
-          "Arial, Helvetica, sans-serif",
       }}
     >
       {/* HEADER */}
