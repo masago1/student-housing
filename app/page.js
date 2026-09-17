@@ -168,24 +168,6 @@ export default async function Home() {
             Eroare Supabase: {error.message}
           </p>
         )}
-
-        {/* BENEFITS */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: "35px",
-            flexWrap: "wrap",
-            marginTop: "32px",
-            color: "#6b7280",
-            fontSize: "14px",
-            fontWeight: "500",
-          }}
-        >
-          <span>Aproape de universitate</span>
-          <span>Chirii într-un singur loc</span>
-          <span>Direct de la proprietari</span>
-        </div>
       </section>
     </main>
   );
