@@ -207,7 +207,9 @@ export default function MessageOwnerButton({
       );
 
       setError(
-        "Mesajul nu a putut fi trimis. Încearcă din nou."
+        err?.message
+          ? `Mesajul nu a putut fi trimis: ${err.message}`
+          : "Mesajul nu a putut fi trimis. Încearcă din nou."
       );
     } finally {
       setSending(false);
@@ -311,7 +313,6 @@ export default function MessageOwnerButton({
         >
           <div
             onClick={(event) => {
-              event.preventDefault();
               event.stopPropagation();
             }}
             style={{
@@ -364,9 +365,8 @@ export default function MessageOwnerButton({
                 lineHeight: "1.6",
               }}
             >
-              Trebuie să te autentifici sau să îți
-              creezi un cont pentru a contacta
-              proprietarul.
+              Trebuie să te autentifici sau să îți creezi un cont
+              pentru a contacta proprietarul.
             </p>
 
             <button
@@ -430,7 +430,6 @@ export default function MessageOwnerButton({
         >
           <div
             onClick={(event) => {
-              event.preventDefault();
               event.stopPropagation();
             }}
             style={{
@@ -493,8 +492,7 @@ export default function MessageOwnerButton({
               </div>
             ) : null}
 
-            {error ===
-            "Acesta este propriul tău anunț." ? (
+            {error === "Acesta este propriul tău anunț." ? (
               <>
                 <div
                   style={{
@@ -507,8 +505,8 @@ export default function MessageOwnerButton({
                     lineHeight: "1.6",
                   }}
                 >
-                  Acesta este propriul tău anunț. Nu îți
-                  poți trimite un mesaj.
+                  Acesta este propriul tău anunț. Nu îți poți
+                  trimite un mesaj.
                 </div>
 
                 <button
@@ -576,29 +574,31 @@ export default function MessageOwnerButton({
 
                 <button
                   type="submit"
-                  disabled={sending}
+                  disabled={sending || !message.trim()}
                   style={{
                     width: "100%",
                     marginTop: "15px",
                     border: "none",
                     borderRadius: "10px",
-                    background: "#172554",
+                    background:
+                      sending || !message.trim()
+                        ? "#94A3B8"
+                        : "#172554",
                     color: "#FFFFFF",
                     padding: "13px 16px",
                     fontFamily: "inherit",
                     fontSize: "14px",
                     fontWeight: "800",
-                    cursor: sending
-                      ? "wait"
-                      : "pointer",
+                    cursor:
+                      sending || !message.trim()
+                        ? "not-allowed"
+                        : "pointer",
                     opacity: sending ? 0.75 : 1,
                     boxShadow:
                       "0 5px 15px rgba(23, 37, 84, 0.16)",
                   }}
                 >
-                  {sending
-                    ? "Se trimite..."
-                    : "Trimite mesajul"}
+                  {sending ? "Se trimite..." : "Trimite mesajul"}
                 </button>
 
                 <button
@@ -614,9 +614,7 @@ export default function MessageOwnerButton({
                     fontFamily: "inherit",
                     fontSize: "13px",
                     fontWeight: "700",
-                    cursor: sending
-                      ? "default"
-                      : "pointer",
+                    cursor: sending ? "default" : "pointer",
                   }}
                 >
                   Anulează
