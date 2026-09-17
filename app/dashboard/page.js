@@ -1250,20 +1250,12 @@ export default function DashboardPage() {
           }}
         >
           <span
-            style={{
-              color: "#172554",
-            }}
-          >
-            Student
-          </span>
-
-          <span
-            style={{
-              color: "#3B82F6",
-            }}
-          >
-            Housing
-          </span>
+  style={{
+    color: "#172554",
+  }}
+>
+  shaus
+</span>
         </a>
 
         <div
