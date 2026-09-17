@@ -26,17 +26,19 @@ export default async function sitemap() {
 
     const activeListings = listings || [];
 
-    // Orașele care au cel puțin un anunț activ
-    const cities = [
+    // Creăm slug-urile orașelor și eliminăm duplicatele
+    // Ex: "Timișoara" și "Timisoara" => "timisoara"
+    const citySlugs = [
       ...new Set(
         activeListings
-          .map((listing) => listing.city)
+          .map((listing) => slugify(listing.city))
           .filter(Boolean)
       ),
     ];
 
-    const cityPages = cities.map((city) => ({
-      url: `${baseUrl}/chirii/${slugify(city)}`,
+    // O singură pagină pentru fiecare oraș
+    const cityPages = citySlugs.map((citySlug) => ({
+      url: `${baseUrl}/chirii/${citySlug}`,
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 0.9,
@@ -59,8 +61,6 @@ export default async function sitemap() {
     ];
   } catch (error) {
     console.error("Sitemap generation error:", error);
-
-    // Homepage-ul rămâne în sitemap chiar dacă Supabase are o problemă
     return staticPages;
   }
 }
