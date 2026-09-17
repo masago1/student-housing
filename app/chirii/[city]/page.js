@@ -7,8 +7,8 @@ import {
   useState,
 } from "react";
 import { useParams } from "next/navigation";
-import { supabase } from "../../../lib/supabase";
-import FavoriteButton from "../../../components/FavoriteButton";
+import { supabase } from "../../lib/supabase";
+import FavoriteButton from "../../components/FavoriteButton";
 
 export const dynamic = "force-dynamic";
 
