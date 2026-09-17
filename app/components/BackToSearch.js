@@ -19,13 +19,16 @@ export default function BackToSearch({ city }) {
     // URL-ul paginii de rezultate din care am venit
     const from = searchParams.get("from");
 
-    // Acceptăm doar rute interne de chirii
+    // Dacă am intrat în proprietate dintr-o pagină de căutare,
+    // revenim prin istoricul browserului.
+    // Astfel browserul poate restaura inclusiv poziția de scroll.
     if (from && from.startsWith("/chirii/")) {
-      router.push(from);
+      router.back();
       return;
     }
 
     // Fallback: dacă proprietatea a fost deschisă direct
+    // (link copiat, refresh, bookmark etc.)
     const citySlug = normalizeCity(city);
 
     if (citySlug) {
