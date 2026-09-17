@@ -1,33 +1,40 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function BackToSearch({ city }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  function normalizeCity(value = "") {
+    return value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "-");
+  }
 
   function handleBack() {
-    // Dacă utilizatorul a venit din lista de anunțuri,
-    // îl întoarcem exact la pagina anterioară.
-    if (window.history.length > 1) {
-      router.back();
+    // URL-ul paginii de rezultate din care am venit
+    const from = searchParams.get("from");
+
+    // Acceptăm doar rute interne de chirii
+    if (from && from.startsWith("/chirii/")) {
+      router.push(from);
       return;
     }
 
-    // Fallback dacă anunțul a fost deschis direct.
-    const citySlug = city
-      ? city
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .toLowerCase()
-          .trim()
-          .replace(/\s+/g, "-")
-      : "";
+    // Fallback: dacă proprietatea a fost deschisă direct
+    const citySlug = normalizeCity(city);
 
     if (citySlug) {
       router.push(`/chirii/${citySlug}`);
-    } else {
-      router.push("/");
+      return;
     }
+
+    // Ultimul fallback
+    router.push("/");
   }
 
   return (
