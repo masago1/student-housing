@@ -138,13 +138,7 @@ export default async function PropertyPage({ params }) {
     }
   });
 
-  /*
-    LUĂM TELEFONUL ACTUAL DIN PROFILUL PROPRIETARULUI
-
-    Dacă proprietarul își schimbă telefonul în Profilul meu,
-    noul număr va apărea automat și pe anunț.
-  */
-
+  // Luăm numele și telefonul actual din profilul contului
   const { data: ownerProfile, error: ownerProfileError } =
     await supabase
       .from("profiles")
@@ -154,13 +148,16 @@ export default async function PropertyPage({ params }) {
 
   if (ownerProfileError) {
     console.error(
-      "Eroare încărcare profil proprietar:",
+      "Eroare încărcare profil utilizator:",
       ownerProfileError
     );
   }
 
-  // Preferăm telefonul actual din profil.
-  // owner_phone rămâne fallback pentru anunțurile mai vechi.
+  const ownerName =
+    ownerProfile?.name?.trim() ||
+    listing.owner_name?.trim() ||
+    "";
+
   const ownerPhone =
     ownerProfile?.phone?.trim() ||
     listing.owner_phone?.trim() ||
@@ -609,24 +606,36 @@ export default async function PropertyPage({ params }) {
               </div>
             )}
 
-            {/* MESAJ PROPRIETAR */}
+            {/* NUMELE CONTULUI */}
+            {ownerName && (
+              <div
+                style={{
+                  marginTop: "22px",
+                  paddingTop: "20px",
+                  borderTop: "1px solid #e5e7eb",
+                  marginBottom: "0px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "17px",
+                    fontWeight: "800",
+                    color: "#172554",
+                    lineHeight: "1.3",
+                  }}
+                >
+                  {ownerName}
+                </div>
+              </div>
+            )}
+
+            {/* BUTON MESAJ */}
             <MessageOwnerButton
               listingId={listing.id}
               ownerId={listing.user_id}
             />
 
-            <div
-              style={{
-                textAlign: "center",
-                marginTop: "12px",
-                color: "#9ca3af",
-                fontSize: "12px",
-              }}
-            >
-              Mesaj direct către proprietar
-            </div>
-
-            {/* TELEFON PROPRIETAR */}
+            {/* TELEFON */}
             <PhoneRevealButton phone={ownerPhone} />
           </aside>
         </div>
