@@ -3,6 +3,7 @@ import MessageOwnerButton from "../../components/MessageOwnerButton";
 import PhoneRevealButton from "../../components/PhoneRevealButton";
 import PropertyGallery from "../../components/PropertyGallery";
 import BackToSearch from "../../components/BackToSearch";
+import ApproximateLocationMap from "../../components/ApproximateLocationMap";
 
 export const dynamic = "force-dynamic";
 
@@ -214,6 +215,12 @@ export default async function PropertyPage({ params }) {
         listing.utilities_included !== null ||
         hasValue(listing.deposit_amount);
 
+    const hasLocation =
+        hasValue(listing.latitude) &&
+        hasValue(listing.longitude) &&
+        Number.isFinite(Number(listing.latitude)) &&
+        Number.isFinite(Number(listing.longitude));
+
     return (
         <main
             style={{
@@ -312,8 +319,6 @@ export default async function PropertyPage({ params }) {
                                 {listing.address}
                             </div>
                         )}
-
-                        {/* NU MAI EXISTĂ NICIUN BADGE SUB ADRESĂ */}
 
                         {/* DESCRIERE */}
 
@@ -475,7 +480,6 @@ export default async function PropertyPage({ params }) {
                             </div>
                         </div>
 
-                        {/* CONTINUĂ CU PARTEA 2/2 */}
                         {/* CLĂDIRE */}
 
                         {hasBuildingDetails && (
@@ -580,8 +584,7 @@ export default async function PropertyPage({ params }) {
                                         )}
 
                                     {listing.smoking_allowed !== null &&
-                                        listing.smoking_allowed !==
-                                            undefined && (
+                                        listing.smoking_allowed !== undefined && (
                                             <DetailRow
                                                 label="Fumat"
                                                 value={
@@ -593,8 +596,7 @@ export default async function PropertyPage({ params }) {
                                         )}
 
                                     {listing.utilities_included !== null &&
-                                        listing.utilities_included !==
-                                            undefined && (
+                                        listing.utilities_included !== undefined && (
                                             <DetailRow
                                                 label="Utilități incluse"
                                                 value={
@@ -614,6 +616,47 @@ export default async function PropertyPage({ params }) {
                                         />
                                     )}
                                 </div>
+                            </div>
+                        )}
+
+                        {/* LOCAȚIE APROXIMATIVĂ */}
+
+                        {hasLocation && (
+                            <div
+                                style={{
+                                    marginTop: "34px",
+                                    paddingTop: "30px",
+                                    borderTop: "1px solid #e5e7eb",
+                                }}
+                            >
+                                <h2
+                                    style={{
+                                        margin: "0 0 17px",
+                                        fontSize: "22px",
+                                        fontWeight: "800",
+                                        color: "#111827",
+                                    }}
+                                >
+                                    Locație
+                                </h2>
+
+                                {listing.address && (
+                                    <div
+                                        style={{
+                                            marginBottom: "16px",
+                                            color: "#4b5563",
+                                            fontSize: "15px",
+                                            lineHeight: "1.5",
+                                        }}
+                                    >
+                                        {listing.address}
+                                    </div>
+                                )}
+
+                                <ApproximateLocationMap
+                                    latitude={listing.latitude}
+                                    longitude={listing.longitude}
+                                />
                             </div>
                         )}
 
