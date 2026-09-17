@@ -1215,17 +1215,16 @@ export default function DashboardPage() {
       </main>
     );
   }
-
   return (
     <main
       style={{
         minHeight: "100vh",
         background: "#F4F7FB",
-        color: "#0F172A",
+        fontFamily:
+          "Inter, Arial, sans-serif",
+        color: "#172554",
       }}
     >
-      {/* HEADER */}
-
       <header
         style={{
           height: "72px",
@@ -1244,9 +1243,9 @@ export default function DashboardPage() {
           href="/"
           style={{
             textDecoration: "none",
-            fontSize: "25px",
-            fontWeight: "800",
-            letterSpacing: "-1px",
+            fontSize: "22px",
+            fontWeight: "900",
+            letterSpacing: "-0.7px",
           }}
         >
           <span
@@ -1473,11 +1472,22 @@ export default function DashboardPage() {
           >
             <button
               type="button"
-              onClick={() =>
+              onClick={() => {
+                if (!profilePhone.trim()) {
+                  setPhoneRequired(true);
+                  setActiveSection("profile");
+
+                  router.push(
+                    "/dashboard?section=profile&required=phone"
+                  );
+
+                  return;
+                }
+
                 router.push(
                   "/adaugaproprietate"
-                )
-              }
+                );
+              }}
               style={{
                 width: "100%",
                 border: "none",
@@ -1638,6 +1648,15 @@ export default function DashboardPage() {
                 toggleListing={
                   toggleListing
                 }
+                profilePhone={
+                  profilePhone
+                }
+                setPhoneRequired={
+                  setPhoneRequired
+                }
+                setActiveSection={
+                  setActiveSection
+                }
               />
             </>
           )}
@@ -1693,17 +1712,27 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => {
-  if (!profilePhone.trim()) {
-    setPhoneRequired(true);
-    setActiveSection("profile");
-    router.push(
-      "/dashboard?section=profile&required=phone"
-    );
-    return;
-  }
+                    if (
+                      !profilePhone.trim()
+                    ) {
+                      setPhoneRequired(
+                        true
+                      );
+                      setActiveSection(
+                        "profile"
+                      );
 
-  router.push("/adaugaproprietate");
-}}
+                      router.push(
+                        "/dashboard?section=profile&required=phone"
+                      );
+
+                      return;
+                    }
+
+                    router.push(
+                      "/adaugaproprietate"
+                    );
+                  }}
                   style={{
                     border: "none",
                     borderRadius:
@@ -1734,6 +1763,15 @@ export default function DashboardPage() {
                 router={router}
                 toggleListing={
                   toggleListing
+                }
+                profilePhone={
+                  profilePhone
+                }
+                setPhoneRequired={
+                  setPhoneRequired
+                }
+                setActiveSection={
+                  setActiveSection
                 }
               />
             </>
@@ -2084,6 +2122,7 @@ export default function DashboardPage() {
               </div>
             </>
           )}
+
           {activeSection ===
             "messages" && (
             <>
@@ -2250,10 +2289,8 @@ export default function DashboardPage() {
                           >
                             <div
                               style={{
-                                width:
-                                  "58px",
-                                height:
-                                  "58px",
+                                width: "58px",
+                                height: "58px",
                                 borderRadius:
                                   "10px",
                                 overflow:
@@ -2268,7 +2305,7 @@ export default function DashboardPage() {
                                     listing.image_url
                                   }
                                   alt={
-                                    listing?.title ||
+                                    listing.title ||
                                     "Anunț"
                                   }
                                   style={{
@@ -2299,8 +2336,6 @@ export default function DashboardPage() {
                                       "#94A3B8",
                                     fontSize:
                                       "9px",
-                                    textAlign:
-                                      "center",
                                   }}
                                 >
                                   Fără poză
@@ -2310,8 +2345,7 @@ export default function DashboardPage() {
 
                             <div
                               style={{
-                                minWidth:
-                                  0,
+                                minWidth: 0,
                               }}
                             >
                               <div
@@ -2330,23 +2364,25 @@ export default function DashboardPage() {
                                   style={{
                                     minWidth:
                                       0,
-                                    fontSize:
-                                      "13px",
-                                    fontWeight:
-                                      hasUnread
-                                        ? "900"
-                                        : "800",
-                                    color:
-                                      "#172554",
                                     overflow:
                                       "hidden",
                                     textOverflow:
                                       "ellipsis",
                                     whiteSpace:
                                       "nowrap",
+                                    color:
+                                      "#172554",
+                                    fontSize:
+                                      "13px",
+                                    fontWeight:
+                                      hasUnread
+                                        ? "900"
+                                        : "800",
                                   }}
                                 >
-                                  {otherUserName}
+                                  {
+                                    otherUserName
+                                  }
                                 </div>
 
                                 {hasUnread && (
@@ -2371,7 +2407,7 @@ export default function DashboardPage() {
                                       justifyContent:
                                         "center",
                                       fontSize:
-                                        "10px",
+                                        "9px",
                                       fontWeight:
                                         "900",
                                       boxSizing:
@@ -2380,7 +2416,9 @@ export default function DashboardPage() {
                                         0,
                                     }}
                                   >
-                                    {unreadCount}
+                                    {
+                                      unreadCount
+                                    }
                                   </span>
                                 )}
                               </div>
@@ -2388,37 +2426,13 @@ export default function DashboardPage() {
                               <div
                                 style={{
                                   marginTop:
-                                    "5px",
+                                    "4px",
                                   color:
-                                    hasUnread
-                                      ? "#334155"
-                                      : "#64748B",
-                                  fontSize:
-                                    "11px",
-                                  fontWeight:
-                                    hasUnread
-                                      ? "800"
-                                      : "600",
-                                  overflow:
-                                    "hidden",
-                                  textOverflow:
-                                    "ellipsis",
-                                  whiteSpace:
-                                    "nowrap",
-                                }}
-                              >
-                                {lastMessage?.content ||
-                                  "Conversație nouă"}
-                              </div>
-
-                              <div
-                                style={{
-                                  marginTop:
-                                    "5px",
-                                  color:
-                                    "#94A3B8",
+                                    "#64748B",
                                   fontSize:
                                     "10px",
+                                  fontWeight:
+                                    "700",
                                   overflow:
                                     "hidden",
                                   textOverflow:
@@ -2429,19 +2443,33 @@ export default function DashboardPage() {
                               >
                                 {listing?.title ||
                                   "Anunț indisponibil"}
+                              </div>
 
-                                {lastMessage?.created_at
-                                  ? ` · ${new Date(
-                                      lastMessage.created_at
-                                    ).toLocaleDateString(
-                                      "ro-RO",
-                                      {
-                                        day: "2-digit",
-                                        month:
-                                          "2-digit",
-                                      }
-                                    )}`
-                                  : ""}
+                              <div
+                                style={{
+                                  marginTop:
+                                    "5px",
+                                  color:
+                                    hasUnread
+                                      ? "#334155"
+                                      : "#94A3B8",
+                                  fontSize:
+                                    "10px",
+                                  fontWeight:
+                                    hasUnread
+                                      ? "700"
+                                      : "500",
+                                  overflow:
+                                    "hidden",
+                                  textOverflow:
+                                    "ellipsis",
+                                  whiteSpace:
+                                    "nowrap",
+                                }}
+                              >
+                                {lastMessage
+                                  ?.content ||
+                                  "Niciun mesaj"}
                               </div>
                             </div>
                           </button>
@@ -2455,76 +2483,106 @@ export default function DashboardPage() {
                     style={{
                       minWidth: 0,
                       display: "flex",
-                      flexDirection: "column",
-                      height: "650px",
+                      flexDirection:
+                        "column",
+                      background:
+                        "#FFFFFF",
                     }}
                   >
                     {!selectedConversation ? (
                       <div
                         style={{
                           flex: 1,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "#94A3B8",
-                          fontSize: "13px",
+                          display:
+                            "flex",
+                          alignItems:
+                            "center",
+                          justifyContent:
+                            "center",
+                          color:
+                            "#94A3B8",
+                          fontSize:
+                            "13px",
                         }}
                       >
-                        Selectează o conversație.
+                        Selectează o
+                        conversație.
                       </div>
                     ) : (
                       <>
-                        {/* HEADER CHAT */}
-
                         <div
                           style={{
-                            minHeight: "78px",
-                            padding: "14px 20px",
-                            boxSizing: "border-box",
+                            minHeight:
+                              "72px",
+                            padding:
+                              "13px 18px",
                             borderBottom:
                               "1px solid #E2E8F0",
-                            display: "flex",
-                            alignItems: "center",
+                            display:
+                              "flex",
+                            alignItems:
+                              "center",
                             justifyContent:
                               "space-between",
-                            gap: "15px",
+                            gap:
+                              "15px",
+                            boxSizing:
+                              "border-box",
                           }}
                         >
-                          <div style={{ minWidth: 0 }}>
+                          <div
+                            style={{
+                              minWidth: 0,
+                            }}
+                          >
                             <div
                               style={{
-                                fontSize: "15px",
-                                fontWeight: "800",
-                                color: "#172554",
-                                overflow: "hidden",
+                                fontSize:
+                                  "14px",
+                                fontWeight:
+                                  "800",
+                                color:
+                                  "#172554",
+                                overflow:
+                                  "hidden",
                                 textOverflow:
                                   "ellipsis",
-                                whiteSpace: "nowrap",
+                                whiteSpace:
+                                  "nowrap",
                               }}
                             >
                               {selectedConversation
-                                .listings?.title ||
+                                .listings
+                                ?.title ||
                                 "Anunț indisponibil"}
                             </div>
 
                             <div
                               style={{
-                                marginTop: "5px",
-                                color: "#64748B",
-                                fontSize: "11px",
-                                overflow: "hidden",
+                                marginTop:
+                                  "5px",
+                                color:
+                                  "#64748B",
+                                fontSize:
+                                  "11px",
+                                overflow:
+                                  "hidden",
                                 textOverflow:
                                   "ellipsis",
-                                whiteSpace: "nowrap",
+                                whiteSpace:
+                                  "nowrap",
                               }}
                             >
                               {conversationDetails[
-                                selectedConversation.id
-                              ]?.otherUserName ||
+                                selectedConversation
+                                  .id
+                              ]
+                                ?.otherUserName ||
                                 "Utilizator"}
 
                               {selectedConversation
-                                .listings?.city
+                                .listings
+                                ?.city
                                 ? ` · ${selectedConversation.listings.city}`
                                 : ""}
                             </div>
@@ -2543,7 +2601,8 @@ export default function DashboardPage() {
                                   "1px solid #DBEAFE",
                                 background:
                                   "#EFF6FF",
-                                color: "#2563EB",
+                                color:
+                                  "#2563EB",
                                 borderRadius:
                                   "9px",
                                 padding:
@@ -2572,18 +2631,24 @@ export default function DashboardPage() {
                           style={{
                             flex: 1,
                             minHeight: 0,
-                            overflowY: "auto",
+                            overflowY:
+                              "auto",
                             padding: "22px",
-                            background: "#F8FAFC",
+                            background:
+                              "#F8FAFC",
                           }}
                         >
                           {messagesLoading ? (
                             <div
                               style={{
-                                textAlign: "center",
-                                color: "#94A3B8",
-                                fontSize: "12px",
-                                paddingTop: "30px",
+                                textAlign:
+                                  "center",
+                                color:
+                                  "#94A3B8",
+                                fontSize:
+                                  "12px",
+                                paddingTop:
+                                  "30px",
                               }}
                             >
                               Se încarcă mesajele...
@@ -2592,22 +2657,30 @@ export default function DashboardPage() {
                             0 ? (
                             <div
                               style={{
-                                height: "100%",
-                                display: "flex",
+                                height:
+                                  "100%",
+                                display:
+                                  "flex",
                                 flexDirection:
                                   "column",
-                                alignItems: "center",
+                                alignItems:
+                                  "center",
                                 justifyContent:
                                   "center",
-                                textAlign: "center",
-                                color: "#94A3B8",
+                                textAlign:
+                                  "center",
+                                color:
+                                  "#94A3B8",
                               }}
                             >
                               <div
                                 style={{
-                                  fontSize: "14px",
-                                  fontWeight: "800",
-                                  color: "#64748B",
+                                  fontSize:
+                                    "14px",
+                                  fontWeight:
+                                    "800",
+                                  color:
+                                    "#64748B",
                                 }}
                               >
                                 Începe conversația
@@ -2615,8 +2688,10 @@ export default function DashboardPage() {
 
                               <div
                                 style={{
-                                  fontSize: "12px",
-                                  marginTop: "5px",
+                                  fontSize:
+                                    "12px",
+                                  marginTop:
+                                    "5px",
                                 }}
                               >
                                 Trimite primul mesaj.
@@ -2625,10 +2700,12 @@ export default function DashboardPage() {
                           ) : (
                             <div
                               style={{
-                                display: "flex",
+                                display:
+                                  "flex",
                                 flexDirection:
                                   "column",
-                                gap: "10px",
+                                gap:
+                                  "10px",
                               }}
                             >
                               {messages.map(
@@ -2639,7 +2716,9 @@ export default function DashboardPage() {
 
                                   return (
                                     <div
-                                      key={message.id}
+                                      key={
+                                        message.id
+                                      }
                                       style={{
                                         display:
                                           "flex",
@@ -2657,12 +2736,14 @@ export default function DashboardPage() {
                                             mine
                                               ? "#172554"
                                               : "#FFFFFF",
-                                          color: mine
-                                            ? "#FFFFFF"
-                                            : "#172554",
-                                          border: mine
-                                            ? "none"
-                                            : "1px solid #E2E8F0",
+                                          color:
+                                            mine
+                                              ? "#FFFFFF"
+                                              : "#172554",
+                                          border:
+                                            mine
+                                              ? "none"
+                                              : "1px solid #E2E8F0",
                                           borderRadius:
                                             mine
                                               ? "15px 15px 4px 15px"
@@ -2700,9 +2781,10 @@ export default function DashboardPage() {
                                               "right",
                                             fontSize:
                                               "9px",
-                                            color: mine
-                                              ? "rgba(255,255,255,0.65)"
-                                              : "#94A3B8",
+                                            color:
+                                              mine
+                                                ? "rgba(255,255,255,0.65)"
+                                                : "#94A3B8",
                                           }}
                                         >
                                           {message.created_at
@@ -2711,7 +2793,8 @@ export default function DashboardPage() {
                                               ).toLocaleTimeString(
                                                 "ro-RO",
                                                 {
-                                                  hour: "2-digit",
+                                                  hour:
+                                                    "2-digit",
                                                   minute:
                                                     "2-digit",
                                                 }
@@ -2734,35 +2817,47 @@ export default function DashboardPage() {
                             padding: "15px",
                             borderTop:
                               "1px solid #E2E8F0",
-                            background: "#FFFFFF",
+                            background:
+                              "#FFFFFF",
                           }}
                         >
                           <div
                             style={{
-                              display: "flex",
+                              display:
+                                "flex",
                               alignItems:
                                 "flex-end",
                               gap: "10px",
                             }}
                           >
                             <textarea
-                              value={messageText}
-                              onChange={(event) =>
+                              value={
+                                messageText
+                              }
+                              onChange={(
+                                event
+                              ) =>
                                 setMessageText(
-                                  event.target.value
+                                  event.target
+                                    .value
                                 )
                               }
                               onKeyDown={
                                 handleMessageKeyDown
                               }
                               placeholder="Scrie un mesaj..."
-                              maxLength={5000}
+                              maxLength={
+                                5000
+                              }
                               rows={1}
                               style={{
                                 flex: 1,
-                                minHeight: "43px",
-                                maxHeight: "110px",
-                                resize: "vertical",
+                                minHeight:
+                                  "43px",
+                                maxHeight:
+                                  "110px",
+                                resize:
+                                  "vertical",
                                 border:
                                   "1px solid #CBD5E1",
                                 borderRadius:
@@ -2771,25 +2866,33 @@ export default function DashboardPage() {
                                   "11px 13px",
                                 boxSizing:
                                   "border-box",
-                                outline: "none",
+                                outline:
+                                  "none",
                                 fontFamily:
                                   "inherit",
-                                fontSize: "13px",
-                                lineHeight: "1.5",
-                                color: "#0F172A",
+                                fontSize:
+                                  "13px",
+                                lineHeight:
+                                  "1.5",
+                                color:
+                                  "#0F172A",
                               }}
                             />
 
                             <button
                               type="button"
-                              onClick={sendMessage}
+                              onClick={
+                                sendMessage
+                              }
                               disabled={
                                 sendingMessage ||
                                 !messageText.trim()
                               }
                               style={{
-                                height: "43px",
-                                border: "none",
+                                height:
+                                  "43px",
+                                border:
+                                  "none",
                                 borderRadius:
                                   "10px",
                                 padding:
@@ -2799,10 +2902,12 @@ export default function DashboardPage() {
                                   !messageText.trim()
                                     ? "#CBD5E1"
                                     : "#172554",
-                                color: "#FFFFFF",
+                                color:
+                                  "#FFFFFF",
                                 fontFamily:
                                   "inherit",
-                                fontSize: "12px",
+                                fontSize:
+                                  "12px",
                                 fontWeight:
                                   "800",
                                 cursor:
@@ -2820,9 +2925,12 @@ export default function DashboardPage() {
 
                           <div
                             style={{
-                              marginTop: "6px",
-                              color: "#94A3B8",
-                              fontSize: "9px",
+                              marginTop:
+                                "6px",
+                              color:
+                                "#94A3B8",
+                              fontSize:
+                                "9px",
                             }}
                           >
                             Enter pentru trimitere ·
@@ -2837,7 +2945,6 @@ export default function DashboardPage() {
               )}
             </>
           )}
-
           {/* FAVORITE */}
 
           {activeSection ===
@@ -3036,7 +3143,25 @@ function ListingsList({
   listings,
   router,
   toggleListing,
+  profilePhone,
+  setPhoneRequired,
+  setActiveSection,
 }) {
+  const handleAddListing = () => {
+    if (!profilePhone?.trim()) {
+      setPhoneRequired(true);
+      setActiveSection("profile");
+
+      router.push(
+        "/dashboard?section=profile&required=phone"
+      );
+
+      return;
+    }
+
+    router.push("/adaugaproprietate");
+  };
+
   if (listings.length === 0) {
     return (
       <div
@@ -3074,11 +3199,7 @@ function ListingsList({
 
         <button
           type="button"
-          onClick={() =>
-            router.push(
-              "/adaugaproprietate"
-            )
-          }
+          onClick={handleAddListing}
           style={{
             marginTop: "18px",
             border: "none",
@@ -3358,6 +3479,11 @@ function ListingsList({
     </div>
   );
 }
+
+/*
+  FAVORITE
+*/
+
 function FavoritesList({
   favorites,
   router,
@@ -3655,4 +3781,3 @@ function EmptyCard({
     </div>
   );
 }
-          
