@@ -542,26 +542,9 @@ export default function AdaugaProprietatePage() {
     ];
 
     /*
-        Folosim data LOCALĂ a browserului.
-        Astfel nu avem probleme cu UTC
-        care ar putea muta data cu o zi.
-    */
-
-    const getTodayAtMidnight = () => {
-        const now = new Date();
-
-        return new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate()
-        );
-    };
-
-    /*
-        Supabase păstrează:
+        Format vizual:
         2026-09-17
-
-        Utilizatorul vede:
+        devine
         17/09/2026
     */
 
@@ -728,13 +711,36 @@ export default function AdaugaProprietatePage() {
             0
         ).getDate();
 
-    const todayForCalendar =
-        getTodayAtMidnight();
+    const calendarCells = [
+        ...Array(mondayOffset).fill(null),
+        ...Array.from(
+            {
+                length:
+                    daysInCalendarMonth,
+            },
+            (
+                _,
+                index
+            ) => index + 1
+        ),
+    ];
+
+    const getTodayAtMidnight =
+        () => {
+            const today =
+                new Date();
+
+            return new Date(
+                today.getFullYear(),
+                today.getMonth(),
+                today.getDate()
+            );
+        };
 
     const currentCalendarMonthStart =
         new Date(
-            todayForCalendar.getFullYear(),
-            todayForCalendar.getMonth(),
+            getTodayAtMidnight().getFullYear(),
+            getTodayAtMidnight().getMonth(),
             1
         );
 
@@ -769,12 +775,6 @@ export default function AdaugaProprietatePage() {
                     calendarMonthIndex - 1,
                     1
                 );
-
-            /*
-                Protecție suplimentară:
-                nu permitem niciodată
-                o lună anterioară lunii curente.
-            */
 
             if (
                 previousMonth <
@@ -910,13 +910,6 @@ export default function AdaugaProprietatePage() {
                 return;
             }
 
-            /*
-                Dacă există o dată selectată,
-                verificăm și la submit
-                să nu fi devenit între timp
-                o dată din trecut.
-            */
-
             if (
                 form.available_from
             ) {
@@ -963,8 +956,7 @@ export default function AdaugaProprietatePage() {
             }
 
             if (
-                form.construction_year !==
-                ""
+                form.construction_year !== ""
             ) {
                 const year =
                     Number(
@@ -987,8 +979,7 @@ export default function AdaugaProprietatePage() {
             }
 
             if (
-                form.max_tenants !==
-                    "" &&
+                form.max_tenants !== "" &&
                 Number(
                     form.max_tenants
                 ) <= 0
@@ -1001,8 +992,7 @@ export default function AdaugaProprietatePage() {
             }
 
             if (
-                form.deposit_amount !==
-                    "" &&
+                form.deposit_amount !== "" &&
                 Number(
                     form.deposit_amount
                 ) < 0
@@ -1041,6 +1031,53 @@ export default function AdaugaProprietatePage() {
             const uploadedPaths = [];
 
             try {
+                const geocodeResponse =
+                    await fetch(
+                        "/api/geocode",
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type":
+                                    "application/json",
+                            },
+                            body: JSON.stringify({
+                                address:
+                                    form.address.trim(),
+                                city:
+                                    form.city.trim(),
+                            }),
+                        }
+                    );
+
+                const geocodeData =
+                    await geocodeResponse.json();
+
+                if (!geocodeResponse.ok) {
+                    throw new Error(
+                        geocodeData?.error ||
+                            "Adresa proprietății nu a putut fi localizată."
+                    );
+                }
+
+                const latitude =
+                    Number(
+                        geocodeData.latitude
+                    );
+
+                const longitude =
+                    Number(
+                        geocodeData.longitude
+                    );
+
+                if (
+                    !Number.isFinite(latitude) ||
+                    !Number.isFinite(longitude)
+                ) {
+                    throw new Error(
+                        "Adresa proprietății nu a putut fi localizată corect."
+                    );
+                }
+
                 const ownerName =
                     currentProfile?.name?.trim() ||
                     form.owner_name.trim() ||
@@ -1068,6 +1105,12 @@ export default function AdaugaProprietatePage() {
 
                     address:
                         form.address.trim(),
+
+                    latitude:
+                        latitude,
+
+                    longitude:
+                        longitude,
 
                     price_monthly:
                         Number(
@@ -1112,11 +1155,6 @@ export default function AdaugaProprietatePage() {
                         form.furnished ===
                         "true",
 
-                    /*
-                        Rămâne ISO pentru Supabase:
-                        AAAA-LL-ZZ
-                    */
-
                     available_from:
                         form.available_from ||
                         null,
@@ -1136,8 +1174,7 @@ export default function AdaugaProprietatePage() {
                             : null,
 
                     construction_year:
-                        form.construction_year !==
-                        ""
+                        form.construction_year !== ""
                             ? Number(
                                   form.construction_year
                               )
@@ -1150,8 +1187,7 @@ export default function AdaugaProprietatePage() {
                     air_conditioning:
                         form.air_conditioning ===
                         "true",
-
-                    balcony:
+                                        balcony:
                         form.balcony ===
                         "true",
 
@@ -1175,8 +1211,7 @@ export default function AdaugaProprietatePage() {
                             : null,
 
                     deposit_amount:
-                        form.deposit_amount !==
-                        ""
+                        form.deposit_amount !== ""
                             ? Number(
                                   form.deposit_amount
                               )
@@ -2147,7 +2182,6 @@ export default function AdaugaProprietatePage() {
                         )}
                     </div>
 
-                    {/* PARTEA 2/2 CONTINUĂ DIRECT DE AICI */}
                     {/* DETALII PROPRIETATE */}
 
                     <div
@@ -2156,7 +2190,8 @@ export default function AdaugaProprietatePage() {
                             border: "1px solid #e5e7eb",
                             borderRadius: "20px",
                             padding: "32px",
-                            boxShadow: "0 12px 35px rgba(17,24,39,0.05)",
+                            boxShadow:
+                                "0 12px 35px rgba(17,24,39,0.05)",
                             marginBottom: "22px",
                         }}
                     >
@@ -2220,7 +2255,8 @@ export default function AdaugaProprietatePage() {
                             className="location-grid"
                             style={{
                                 display: "grid",
-                                gridTemplateColumns: "1fr 1fr",
+                                gridTemplateColumns:
+                                    "1fr 1fr",
                                 gap: "18px",
                                 alignItems: "start",
                             }}
@@ -2326,24 +2362,37 @@ export default function AdaugaProprietatePage() {
 
                                 <div
                                     style={{
-                                        border: "1px solid #d1d5db",
-                                        borderRadius: "11px",
-                                        background: form.city
-                                            ? "#ffffff"
-                                            : "#f9fafb",
-                                        maxHeight: "280px",
-                                        minHeight: "160px",
-                                        overflowY: "auto",
-                                        padding: "8px",
-                                        opacity: form.city ? 1 : 0.65,
+                                        border:
+                                            "1px solid #d1d5db",
+                                        borderRadius:
+                                            "11px",
+                                        background:
+                                            form.city
+                                                ? "#ffffff"
+                                                : "#f9fafb",
+                                        maxHeight:
+                                            "280px",
+                                        minHeight:
+                                            "160px",
+                                        overflowY:
+                                            "auto",
+                                        padding:
+                                            "8px",
+                                        opacity:
+                                            form.city
+                                                ? 1
+                                                : 0.65,
                                     }}
                                 >
                                     {!form.city ? (
                                         <div
                                             style={{
-                                                padding: "8px",
-                                                color: "#6b7280",
-                                                fontSize: "14px",
+                                                padding:
+                                                    "8px",
+                                                color:
+                                                    "#6b7280",
+                                                fontSize:
+                                                    "14px",
                                             }}
                                         >
                                             Alege mai întâi orașul
@@ -2351,23 +2400,29 @@ export default function AdaugaProprietatePage() {
                                     ) : loadingUniversities ? (
                                         <div
                                             style={{
-                                                padding: "8px",
-                                                color: "#6b7280",
-                                                fontSize: "14px",
+                                                padding:
+                                                    "8px",
+                                                color:
+                                                    "#6b7280",
+                                                fontSize:
+                                                    "14px",
                                             }}
                                         >
                                             Se încarcă universitățile...
                                         </div>
-                                    ) : universitiesForCity.length === 0 ? (
+                                    ) : universitiesForCity.length ===
+                                      0 ? (
                                         <div
                                             style={{
-                                                padding: "8px",
-                                                color: "#6b7280",
-                                                fontSize: "14px",
+                                                padding:
+                                                    "8px",
+                                                color:
+                                                    "#6b7280",
+                                                fontSize:
+                                                    "14px",
                                             }}
                                         >
-                                            Nu există universități disponibile
-                                            pentru acest oraș.
+                                            Nu există universități disponibile pentru acest oraș.
                                         </div>
                                     ) : (
                                         universitiesForCity.map(
@@ -2379,23 +2434,33 @@ export default function AdaugaProprietatePage() {
 
                                                 return (
                                                     <label
-                                                        key={university.id}
+                                                        key={
+                                                            university.id
+                                                        }
                                                         style={{
-                                                            display: "flex",
+                                                            display:
+                                                                "flex",
                                                             alignItems:
                                                                 "flex-start",
-                                                            gap: "10px",
-                                                            padding: "10px",
-                                                            borderRadius: "9px",
-                                                            cursor: "pointer",
-                                                            background: checked
-                                                                ? "#eff6ff"
-                                                                : "transparent",
+                                                            gap:
+                                                                "10px",
+                                                            padding:
+                                                                "10px",
+                                                            borderRadius:
+                                                                "9px",
+                                                            cursor:
+                                                                "pointer",
+                                                            background:
+                                                                checked
+                                                                    ? "#eff6ff"
+                                                                    : "transparent",
                                                         }}
                                                     >
                                                         <input
                                                             type="checkbox"
-                                                            checked={checked}
+                                                            checked={
+                                                                checked
+                                                            }
                                                             onChange={() => {
                                                                 setSelectedUniversityIds(
                                                                     (
@@ -2420,9 +2485,12 @@ export default function AdaugaProprietatePage() {
                                                             style={{
                                                                 marginTop:
                                                                     "2px",
-                                                                width: "16px",
-                                                                height: "16px",
-                                                                cursor: "pointer",
+                                                                width:
+                                                                    "16px",
+                                                                height:
+                                                                    "16px",
+                                                                cursor:
+                                                                    "pointer",
                                                             }}
                                                         />
 
@@ -2452,16 +2520,22 @@ export default function AdaugaProprietatePage() {
                                 </div>
 
                                 {form.city &&
-                                    selectedUniversityIds.length > 0 && (
+                                    selectedUniversityIds.length >
+                                        0 && (
                                         <div
                                             style={{
-                                                marginTop: "8px",
-                                                color: "#2563eb",
-                                                fontSize: "12px",
-                                                fontWeight: "700",
+                                                marginTop:
+                                                    "8px",
+                                                color:
+                                                    "#2563eb",
+                                                fontSize:
+                                                    "12px",
+                                                fontWeight:
+                                                    "700",
                                             }}
                                         >
-                                            {selectedUniversityIds.length === 1
+                                            {selectedUniversityIds.length ===
+                                            1
                                                 ? "1 universitate selectată"
                                                 : `${selectedUniversityIds.length} universități selectate`}
                                         </div>
@@ -2472,19 +2546,24 @@ export default function AdaugaProprietatePage() {
                         <div
                             style={{
                                 background: "#eff6ff",
-                                border: "1px solid #dbeafe",
+                                border:
+                                    "1px solid #dbeafe",
                                 color: "#1e40af",
-                                borderRadius: "11px",
-                                padding: "12px 14px",
-                                fontSize: "13px",
-                                lineHeight: "1.5",
-                                marginBottom: "22px",
+                                borderRadius:
+                                    "11px",
+                                padding:
+                                    "12px 14px",
+                                fontSize:
+                                    "13px",
+                                lineHeight:
+                                    "1.5",
+                                marginBottom:
+                                    "22px",
                             }}
                         >
                             Selectează orașul și zona / cartierul proprietății.
                             Universitățile apropiate sunt opționale.
                         </div>
-
                         {/* PREȚ + DATA DISPONIBILITĂȚII */}
 
                         <div
@@ -2521,10 +2600,6 @@ export default function AdaugaProprietatePage() {
                                 <label style={labelStyle}>
                                     Disponibil de la
                                 </label>
-
-                                {/* NU folosim input type="date".
-                                    Browserul nu mai poate afișa MM/DD/YYYY.
-                                    Utilizatorul nu poate scrie manual o dată imposibilă. */}
 
                                 <button
                                     type="button"
@@ -2582,8 +2657,6 @@ export default function AdaugaProprietatePage() {
                                             boxSizing: "border-box",
                                         }}
                                     >
-                                        {/* HEADER CALENDAR */}
-
                                         <div
                                             style={{
                                                 display: "flex",
@@ -2660,34 +2733,37 @@ export default function AdaugaProprietatePage() {
                                             </button>
                                         </div>
 
-                                        {/* ZILELE SĂPTĂMÂNII */}
-
                                         <div
                                             style={{
                                                 display: "grid",
                                                 gridTemplateColumns:
                                                     "repeat(7, 1fr)",
-                                                gap: "4px",
-                                                marginBottom: "5px",
+                                                gap: "5px",
+                                                marginBottom: "6px",
                                             }}
                                         >
                                             {[
-                                                "L",
+                                                "Lu",
                                                 "Ma",
                                                 "Mi",
-                                                "J",
-                                                "V",
-                                                "S",
-                                                "D",
+                                                "Jo",
+                                                "Vi",
+                                                "Sâ",
+                                                "Du",
                                             ].map((dayName) => (
                                                 <div
                                                     key={dayName}
                                                     style={{
-                                                        textAlign: "center",
-                                                        fontSize: "11px",
-                                                        fontWeight: "800",
-                                                        color: "#9ca3af",
-                                                        padding: "6px 0",
+                                                        textAlign:
+                                                            "center",
+                                                        fontSize:
+                                                            "11px",
+                                                        fontWeight:
+                                                            "800",
+                                                        color:
+                                                            "#9ca3af",
+                                                        padding:
+                                                            "5px 0",
                                                     }}
                                                 >
                                                     {dayName}
@@ -2695,184 +2771,147 @@ export default function AdaugaProprietatePage() {
                                             ))}
                                         </div>
 
-                                        {/* ZILELE LUNII */}
-
                                         <div
                                             style={{
                                                 display: "grid",
                                                 gridTemplateColumns:
                                                     "repeat(7, 1fr)",
-                                                gap: "4px",
+                                                gap: "5px",
                                             }}
                                         >
-                                            {Array.from({
-                                                length: mondayOffset,
-                                            }).map((_, index) => (
-                                                <div
-                                                    key={`empty-${index}`}
-                                                    style={{
-                                                        height: "38px",
-                                                    }}
-                                                />
-                                            ))}
+                                            {calendarCells.map(
+                                                (day, index) => {
+                                                    if (!day) {
+                                                        return (
+                                                            <div
+                                                                key={`empty-${index}`}
+                                                                style={{
+                                                                    height:
+                                                                        "36px",
+                                                                }}
+                                                            />
+                                                        );
+                                                    }
 
-                                            {Array.from({
-                                                length: daysInCalendarMonth,
-                                            }).map((_, index) => {
-                                                const day = index + 1;
+                                                    const cellDate =
+                                                        new Date(
+                                                            calendarYear,
+                                                            calendarMonthIndex,
+                                                            day
+                                                        );
 
-                                                const date = new Date(
-                                                    calendarYear,
-                                                    calendarMonthIndex,
-                                                    day
-                                                );
+                                                    const disabled =
+                                                        cellDate <
+                                                        getTodayAtMidnight();
 
-                                                const isPast =
-                                                    date <
-                                                    todayForCalendar;
+                                                    const selected =
+                                                        form.available_from ===
+                                                        `${calendarYear}-${String(
+                                                            calendarMonthIndex +
+                                                                1
+                                                        ).padStart(
+                                                            2,
+                                                            "0"
+                                                        )}-${String(
+                                                            day
+                                                        ).padStart(
+                                                            2,
+                                                            "0"
+                                                        )}`;
 
-                                                const isoDate =
-                                                    `${calendarYear}-${String(
-                                                        calendarMonthIndex + 1
-                                                    ).padStart(
-                                                        2,
-                                                        "0"
-                                                    )}-${String(day).padStart(
-                                                        2,
-                                                        "0"
-                                                    )}`;
-
-                                                const isSelected =
-                                                    form.available_from ===
-                                                    isoDate;
-
-                                                const isToday =
-                                                    date.getTime() ===
-                                                    todayForCalendar.getTime();
-
-                                                return (
-                                                    <button
-                                                        key={isoDate}
-                                                        type="button"
-                                                        disabled={isPast}
-                                                        onClick={() =>
-                                                            selectCalendarDate(
-                                                                calendarYear,
-                                                                calendarMonthIndex,
-                                                                day
-                                                            )
-                                                        }
-                                                        style={{
-                                                            height: "38px",
-                                                            border: isSelected
-                                                                ? "1px solid #111827"
-                                                                : isToday
-                                                                ? "1px solid #93c5fd"
-                                                                : "1px solid transparent",
-                                                            borderRadius:
-                                                                "9px",
-                                                            background:
-                                                                isSelected
-                                                                    ? "#111827"
-                                                                    : "#ffffff",
-                                                            color: isPast
-                                                                ? "#d1d5db"
-                                                                : isSelected
-                                                                ? "#ffffff"
-                                                                : "#111827",
-                                                            fontFamily:
-                                                                "inherit",
-                                                            fontSize: "13px",
-                                                            fontWeight:
-                                                                isSelected ||
-                                                                isToday
-                                                                    ? "800"
-                                                                    : "600",
-                                                            cursor: isPast
-                                                                ? "not-allowed"
-                                                                : "pointer",
-                                                        }}
-                                                    >
-                                                        {day}
-                                                    </button>
-                                                );
-                                            })}
+                                                    return (
+                                                        <button
+                                                            key={day}
+                                                            type="button"
+                                                            disabled={
+                                                                disabled
+                                                            }
+                                                            onClick={() =>
+                                                                selectCalendarDate(
+                                                                    calendarYear,
+                                                                    calendarMonthIndex,
+                                                                    day
+                                                                )
+                                                            }
+                                                            style={{
+                                                                height:
+                                                                    "36px",
+                                                                border:
+                                                                    selected
+                                                                        ? "1px solid #2563eb"
+                                                                        : "1px solid transparent",
+                                                                borderRadius:
+                                                                    "8px",
+                                                                background:
+                                                                    selected
+                                                                        ? "#2563eb"
+                                                                        : "#ffffff",
+                                                                color:
+                                                                    selected
+                                                                        ? "#ffffff"
+                                                                        : disabled
+                                                                        ? "#d1d5db"
+                                                                        : "#111827",
+                                                                fontSize:
+                                                                    "13px",
+                                                                fontWeight:
+                                                                    selected
+                                                                        ? "800"
+                                                                        : "600",
+                                                                cursor:
+                                                                    disabled
+                                                                        ? "not-allowed"
+                                                                        : "pointer",
+                                                            }}
+                                                        >
+                                                            {day}
+                                                        </button>
+                                                    );
+                                                }
+                                            )}
                                         </div>
 
-                                        {/* ACȚIUNI CALENDAR */}
-
-                                        <div
-                                            style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent:
-                                                    "space-between",
-                                                borderTop:
-                                                    "1px solid #f3f4f6",
-                                                marginTop: "14px",
-                                                paddingTop: "12px",
-                                            }}
-                                        >
+                                        {form.available_from && (
                                             <button
                                                 type="button"
                                                 onClick={() => {
-                                                    const today =
-                                                        getTodayAtMidnight();
+                                                    setForm(
+                                                        (current) => ({
+                                                            ...current,
+                                                            available_from:
+                                                                "",
+                                                        })
+                                                    );
 
-                                                    selectCalendarDate(
-                                                        today.getFullYear(),
-                                                        today.getMonth(),
-                                                        today.getDate()
+                                                    setCalendarOpen(
+                                                        false
                                                     );
                                                 }}
                                                 style={{
-                                                    border: "none",
+                                                    width: "100%",
+                                                    marginTop: "13px",
+                                                    border:
+                                                        "1px solid #e5e7eb",
+                                                    borderRadius: "9px",
                                                     background:
-                                                        "transparent",
-                                                    color: "#2563eb",
-                                                    padding: 0,
-                                                    fontFamily: "inherit",
-                                                    fontSize: "12px",
-                                                    fontWeight: "800",
-                                                    cursor: "pointer",
+                                                        "#ffffff",
+                                                    padding:
+                                                        "9px 12px",
+                                                    fontFamily:
+                                                        "inherit",
+                                                    fontSize:
+                                                        "12px",
+                                                    fontWeight:
+                                                        "700",
+                                                    color:
+                                                        "#4b5563",
+                                                    cursor:
+                                                        "pointer",
                                                 }}
                                             >
-                                                Astăzi
+                                                Șterge data
                                             </button>
-
-                                            {form.available_from && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setForm(
-                                                            (current) => ({
-                                                                ...current,
-                                                                available_from:
-                                                                    "",
-                                                            })
-                                                        );
-
-                                                        setCalendarOpen(
-                                                            false
-                                                        );
-                                                    }}
-                                                    style={{
-                                                        border: "none",
-                                                        background:
-                                                            "transparent",
-                                                        color: "#6b7280",
-                                                        padding: 0,
-                                                        fontFamily:
-                                                            "inherit",
-                                                        fontSize: "12px",
-                                                        fontWeight: "700",
-                                                        cursor: "pointer",
-                                                    }}
-                                                >
-                                                    Șterge data
-                                                </button>
-                                            )}
-                                        </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -2890,7 +2929,7 @@ export default function AdaugaProprietatePage() {
                         >
                             <div style={fieldStyle}>
                                 <label style={labelStyle}>
-                                    Camere
+                                    Număr camere
                                 </label>
 
                                 <input
@@ -2928,7 +2967,7 @@ export default function AdaugaProprietatePage() {
                                 <input
                                     name="bathrooms"
                                     type="number"
-                                    min="0"
+                                    min="1"
                                     value={form.bathrooms}
                                     onChange={updateField}
                                     placeholder="1"
@@ -2945,7 +2984,6 @@ export default function AdaugaProprietatePage() {
                                     name="surface_m2"
                                     type="number"
                                     min="1"
-                                    step="0.1"
                                     value={form.surface_m2}
                                     onChange={updateField}
                                     placeholder="55"
@@ -2979,15 +3017,16 @@ export default function AdaugaProprietatePage() {
 
                         <div
                             style={{
-                                marginTop: "10px",
-                                paddingTop: "30px",
-                                borderTop: "1px solid #e5e7eb",
+                                marginTop: "8px",
+                                paddingTop: "28px",
+                                borderTop:
+                                    "1px solid #e5e7eb",
                             }}
                         >
                             <h3
                                 style={{
                                     margin: "0 0 8px",
-                                    fontSize: "18px",
+                                    fontSize: "17px",
                                     fontWeight: "800",
                                 }}
                             >
@@ -3055,8 +3094,12 @@ export default function AdaugaProprietatePage() {
                                         name="construction_year"
                                         type="number"
                                         min="1800"
-                                        max={new Date().getFullYear()}
-                                        value={form.construction_year}
+                                        max={
+                                            new Date().getFullYear()
+                                        }
+                                        value={
+                                            form.construction_year
+                                        }
                                         onChange={updateField}
                                         placeholder="2018"
                                         style={inputStyle}
@@ -3070,7 +3113,9 @@ export default function AdaugaProprietatePage() {
 
                                     <select
                                         name="heating_type"
-                                        value={form.heating_type}
+                                        value={
+                                            form.heating_type
+                                        }
                                         onChange={updateField}
                                         style={inputStyle}
                                     >
@@ -3113,7 +3158,9 @@ export default function AdaugaProprietatePage() {
                                         name="max_tenants"
                                         type="number"
                                         min="1"
-                                        value={form.max_tenants}
+                                        value={
+                                            form.max_tenants
+                                        }
                                         onChange={updateField}
                                         placeholder="2"
                                         style={inputStyle}
@@ -3130,7 +3177,9 @@ export default function AdaugaProprietatePage() {
                                         type="number"
                                         min="0"
                                         step="1"
-                                        value={form.deposit_amount}
+                                        value={
+                                            form.deposit_amount
+                                        }
                                         onChange={updateField}
                                         placeholder="450"
                                         style={inputStyle}
@@ -3153,14 +3202,15 @@ export default function AdaugaProprietatePage() {
 
                                     <select
                                         name="air_conditioning"
-                                        value={form.air_conditioning}
+                                        value={
+                                            form.air_conditioning
+                                        }
                                         onChange={updateField}
                                         style={inputStyle}
                                     >
                                         <option value="false">
                                             Nu
                                         </option>
-
                                         <option value="true">
                                             Da
                                         </option>
@@ -3181,7 +3231,6 @@ export default function AdaugaProprietatePage() {
                                         <option value="false">
                                             Nu
                                         </option>
-
                                         <option value="true">
                                             Da
                                         </option>
@@ -3202,7 +3251,6 @@ export default function AdaugaProprietatePage() {
                                         <option value="false">
                                             Nu
                                         </option>
-
                                         <option value="true">
                                             Da
                                         </option>
@@ -3216,14 +3264,15 @@ export default function AdaugaProprietatePage() {
 
                                     <select
                                         name="pets_allowed"
-                                        value={form.pets_allowed}
+                                        value={
+                                            form.pets_allowed
+                                        }
                                         onChange={updateField}
                                         style={inputStyle}
                                     >
                                         <option value="false">
                                             Nu
                                         </option>
-
                                         <option value="true">
                                             Da
                                         </option>
@@ -3237,14 +3286,15 @@ export default function AdaugaProprietatePage() {
 
                                     <select
                                         name="smoking_allowed"
-                                        value={form.smoking_allowed}
+                                        value={
+                                            form.smoking_allowed
+                                        }
                                         onChange={updateField}
                                         style={inputStyle}
                                     >
                                         <option value="false">
                                             Nu
                                         </option>
-
                                         <option value="true">
                                             Da
                                         </option>
@@ -3258,14 +3308,15 @@ export default function AdaugaProprietatePage() {
 
                                     <select
                                         name="utilities_included"
-                                        value={form.utilities_included}
+                                        value={
+                                            form.utilities_included
+                                        }
                                         onChange={updateField}
                                         style={inputStyle}
                                     >
                                         <option value="false">
                                             Nu
                                         </option>
-
                                         <option value="true">
                                             Da
                                         </option>
@@ -3280,7 +3331,8 @@ export default function AdaugaProprietatePage() {
                             style={{
                                 marginTop: "8px",
                                 paddingTop: "30px",
-                                borderTop: "1px solid #e5e7eb",
+                                borderTop:
+                                    "1px solid #e5e7eb",
                             }}
                         >
                             <label style={labelStyle}>
@@ -3307,7 +3359,8 @@ export default function AdaugaProprietatePage() {
                     <div
                         style={{
                             background: "#ffffff",
-                            border: "1px solid #e5e7eb",
+                            border:
+                                "1px solid #e5e7eb",
                             borderRadius: "20px",
                             padding: "32px",
                             boxShadow:
@@ -3347,7 +3400,8 @@ export default function AdaugaProprietatePage() {
                                 readOnly
                                 style={{
                                     ...inputStyle,
-                                    background: "#f9fafb",
+                                    background:
+                                        "#f9fafb",
                                     color: "#4b5563",
                                 }}
                             />
@@ -3356,7 +3410,8 @@ export default function AdaugaProprietatePage() {
                         <div
                             style={{
                                 display: "grid",
-                                gridTemplateColumns: "1fr 1fr",
+                                gridTemplateColumns:
+                                    "1fr 1fr",
                                 gap: "18px",
                             }}
                         >
@@ -3367,11 +3422,14 @@ export default function AdaugaProprietatePage() {
 
                                 <input
                                     type="tel"
-                                    value={form.owner_phone}
+                                    value={
+                                        form.owner_phone
+                                    }
                                     readOnly
                                     style={{
                                         ...inputStyle,
-                                        background: "#f9fafb",
+                                        background:
+                                            "#f9fafb",
                                         color: "#4b5563",
                                     }}
                                 />
@@ -3384,11 +3442,14 @@ export default function AdaugaProprietatePage() {
 
                                 <input
                                     type="email"
-                                    value={form.owner_email}
+                                    value={
+                                        form.owner_email
+                                    }
                                     readOnly
                                     style={{
                                         ...inputStyle,
-                                        background: "#f9fafb",
+                                        background:
+                                            "#f9fafb",
                                         color: "#4b5563",
                                     }}
                                 />
@@ -3405,10 +3466,12 @@ export default function AdaugaProprietatePage() {
                             style={{
                                 marginTop: "18px",
                                 border: "none",
-                                background: "transparent",
+                                background:
+                                    "transparent",
                                 padding: 0,
                                 color: "#2563eb",
-                                fontFamily: "inherit",
+                                fontFamily:
+                                    "inherit",
                                 fontSize: "13px",
                                 fontWeight: "700",
                                 cursor: "pointer",
@@ -3424,10 +3487,12 @@ export default function AdaugaProprietatePage() {
                         <div
                             style={{
                                 background: "#fef2f2",
-                                border: "1px solid #fecaca",
+                                border:
+                                    "1px solid #fecaca",
                                 color: "#b91c1c",
                                 borderRadius: "12px",
-                                padding: "14px 16px",
+                                padding:
+                                    "14px 16px",
                                 fontSize: "14px",
                                 lineHeight: "1.5",
                                 marginBottom: "18px",
@@ -3443,10 +3508,12 @@ export default function AdaugaProprietatePage() {
                         <div
                             style={{
                                 background: "#f0fdf4",
-                                border: "1px solid #bbf7d0",
+                                border:
+                                    "1px solid #bbf7d0",
                                 color: "#166534",
                                 borderRadius: "12px",
-                                padding: "14px 16px",
+                                padding:
+                                    "14px 16px",
                                 fontSize: "14px",
                                 fontWeight: "600",
                                 lineHeight: "1.5",
@@ -3462,11 +3529,13 @@ export default function AdaugaProprietatePage() {
                     <div
                         style={{
                             background: "#ffffff",
-                            border: "1px solid #e5e7eb",
+                            border:
+                                "1px solid #e5e7eb",
                             borderRadius: "18px",
                             padding: "22px",
                             display: "flex",
-                            justifyContent: "space-between",
+                            justifyContent:
+                                "space-between",
                             alignItems: "center",
                             gap: "20px",
                         }}
@@ -3500,18 +3569,21 @@ export default function AdaugaProprietatePage() {
                             style={{
                                 border: "none",
                                 borderRadius: "11px",
-                                padding: "14px 24px",
+                                padding:
+                                    "14px 24px",
                                 background: publishing
                                     ? "#374151"
                                     : "#111827",
                                 color: "#ffffff",
-                                fontFamily: "inherit",
+                                fontFamily:
+                                    "inherit",
                                 fontSize: "14px",
                                 fontWeight: "800",
                                 cursor: publishing
                                     ? "not-allowed"
                                     : "pointer",
-                                whiteSpace: "nowrap",
+                                whiteSpace:
+                                    "nowrap",
                             }}
                         >
                             {publishing
