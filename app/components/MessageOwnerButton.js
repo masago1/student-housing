@@ -249,7 +249,6 @@ export default function MessageOwnerButton({
   return (
     <>
       {/* BUTON PRINCIPAL */}
-
       <button
         type="button"
         onClick={handleContactOwner}
@@ -291,11 +290,10 @@ export default function MessageOwnerButton({
       >
         {checking
           ? "Se verifică..."
-          : "Trimite mesaj proprietarului"}
+          : "Trimite mesaj"}
       </button>
 
       {/* POPUP UTILIZATOR NELOGAT */}
-
       {showLoginModal && (
         <div
           onClick={closeLoginModal}
@@ -412,7 +410,6 @@ export default function MessageOwnerButton({
       )}
 
       {/* POPUP SCRIERE MESAJ */}
-
       {showMessageModal && (
         <div
           onClick={closeMessageModal}
