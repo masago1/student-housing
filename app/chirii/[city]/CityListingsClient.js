@@ -1858,7 +1858,7 @@ export default function CityListingsPage() {
             letterSpacing: "-0.8px",
           }}
         >
-          StudentHousing
+          shaus
         </a>
 
         <a
