@@ -21,6 +21,7 @@ export default function DashboardPage() {
   const [messageText, setMessageText] = useState("");
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
   /*
     ÎNCĂRCARE DASHBOARD
@@ -42,10 +43,6 @@ export default function DashboardPage() {
       }
 
       setUser(user);
-
-      /*
-        ANUNȚURILE UTILIZATORULUI
-      */
 
       const { data, error: listingsError } = await supabase
         .from("listings")
@@ -70,10 +67,6 @@ export default function DashboardPage() {
       } else {
         setListings(data || []);
       }
-
-      /*
-        FAVORITELE UTILIZATORULUI
-      */
 
       const { data: favoriteRows, error: favoritesError } =
         await supabase
@@ -131,10 +124,7 @@ export default function DashboardPage() {
   }, [router]);
 
   /*
-    CITIRE PARAMETRI DIN URL
-
-    Nu folosim useSearchParams deoarece provoca
-    eroarea de prerender pe Vercel.
+    PARAMETRI URL
   */
 
   useEffect(() => {
@@ -164,7 +154,81 @@ export default function DashboardPage() {
   }, []);
 
   /*
-    ÎNCARCĂ CONVERSAȚII
+    MESAJE NECITITE
+  */
+
+  const loadUnreadMessagesCount = async (
+    conversationRows = conversations
+  ) => {
+    if (!user?.id) return;
+
+    const conversationIds = (conversationRows || []).map(
+      (conversation) => conversation.id
+    );
+
+    if (conversationIds.length === 0) {
+      setUnreadMessagesCount(0);
+      return;
+    }
+
+    const { count, error: unreadError } = await supabase
+      .from("messages")
+      .select("id", {
+        count: "exact",
+        head: true,
+      })
+      .in("conversation_id", conversationIds)
+      .neq("sender_id", user.id)
+      .is("read_at", null);
+
+    if (unreadError) {
+      console.error("Eroare mesaje necitite:", unreadError);
+      return;
+    }
+
+    setUnreadMessagesCount(count || 0);
+  };
+
+  const markConversationAsRead = async (conversationId) => {
+    if (!user?.id || !conversationId) return;
+
+    const readAt = new Date().toISOString();
+
+    const { error: readError } = await supabase
+      .from("messages")
+      .update({
+        read_at: readAt,
+      })
+      .eq("conversation_id", conversationId)
+      .neq("sender_id", user.id)
+      .is("read_at", null);
+
+    if (readError) {
+      console.error(
+        "Eroare marcare mesaje ca citite:",
+        readError
+      );
+      return;
+    }
+
+    setMessages((current) =>
+      current.map((message) =>
+        message.conversation_id === conversationId &&
+        message.sender_id !== user.id &&
+        !message.read_at
+          ? {
+              ...message,
+              read_at: readAt,
+            }
+          : message
+      )
+    );
+
+    await loadUnreadMessagesCount();
+  };
+
+  /*
+    CONVERSAȚII
   */
 
   const loadConversations = async () => {
@@ -193,12 +257,19 @@ export default function DashboardPage() {
       .order("updated_at", { ascending: false });
 
     if (conversationsError) {
-      console.error("Eroare conversații:", conversationsError);
+      console.error(
+        "Eroare conversații:",
+        conversationsError
+      );
       setError("Conversațiile nu au putut fi încărcate.");
       return;
     }
 
-    setConversations(data || []);
+    const conversationRows = data || [];
+
+    setConversations(conversationRows);
+
+    await loadUnreadMessagesCount(conversationRows);
   };
 
   useEffect(() => {
@@ -206,10 +277,6 @@ export default function DashboardPage() {
 
     loadConversations();
   }, [user?.id]);
-
-  /*
-    SELECTEAZĂ PRIMA CONVERSAȚIE
-  */
 
   useEffect(() => {
     if (
@@ -219,10 +286,14 @@ export default function DashboardPage() {
     ) {
       setSelectedConversationId(conversations[0].id);
     }
-  }, [activeSection, conversations, selectedConversationId]);
+  }, [
+    activeSection,
+    conversations,
+    selectedConversationId,
+  ]);
 
   /*
-    ÎNCARCĂ MESAJELE
+    MESAJE
   */
 
   const loadMessages = async (conversationId) => {
@@ -240,10 +311,13 @@ export default function DashboardPage() {
         conversation_id,
         sender_id,
         content,
-        created_at
+        created_at,
+        read_at
       `)
       .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: true });
+      .order("created_at", {
+        ascending: true,
+      });
 
     if (messagesError) {
       console.error("Eroare mesaje:", messagesError);
@@ -254,6 +328,8 @@ export default function DashboardPage() {
 
     setMessages(data || []);
     setMessagesLoading(false);
+
+    await markConversationAsRead(conversationId);
   };
 
   useEffect(() => {
@@ -266,38 +342,65 @@ export default function DashboardPage() {
   }, [selectedConversationId]);
 
   /*
-    REALTIME MESAJE
+    REALTIME
   */
 
   useEffect(() => {
-    if (!selectedConversationId) return;
+    if (!user?.id) return;
 
     const channel = supabase
-      .channel(`conversation-${selectedConversationId}`)
+      .channel(`messages-user-${user.id}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "messages",
-          filter: `conversation_id=eq.${selectedConversationId}`,
         },
-        (payload) => {
+        async (payload) => {
           const newMessage = payload.new;
 
-          setMessages((current) => {
-            const exists = current.some(
-              (message) => message.id === newMessage.id
+          const belongsToUser = conversations.some(
+            (conversation) =>
+              conversation.id === newMessage.conversation_id
+          );
+
+          if (!belongsToUser) {
+            await loadConversations();
+            return;
+          }
+
+          if (
+            newMessage.conversation_id ===
+            selectedConversationId
+          ) {
+            setMessages((current) => {
+              const exists = current.some(
+                (message) => message.id === newMessage.id
+              );
+
+              if (exists) {
+                return current;
+              }
+
+              return [...current, newMessage];
+            });
+          }
+
+          if (
+            newMessage.sender_id !== user.id &&
+            activeSection === "messages" &&
+            newMessage.conversation_id ===
+              selectedConversationId
+          ) {
+            await markConversationAsRead(
+              newMessage.conversation_id
             );
+          } else {
+            await loadUnreadMessagesCount();
+          }
 
-            if (exists) {
-              return current;
-            }
-
-            return [...current, newMessage];
-          });
-
-          loadConversations();
+          await loadConversations();
         }
       )
       .subscribe();
@@ -305,7 +408,12 @@ export default function DashboardPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedConversationId, user?.id]);
+  }, [
+    user?.id,
+    conversations,
+    selectedConversationId,
+    activeSection,
+  ]);
 
   /*
     TRIMITE MESAJ
@@ -323,7 +431,10 @@ export default function DashboardPage() {
     setSendingMessage(true);
     setError("");
 
-    const { data: insertedMessage, error: sendError } = await supabase
+    const {
+      data: insertedMessage,
+      error: sendError,
+    } = await supabase
       .from("messages")
       .insert({
         conversation_id: selectedConversationId,
@@ -335,12 +446,16 @@ export default function DashboardPage() {
         conversation_id,
         sender_id,
         content,
-        created_at
+        created_at,
+        read_at
       `)
       .single();
 
     if (sendError) {
-      console.error("Eroare trimitere mesaj:", sendError);
+      console.error(
+        "Eroare trimitere mesaj:",
+        sendError
+      );
       setError("Mesajul nu a putut fi trimis.");
       setSendingMessage(false);
       return;
@@ -351,21 +466,20 @@ export default function DashboardPage() {
         (message) => message.id === insertedMessage.id
       );
 
-      if (exists) {
-        return current;
-      }
+      if (exists) return current;
 
       return [...current, insertedMessage];
     });
 
     setMessageText("");
 
-    const { error: conversationUpdateError } = await supabase
-      .from("conversations")
-      .update({
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", selectedConversationId);
+    const { error: conversationUpdateError } =
+      await supabase
+        .from("conversations")
+        .update({
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", selectedConversationId);
 
     if (conversationUpdateError) {
       console.error(
@@ -379,13 +493,11 @@ export default function DashboardPage() {
     setSendingMessage(false);
   };
 
-  /*
-    ENTER = TRIMITE
-    SHIFT + ENTER = RÂND NOU
-  */
-
   const handleMessageKeyDown = (event) => {
-    if (event.key === "Enter" && !event.shiftKey) {
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey
+    ) {
       event.preventDefault();
 
       if (!sendingMessage) {
@@ -393,10 +505,6 @@ export default function DashboardPage() {
       }
     }
   };
-
-  /*
-    DESCHIDE CONVERSAȚIA
-  */
 
   const openConversation = (conversationId) => {
     setSelectedConversationId(conversationId);
@@ -409,7 +517,8 @@ export default function DashboardPage() {
 
   const selectedConversation =
     conversations.find(
-      (conversation) => conversation.id === selectedConversationId
+      (conversation) =>
+        conversation.id === selectedConversationId
     ) || null;
 
   /*
@@ -442,7 +551,9 @@ export default function DashboardPage() {
 
     if (error) {
       console.error(error);
-      setError("Statusul anunțului nu a putut fi modificat.");
+      setError(
+        "Statusul anunțului nu a putut fi modificat."
+      );
       return;
     }
 
@@ -470,7 +581,7 @@ export default function DashboardPage() {
   };
 
   /*
-    ELIMINĂ DIN FAVORITE
+    ELIMINĂ FAVORIT
   */
 
   const removeFavorite = async (listing) => {
@@ -485,23 +596,28 @@ export default function DashboardPage() {
       .eq("listing_id", listing.id);
 
     if (deleteError) {
-      console.error("Eroare ștergere favorit:", deleteError);
-      setError("Anunțul nu a putut fi eliminat din favorite.");
+      console.error(
+        "Eroare ștergere favorit:",
+        deleteError
+      );
+
+      setError(
+        "Anunțul nu a putut fi eliminat din favorite."
+      );
+
       return;
     }
 
     setFavorites((current) =>
-      current.filter((item) => item.id !== listing.id)
+      current.filter(
+        (item) => item.id !== listing.id
+      )
     );
   };
 
   const activeListings = listings.filter(
     (listing) => listing.active
   ).length;
-
-  /*
-    STIL MENIU
-  */
 
   const menuItemStyle = (section) => ({
     width: "100%",
@@ -511,17 +627,18 @@ export default function DashboardPage() {
     textAlign: "left",
     fontFamily: "inherit",
     fontSize: "14px",
-    fontWeight: activeSection === section ? "800" : "600",
+    fontWeight:
+      activeSection === section ? "800" : "600",
     cursor: "pointer",
     background:
-      activeSection === section ? "#EFF6FF" : "transparent",
+      activeSection === section
+        ? "#EFF6FF"
+        : "transparent",
     color:
-      activeSection === section ? "#172554" : "#64748B",
+      activeSection === section
+        ? "#172554"
+        : "#64748B",
   });
-
-  /*
-    LOADING
-  */
 
   if (loading) {
     return (
@@ -573,8 +690,12 @@ export default function DashboardPage() {
             letterSpacing: "-1px",
           }}
         >
-          <span style={{ color: "#172554" }}>Student</span>
-          <span style={{ color: "#3B82F6" }}>Housing</span>
+          <span style={{ color: "#172554" }}>
+            Student
+          </span>
+          <span style={{ color: "#3B82F6" }}>
+            Housing
+          </span>
         </a>
 
         <div
@@ -614,14 +735,13 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* DASHBOARD */}
-
       <div
         className="dashboard-layout"
         style={{
           minHeight: "calc(100vh - 73px)",
           display: "grid",
-          gridTemplateColumns: "250px minmax(0, 1fr)",
+          gridTemplateColumns:
+            "250px minmax(0, 1fr)",
         }}
       >
         {/* SIDEBAR */}
@@ -670,7 +790,9 @@ export default function DashboardPage() {
               type="button"
               onClick={() => {
                 setActiveSection("listings");
-                router.replace("/dashboard?section=listings");
+                router.replace(
+                  "/dashboard?section=listings"
+                );
               }}
               style={menuItemStyle("listings")}
             >
@@ -686,20 +808,26 @@ export default function DashboardPage() {
                   !selectedConversationId &&
                   conversations.length > 0
                 ) {
-                  openConversation(conversations[0].id);
-                } else if (selectedConversationId) {
+                  openConversation(
+                    conversations[0].id
+                  );
+                } else if (
+                  selectedConversationId
+                ) {
                   router.replace(
                     `/dashboard?section=messages&conversation=${selectedConversationId}`
                   );
                 } else {
-                  router.replace("/dashboard?section=messages");
+                  router.replace(
+                    "/dashboard?section=messages"
+                  );
                 }
               }}
               style={menuItemStyle("messages")}
             >
               Mesaje
-              {conversations.length > 0
-                ? ` (${conversations.length})`
+              {unreadMessagesCount > 0
+                ? ` (${unreadMessagesCount})`
                 : ""}
             </button>
 
@@ -707,12 +835,16 @@ export default function DashboardPage() {
               type="button"
               onClick={() => {
                 setActiveSection("favorites");
-                router.replace("/dashboard?section=favorites");
+                router.replace(
+                  "/dashboard?section=favorites"
+                );
               }}
               style={menuItemStyle("favorites")}
             >
               Favorite
-              {favorites.length > 0 ? ` (${favorites.length})` : ""}
+              {favorites.length > 0
+                ? ` (${favorites.length})`
+                : ""}
             </button>
           </nav>
 
@@ -725,7 +857,9 @@ export default function DashboardPage() {
           >
             <button
               type="button"
-              onClick={() => router.push("/adaugaproprietate")}
+              onClick={() =>
+                router.push("/adaugaproprietate")
+              }
               style={{
                 width: "100%",
                 border: "none",
@@ -737,15 +871,14 @@ export default function DashboardPage() {
                 fontSize: "14px",
                 fontWeight: "800",
                 cursor: "pointer",
-                boxShadow: "0 6px 16px rgba(23, 37, 84, 0.16)",
+                boxShadow:
+                  "0 6px 16px rgba(23, 37, 84, 0.16)",
               }}
             >
               + Adaugă anunț
             </button>
           </div>
         </aside>
-
-        {/* PARTEA DREAPTĂ */}
 
         <section
           className="dashboard-content"
@@ -754,11 +887,13 @@ export default function DashboardPage() {
             minWidth: 0,
           }}
         >
-          {/* PANOU PRINCIPAL */}
-
           {activeSection === "dashboard" && (
             <>
-              <div style={{ marginBottom: "32px" }}>
+              <div
+                style={{
+                  marginBottom: "32px",
+                }}
+              >
                 <h1
                   style={{
                     margin: 0,
@@ -778,11 +913,10 @@ export default function DashboardPage() {
                     fontSize: "15px",
                   }}
                 >
-                  Administrează anunțurile și mesajele tale.
+                  Administrează anunțurile și mesajele
+                  tale.
                 </p>
               </div>
-
-              {/* STATISTICI */}
 
               <div
                 className="stats-grid"
@@ -800,7 +934,7 @@ export default function DashboardPage() {
                 />
 
                 <StatCard
-                  number={conversations.length}
+                  number={unreadMessagesCount}
                   title="Mesaje"
                 />
 
@@ -809,8 +943,6 @@ export default function DashboardPage() {
                   title="Active"
                 />
               </div>
-
-              {/* ANUNȚURI RECENTE */}
 
               <div
                 style={{
@@ -863,8 +995,6 @@ export default function DashboardPage() {
             </>
           )}
 
-          {/* ANUNȚURILE TALE */}
-
           {activeSection === "listings" && (
             <>
               <div
@@ -903,7 +1033,11 @@ export default function DashboardPage() {
 
                 <button
                   type="button"
-                  onClick={() => router.push("/adaugaproprietate")}
+                  onClick={() =>
+                    router.push(
+                      "/adaugaproprietate"
+                    )
+                  }
                   style={{
                     border: "none",
                     borderRadius: "10px",
@@ -930,11 +1064,13 @@ export default function DashboardPage() {
             </>
           )}
 
-          {/* MESAJE */}
-
           {activeSection === "messages" && (
             <>
-              <div style={{ marginBottom: "28px" }}>
+              <div
+                style={{
+                  marginBottom: "28px",
+                }}
+              >
                 <h1
                   style={{
                     margin: 0,
@@ -954,8 +1090,8 @@ export default function DashboardPage() {
                     fontSize: "15px",
                   }}
                 >
-                  Discută direct cu proprietarii sau cu persoanele
-                  interesate de anunțurile tale.
+                  Discută direct cu proprietarii sau cu
+                  persoanele interesate de anunțurile tale.
                 </p>
               </div>
 
@@ -982,12 +1118,11 @@ export default function DashboardPage() {
                       "0 8px 24px rgba(15, 23, 42, 0.05)",
                   }}
                 >
-                  {/* LISTA CONVERSAȚII */}
-
                   <div
                     className="conversation-list"
                     style={{
-                      borderRight: "1px solid #E2E8F0",
+                      borderRight:
+                        "1px solid #E2E8F0",
                       overflowY: "auto",
                       minWidth: 0,
                     }}
@@ -995,7 +1130,8 @@ export default function DashboardPage() {
                     <div
                       style={{
                         padding: "18px 18px 14px",
-                        borderBottom: "1px solid #E2E8F0",
+                        borderBottom:
+                          "1px solid #E2E8F0",
                         fontSize: "13px",
                         fontWeight: "800",
                         color: "#172554",
@@ -1004,127 +1140,142 @@ export default function DashboardPage() {
                       Conversații
                     </div>
 
-                    {conversations.map((conversation) => {
-                      const listing = conversation.listings;
+                    {conversations.map(
+                      (conversation) => {
+                        const listing =
+                          conversation.listings;
 
-                      const selected =
-                        conversation.id === selectedConversationId;
+                        const selected =
+                          conversation.id ===
+                          selectedConversationId;
 
-                      const isOwner =
-                        conversation.owner_id === user?.id;
+                        const isOwner =
+                          conversation.owner_id ===
+                          user?.id;
 
-                      return (
-                        <button
-                          key={conversation.id}
-                          type="button"
-                          onClick={() =>
-                            openConversation(conversation.id)
-                          }
-                          style={{
-                            width: "100%",
-                            border: "none",
-                            borderBottom: "1px solid #F1F5F9",
-                            background: selected
-                              ? "#EFF6FF"
-                              : "#FFFFFF",
-                            padding: "15px",
-                            cursor: "pointer",
-                            display: "grid",
-                            gridTemplateColumns:
-                              "58px minmax(0, 1fr)",
-                            gap: "12px",
-                            textAlign: "left",
-                            fontFamily: "inherit",
-                          }}
-                        >
-                          <div
+                        return (
+                          <button
+                            key={conversation.id}
+                            type="button"
+                            onClick={() =>
+                              openConversation(
+                                conversation.id
+                              )
+                            }
                             style={{
-                              width: "58px",
-                              height: "58px",
-                              borderRadius: "10px",
-                              overflow: "hidden",
-                              background: "#F1F5F9",
+                              width: "100%",
+                              border: "none",
+                              borderBottom:
+                                "1px solid #F1F5F9",
+                              background: selected
+                                ? "#EFF6FF"
+                                : "#FFFFFF",
+                              padding: "15px",
+                              cursor: "pointer",
+                              display: "grid",
+                              gridTemplateColumns:
+                                "58px minmax(0, 1fr)",
+                              gap: "12px",
+                              textAlign: "left",
+                              fontFamily: "inherit",
                             }}
                           >
-                            {listing?.image_url ? (
-                              <img
-                                src={listing.image_url}
-                                alt={listing?.title || "Anunț"}
-                                style={{
-                                  width: "100%",
-                                  height: "100%",
-                                  objectFit: "cover",
-                                  display: "block",
-                                }}
-                              />
-                            ) : (
-                              <div
-                                style={{
-                                  width: "100%",
-                                  height: "100%",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  color: "#94A3B8",
-                                  fontSize: "9px",
-                                  textAlign: "center",
-                                }}
-                              >
-                                Fără poză
-                              </div>
-                            )}
-                          </div>
-
-                          <div style={{ minWidth: 0 }}>
                             <div
                               style={{
-                                fontSize: "13px",
-                                fontWeight: "800",
-                                color: "#172554",
+                                width: "58px",
+                                height: "58px",
+                                borderRadius: "10px",
                                 overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
+                                background: "#F1F5F9",
                               }}
                             >
-                              {listing?.title ||
-                                "Anunț indisponibil"}
+                              {listing?.image_url ? (
+                                <img
+                                  src={listing.image_url}
+                                  alt={
+                                    listing?.title ||
+                                    "Anunț"
+                                  }
+                                  style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    objectFit: "cover",
+                                    display: "block",
+                                  }}
+                                />
+                              ) : (
+                                <div
+                                  style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent:
+                                      "center",
+                                    color: "#94A3B8",
+                                    fontSize: "9px",
+                                    textAlign: "center",
+                                  }}
+                                >
+                                  Fără poză
+                                </div>
+                              )}
                             </div>
 
                             <div
                               style={{
-                                marginTop: "5px",
-                                color: "#64748B",
-                                fontSize: "11px",
-                                fontWeight: "600",
+                                minWidth: 0,
                               }}
                             >
-                              {isOwner
-                                ? "Persoană interesată"
-                                : "Proprietar"}
-                            </div>
-
-                            {listing?.city && (
                               <div
                                 style={{
-                                  marginTop: "4px",
-                                  color: "#94A3B8",
-                                  fontSize: "10px",
+                                  fontSize: "13px",
+                                  fontWeight: "800",
+                                  color: "#172554",
                                   overflow: "hidden",
-                                  textOverflow: "ellipsis",
+                                  textOverflow:
+                                    "ellipsis",
                                   whiteSpace: "nowrap",
                                 }}
                               >
-                                {listing.city}
+                                {listing?.title ||
+                                  "Anunț indisponibil"}
                               </div>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
+
+                              <div
+                                style={{
+                                  marginTop: "5px",
+                                  color: "#64748B",
+                                  fontSize: "11px",
+                                  fontWeight: "600",
+                                }}
+                              >
+                                {isOwner
+                                  ? "Persoană interesată"
+                                  : "Proprietar"}
+                              </div>
+
+                              {listing?.city && (
+                                <div
+                                  style={{
+                                    marginTop: "4px",
+                                    color: "#94A3B8",
+                                    fontSize: "10px",
+                                    overflow: "hidden",
+                                    textOverflow:
+                                      "ellipsis",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {listing.city}
+                                </div>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      }
+                    )}
                   </div>
-
-                  {/* CHAT */}
-
                   <div
                     className="chat-panel"
                     style={{
@@ -1156,10 +1307,12 @@ export default function DashboardPage() {
                             minHeight: "78px",
                             padding: "14px 20px",
                             boxSizing: "border-box",
-                            borderBottom: "1px solid #E2E8F0",
+                            borderBottom:
+                              "1px solid #E2E8F0",
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: "space-between",
+                            justifyContent:
+                              "space-between",
                             gap: "15px",
                           }}
                         >
@@ -1174,7 +1327,8 @@ export default function DashboardPage() {
                                 whiteSpace: "nowrap",
                               }}
                             >
-                              {selectedConversation.listings?.title ||
+                              {selectedConversation
+                                .listings?.title ||
                                 "Conversație"}
                             </div>
 
@@ -1185,10 +1339,11 @@ export default function DashboardPage() {
                                 fontSize: "11px",
                               }}
                             >
-                              {selectedConversation.listings?.city ||
-                                ""}
+                              {selectedConversation
+                                .listings?.city || ""}
 
-                              {selectedConversation.listings?.address
+                              {selectedConversation
+                                .listings?.address
                                 ? ` · ${selectedConversation.listings.address}`
                                 : ""}
                             </div>
@@ -1203,7 +1358,8 @@ export default function DashboardPage() {
                                 )
                               }
                               style={{
-                                border: "1px solid #DBEAFE",
+                                border:
+                                  "1px solid #DBEAFE",
                                 background: "#EFF6FF",
                                 color: "#2563EB",
                                 borderRadius: "9px",
@@ -1250,7 +1406,8 @@ export default function DashboardPage() {
                                 display: "flex",
                                 flexDirection: "column",
                                 alignItems: "center",
-                                justifyContent: "center",
+                                justifyContent:
+                                  "center",
                                 textAlign: "center",
                                 color: "#94A3B8",
                               }}
@@ -1284,7 +1441,8 @@ export default function DashboardPage() {
                             >
                               {messages.map((message) => {
                                 const mine =
-                                  message.sender_id === user?.id;
+                                  message.sender_id ===
+                                  user?.id;
 
                                 return (
                                   <div
@@ -1311,18 +1469,21 @@ export default function DashboardPage() {
                                         borderRadius: mine
                                           ? "15px 15px 4px 15px"
                                           : "15px 15px 15px 4px",
-                                        padding: "10px 13px 8px",
+                                        padding:
+                                          "10px 13px 8px",
                                         boxShadow: mine
                                           ? "none"
                                           : "0 2px 7px rgba(15,23,42,0.04)",
-                                        wordBreak: "break-word",
+                                        wordBreak:
+                                          "break-word",
                                       }}
                                     >
                                       <div
                                         style={{
                                           fontSize: "13px",
                                           lineHeight: "1.5",
-                                          whiteSpace: "pre-wrap",
+                                          whiteSpace:
+                                            "pre-wrap",
                                         }}
                                       >
                                         {message.content}
@@ -1345,7 +1506,8 @@ export default function DashboardPage() {
                                               "ro-RO",
                                               {
                                                 hour: "2-digit",
-                                                minute: "2-digit",
+                                                minute:
+                                                  "2-digit",
                                               }
                                             )
                                           : ""}
@@ -1363,7 +1525,8 @@ export default function DashboardPage() {
                         <div
                           style={{
                             padding: "15px",
-                            borderTop: "1px solid #E2E8F0",
+                            borderTop:
+                              "1px solid #E2E8F0",
                             background: "#FFFFFF",
                           }}
                         >
@@ -1377,9 +1540,13 @@ export default function DashboardPage() {
                             <textarea
                               value={messageText}
                               onChange={(event) =>
-                                setMessageText(event.target.value)
+                                setMessageText(
+                                  event.target.value
+                                )
                               }
-                              onKeyDown={handleMessageKeyDown}
+                              onKeyDown={
+                                handleMessageKeyDown
+                              }
                               placeholder="Scrie un mesaj..."
                               maxLength={5000}
                               rows={1}
@@ -1388,10 +1555,12 @@ export default function DashboardPage() {
                                 minHeight: "43px",
                                 maxHeight: "110px",
                                 resize: "vertical",
-                                border: "1px solid #CBD5E1",
+                                border:
+                                  "1px solid #CBD5E1",
                                 borderRadius: "11px",
                                 padding: "11px 13px",
-                                boxSizing: "border-box",
+                                boxSizing:
+                                  "border-box",
                                 outline: "none",
                                 fontFamily: "inherit",
                                 fontSize: "13px",
@@ -1441,8 +1610,8 @@ export default function DashboardPage() {
                               fontSize: "9px",
                             }}
                           >
-                            Enter pentru trimitere · Shift + Enter
-                            pentru rând nou
+                            Enter pentru trimitere · Shift +
+                            Enter pentru rând nou
                           </div>
                         </div>
                       </>
@@ -1477,8 +1646,8 @@ export default function DashboardPage() {
                     fontSize: "15px",
                   }}
                 >
-                  Anunțurile pe care le-ai salvat pentru mai
-                  târziu.
+                  Anunțurile pe care le-ai salvat pentru a
+                  reveni rapid la ele.
                 </p>
               </div>
 
@@ -1497,8 +1666,6 @@ export default function DashboardPage() {
             </>
           )}
 
-          {/* EROARE */}
-
           {error && (
             <div
               style={{
@@ -1516,8 +1683,6 @@ export default function DashboardPage() {
           )}
         </section>
       </div>
-
-      {/* RESPONSIVE */}
 
       <style>{`
         @media (max-width: 900px) {
@@ -1604,7 +1769,8 @@ function StatCard({ number, title }) {
       style={{
         background: "#FFFFFF",
         border: "1px solid #E2E8F0",
-        boxShadow: "0 8px 24px rgba(15, 23, 42, 0.05)",
+        boxShadow:
+          "0 8px 24px rgba(15, 23, 42, 0.05)",
         borderRadius: "14px",
         padding: "22px",
         minHeight: "95px",
@@ -1654,7 +1820,8 @@ function ListingsList({
           border: "1px solid #E2E8F0",
           borderRadius: "16px",
           padding: "45px 25px",
-          boxShadow: "0 8px 24px rgba(15, 23, 42, 0.04)",
+          boxShadow:
+            "0 8px 24px rgba(15, 23, 42, 0.04)",
         }}
       >
         <div
@@ -1674,7 +1841,8 @@ function ListingsList({
             marginTop: "7px",
           }}
         >
-          Primul tău anunț va apărea aici după publicare.
+          Primul tău anunț va apărea aici după
+          publicare.
         </div>
       </div>
     );
@@ -1695,17 +1863,17 @@ function ListingsList({
           style={{
             background: "#FFFFFF",
             border: "1px solid #E2E8F0",
-            boxShadow: "0 8px 24px rgba(15, 23, 42, 0.04)",
+            boxShadow:
+              "0 8px 24px rgba(15, 23, 42, 0.04)",
             borderRadius: "15px",
             padding: "14px",
             display: "grid",
-            gridTemplateColumns: "135px minmax(0, 1fr)",
+            gridTemplateColumns:
+              "135px minmax(0, 1fr)",
             gap: "18px",
             maxWidth: "850px",
           }}
         >
-          {/* POZA */}
-
           <div
             className="dashboard-listing-image"
             style={{
@@ -1744,8 +1912,6 @@ function ListingsList({
             )}
           </div>
 
-          {/* INFO */}
-
           <div style={{ minWidth: 0 }}>
             <div
               className="listing-header"
@@ -1776,7 +1942,9 @@ function ListingsList({
                   }}
                 >
                   {listing.city}
-                  {listing.address ? ` · ${listing.address}` : ""}
+                  {listing.address
+                    ? ` · ${listing.address}`
+                    : ""}
                 </div>
               </div>
 
@@ -1788,9 +1956,9 @@ function ListingsList({
                   whiteSpace: "nowrap",
                 }}
               >
-                {Number(listing.price_monthly).toLocaleString(
-                  "ro-RO"
-                )}{" "}
+                {Number(
+                  listing.price_monthly
+                ).toLocaleString("ro-RO")}{" "}
                 €
 
                 <span
@@ -1820,7 +1988,9 @@ function ListingsList({
                   background: listing.active
                     ? "#DCFCE7"
                     : "#F1F5F9",
-                  color: listing.active ? "#15803D" : "#64748B",
+                  color: listing.active
+                    ? "#15803D"
+                    : "#64748B",
                   borderRadius: "100px",
                   padding: "5px 8px",
                   fontSize: "10px",
@@ -1856,8 +2026,6 @@ function ListingsList({
               )}
             </div>
 
-            {/* ACȚIUNI */}
-
             <div
               style={{
                 display: "flex",
@@ -1870,7 +2038,9 @@ function ListingsList({
               <button
                 type="button"
                 onClick={() =>
-                  router.push(`/proprietate/${listing.id}`)
+                  router.push(
+                    `/proprietate/${listing.id}`
+                  )
                 }
                 style={actionButton}
               >
@@ -1891,13 +2061,19 @@ function ListingsList({
 
               <button
                 type="button"
-                onClick={() => toggleListing(listing)}
+                onClick={() =>
+                  toggleListing(listing)
+                }
                 style={{
                   ...actionButton,
-                  color: listing.active ? "#D97706" : "#15803D",
+                  color: listing.active
+                    ? "#D97706"
+                    : "#15803D",
                 }}
               >
-                {listing.active ? "Dezactivează" : "Activează"}
+                {listing.active
+                  ? "Dezactivează"
+                  : "Activează"}
               </button>
             </div>
           </div>
@@ -1908,7 +2084,7 @@ function ListingsList({
 }
 
 /*
-  LISTA FAVORITE
+  FAVORITE
 */
 
 function FavoritesList({
@@ -1931,17 +2107,17 @@ function FavoritesList({
           style={{
             background: "#FFFFFF",
             border: "1px solid #E2E8F0",
-            boxShadow: "0 8px 24px rgba(15, 23, 42, 0.04)",
+            boxShadow:
+              "0 8px 24px rgba(15, 23, 42, 0.04)",
             borderRadius: "15px",
             padding: "14px",
             display: "grid",
-            gridTemplateColumns: "135px minmax(0, 1fr)",
+            gridTemplateColumns:
+              "135px minmax(0, 1fr)",
             gap: "18px",
             maxWidth: "850px",
           }}
         >
-          {/* POZA */}
-
           <div
             className="favorite-image"
             style={{
@@ -1980,8 +2156,6 @@ function FavoritesList({
             )}
           </div>
 
-          {/* INFO */}
-
           <div style={{ minWidth: 0 }}>
             <div
               className="favorite-header"
@@ -2012,7 +2186,9 @@ function FavoritesList({
                   }}
                 >
                   {listing.city}
-                  {listing.address ? ` · ${listing.address}` : ""}
+                  {listing.address
+                    ? ` · ${listing.address}`
+                    : ""}
                 </div>
               </div>
 
@@ -2024,9 +2200,9 @@ function FavoritesList({
                   whiteSpace: "nowrap",
                 }}
               >
-                {Number(listing.price_monthly).toLocaleString(
-                  "ro-RO"
-                )}{" "}
+                {Number(
+                  listing.price_monthly
+                ).toLocaleString("ro-RO")}{" "}
                 €
 
                 <span
@@ -2041,8 +2217,6 @@ function FavoritesList({
                 </span>
               </div>
             </div>
-
-            {/* DETALII */}
 
             <div
               style={{
@@ -2094,8 +2268,6 @@ function FavoritesList({
               )}
             </div>
 
-            {/* ACȚIUNI */}
-
             <div
               style={{
                 display: "flex",
@@ -2108,7 +2280,9 @@ function FavoritesList({
               <button
                 type="button"
                 onClick={() =>
-                  router.push(`/proprietate/${listing.id}`)
+                  router.push(
+                    `/proprietate/${listing.id}`
+                  )
                 }
                 style={{
                   border: "none",
@@ -2126,7 +2300,9 @@ function FavoritesList({
 
               <button
                 type="button"
-                onClick={() => removeFavorite(listing)}
+                onClick={() =>
+                  removeFavorite(listing)
+                }
                 style={{
                   border: "none",
                   background: "transparent",
@@ -2156,12 +2332,13 @@ function EmptyCard({ title, text }) {
   return (
     <div
       style={{
-        maxWidth: "850px",
         background: "#FFFFFF",
         border: "1px solid #E2E8F0",
         borderRadius: "16px",
         padding: "45px 25px",
-        boxShadow: "0 8px 24px rgba(15, 23, 42, 0.04)",
+        boxShadow:
+          "0 8px 24px rgba(15, 23, 42, 0.04)",
+        maxWidth: "850px",
       }}
     >
       <div
@@ -2178,8 +2355,8 @@ function EmptyCard({ title, text }) {
         style={{
           color: "#64748B",
           fontSize: "13px",
-          lineHeight: "1.6",
           marginTop: "7px",
+          lineHeight: "1.6",
         }}
       >
         {text}
@@ -2187,10 +2364,6 @@ function EmptyCard({ title, text }) {
     </div>
   );
 }
-
-/*
-  BUTOANE ACȚIUNI
-*/
 
 const actionButton = {
   border: "none",
@@ -2202,3 +2375,4 @@ const actionButton = {
   fontWeight: "700",
   cursor: "pointer",
 };
+        
