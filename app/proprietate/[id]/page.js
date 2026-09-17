@@ -165,6 +165,10 @@ export default async function PropertyPage({ params }) {
         studio: "Garsonieră",
         room: "Cameră",
         house: "Casă",
+        apartament: "Apartament",
+        garsoniera: "Garsonieră",
+        camera: "Cameră",
+        casa: "Casă",
     };
 
     const propertyType =
@@ -172,8 +176,16 @@ export default async function PropertyPage({ params }) {
         listing.property_type ||
         null;
 
+    const hasValue = (value) => {
+        return (
+            value !== null &&
+            value !== undefined &&
+            String(value).trim() !== ""
+        );
+    };
+
     const formatMoney = (value) => {
-        if (value === null || value === undefined || value === "") {
+        if (!hasValue(value)) {
             return null;
         }
 
@@ -190,117 +202,17 @@ export default async function PropertyPage({ params }) {
         }).format(new Date(`${date}T00:00:00`));
     };
 
-    const primaryDetails = [];
-
-    if (listing.rooms !== null && listing.rooms !== undefined) {
-        primaryDetails.push(
-            `${listing.rooms} ${
-                Number(listing.rooms) === 1 ? "cameră" : "camere"
-            }`
-        );
-    }
-
-    if (
-        listing.bedrooms !== null &&
-        listing.bedrooms !== undefined
-    ) {
-        primaryDetails.push(
-            `${listing.bedrooms} ${
-                Number(listing.bedrooms) === 1
-                    ? "dormitor"
-                    : "dormitoare"
-            }`
-        );
-    }
-
-    if (
-        listing.bathrooms !== null &&
-        listing.bathrooms !== undefined
-    ) {
-        primaryDetails.push(
-            `${listing.bathrooms} ${
-                Number(listing.bathrooms) === 1 ? "baie" : "băi"
-            }`
-        );
-    }
-
-    if (
-        listing.surface_m2 !== null &&
-        listing.surface_m2 !== undefined
-    ) {
-        primaryDetails.push(`${listing.surface_m2} m²`);
-    }
-
-    if (
-        listing.floor !== null &&
-        listing.floor !== undefined &&
-        listing.total_floors !== null &&
-        listing.total_floors !== undefined
-    ) {
-        primaryDetails.push(
-            `Etaj ${listing.floor}/${listing.total_floors}`
-        );
-    } else if (
-        listing.floor !== null &&
-        listing.floor !== undefined
-    ) {
-        primaryDetails.push(`Etaj ${listing.floor}`);
-    } else if (
-        listing.total_floors !== null &&
-        listing.total_floors !== undefined
-    ) {
-        primaryDetails.push(
-            `${listing.total_floors} etaje`
-        );
-    }
-
-    const facilities = [];
-
-    if (listing.furnished === true) {
-        facilities.push("Mobilat");
-    }
-
-    if (listing.air_conditioning === true) {
-        facilities.push("Aer condiționat");
-    }
-
-    if (listing.balcony === true) {
-        facilities.push("Balcon");
-    }
-
-    if (listing.parking === true) {
-        facilities.push("Parcare");
-    }
+    const hasBuildingDetails =
+        hasValue(listing.construction_year) ||
+        hasValue(listing.heating_type) ||
+        hasValue(listing.total_floors);
 
     const hasRentalConditions =
-        listing.max_tenants !== null &&
-            listing.max_tenants !== undefined ||
-        listing.pets_allowed === true ||
-        listing.smoking_allowed === true ||
-        listing.utilities_included === true ||
-        listing.deposit_amount !== null &&
-            listing.deposit_amount !== undefined;
-
-    const hasBuildingDetails =
-        listing.construction_year !== null &&
-            listing.construction_year !== undefined ||
-        Boolean(listing.heating_type);
-
-    const badgeStyle = {
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "36px",
-        padding: "0 13px",
-        border: "1px solid #e5e7eb",
-        borderRadius: "10px",
-        background: "#ffffff",
-        color: "#111827",
-        fontSize: "13px",
-        fontWeight: "700",
-        lineHeight: "1",
-        whiteSpace: "nowrap",
-    };
+        hasValue(listing.max_tenants) ||
+        listing.pets_allowed !== null ||
+        listing.smoking_allowed !== null ||
+        listing.utilities_included !== null ||
+        hasValue(listing.deposit_amount);
 
     return (
         <main
@@ -342,11 +254,7 @@ export default async function PropertyPage({ params }) {
                     padding: "35px 30px 100px",
                 }}
             >
-                <div
-                    style={{
-                        marginBottom: "25px",
-                    }}
-                >
+                <div style={{ marginBottom: "25px" }}>
                     <BackToSearch city={listing.city} />
                 </div>
 
@@ -359,18 +267,13 @@ export default async function PropertyPage({ params }) {
                     className="property-content-grid"
                     style={{
                         display: "grid",
-                        gridTemplateColumns:
-                            "minmax(0, 1fr) 350px",
+                        gridTemplateColumns: "minmax(0, 1fr) 350px",
                         gap: "45px",
                         marginTop: "36px",
                         alignItems: "start",
                     }}
                 >
-                    <div
-                        style={{
-                            minWidth: 0,
-                        }}
-                    >
+                    <div style={{ minWidth: 0 }}>
                         {listing.city && (
                             <div
                                 style={{
@@ -410,66 +313,16 @@ export default async function PropertyPage({ params }) {
                             </div>
                         )}
 
-                        {/* DETALII PRINCIPALE */}
+                        {/* NU MAI EXISTĂ NICIUN BADGE SUB ADRESĂ */}
 
-                        {primaryDetails.length > 0 && (
-                            <div
-                                style={{
-                                    display: "flex",
-                                    flexWrap: "wrap",
-                                    gap: "10px",
-                                    marginTop: "22px",
-                                }}
-                            >
-                                {primaryDetails.map(
-                                    (detail, index) => (
-                                        <span
-                                            key={`${detail}-${index}`}
-                                            style={badgeStyle}
-                                        >
-                                            {detail}
-                                        </span>
-                                    )
-                                )}
-                            </div>
-                        )}
-
-                        {/* DOTĂRI */}
-
-                        {facilities.length > 0 && (
-                            <div
-                                style={{
-                                    display: "flex",
-                                    flexWrap: "wrap",
-                                    gap: "10px",
-                                    marginTop: "10px",
-                                }}
-                            >
-                                {facilities.map(
-                                    (facility, index) => (
-                                        <span
-                                            key={`${facility}-${index}`}
-                                            style={{
-                                                ...badgeStyle,
-                                                background: "#f8fafc",
-                                            }}
-                                        >
-                                            {facility}
-                                        </span>
-                                    )
-                                )}
-                            </div>
-                        )}
-
-                        {/* DESPRE PROPRIETATE */}
+                        {/* DESCRIERE */}
 
                         {listing.description && (
                             <div
                                 style={{
                                     marginTop: "34px",
                                     paddingTop: "30px",
-                                    borderTop:
-                                        "1px solid #e5e7eb",
+                                    borderTop: "1px solid #e5e7eb",
                                 }}
                             >
                                 <h2
@@ -533,65 +386,47 @@ export default async function PropertyPage({ params }) {
                                     />
                                 )}
 
-                                {listing.rooms !== null &&
-                                    listing.rooms !==
-                                        undefined && (
-                                        <DetailRow
-                                            label="Camere"
-                                            value={listing.rooms}
-                                        />
-                                    )}
+                                {hasValue(listing.rooms) && (
+                                    <DetailRow
+                                        label="Număr camere"
+                                        value={listing.rooms}
+                                    />
+                                )}
 
-                                {listing.bedrooms !== null &&
-                                    listing.bedrooms !==
-                                        undefined && (
-                                        <DetailRow
-                                            label="Dormitoare"
-                                            value={
-                                                listing.bedrooms
-                                            }
-                                        />
-                                    )}
+                                {hasValue(listing.bedrooms) && (
+                                    <DetailRow
+                                        label="Dormitoare"
+                                        value={listing.bedrooms}
+                                    />
+                                )}
 
-                                {listing.bathrooms !== null &&
-                                    listing.bathrooms !==
-                                        undefined && (
-                                        <DetailRow
-                                            label="Băi"
-                                            value={
-                                                listing.bathrooms
-                                            }
-                                        />
-                                    )}
+                                {hasValue(listing.bathrooms) && (
+                                    <DetailRow
+                                        label="Băi"
+                                        value={listing.bathrooms}
+                                    />
+                                )}
 
-                                {listing.surface_m2 !== null &&
-                                    listing.surface_m2 !==
-                                        undefined && (
-                                        <DetailRow
-                                            label="Suprafață"
-                                            value={`${listing.surface_m2} m²`}
-                                        />
-                                    )}
+                                {hasValue(listing.surface_m2) && (
+                                    <DetailRow
+                                        label="Suprafață"
+                                        value={`${listing.surface_m2} m²`}
+                                    />
+                                )}
 
-                                {listing.floor !== null &&
-                                    listing.floor !==
-                                        undefined && (
-                                        <DetailRow
-                                            label="Etaj"
-                                            value={
-                                                listing.total_floors !==
-                                                    null &&
-                                                listing.total_floors !==
-                                                    undefined
-                                                    ? `${listing.floor} / ${listing.total_floors}`
-                                                    : listing.floor
-                                            }
-                                        />
-                                    )}
+                                {hasValue(listing.floor) && (
+                                    <DetailRow
+                                        label="Etaj"
+                                        value={
+                                            hasValue(listing.total_floors)
+                                                ? `${listing.floor} / ${listing.total_floors}`
+                                                : listing.floor
+                                        }
+                                    />
+                                )}
 
                                 {listing.furnished !== null &&
-                                    listing.furnished !==
-                                        undefined && (
+                                    listing.furnished !== undefined && (
                                         <DetailRow
                                             label="Mobilat"
                                             value={
@@ -602,10 +437,8 @@ export default async function PropertyPage({ params }) {
                                         />
                                     )}
 
-                                {listing.air_conditioning !==
-                                    null &&
-                                    listing.air_conditioning !==
-                                        undefined && (
+                                {listing.air_conditioning !== null &&
+                                    listing.air_conditioning !== undefined && (
                                         <DetailRow
                                             label="Aer condiționat"
                                             value={
@@ -617,8 +450,7 @@ export default async function PropertyPage({ params }) {
                                     )}
 
                                 {listing.balcony !== null &&
-                                    listing.balcony !==
-                                        undefined && (
+                                    listing.balcony !== undefined && (
                                         <DetailRow
                                             label="Balcon"
                                             value={
@@ -630,8 +462,7 @@ export default async function PropertyPage({ params }) {
                                     )}
 
                                 {listing.parking !== null &&
-                                    listing.parking !==
-                                        undefined && (
+                                    listing.parking !== undefined && (
                                         <DetailRow
                                             label="Parcare"
                                             value={
@@ -643,6 +474,8 @@ export default async function PropertyPage({ params }) {
                                     )}
                             </div>
                         </div>
+
+                        {/* CONTINUĂ CU PARTEA 2/2 */}
                         {/* CLĂDIRE */}
 
                         {hasBuildingDetails && (
@@ -673,34 +506,26 @@ export default async function PropertyPage({ params }) {
                                         gap: "12px",
                                     }}
                                 >
-                                    {listing.construction_year !== null &&
-                                        listing.construction_year !==
-                                            undefined && (
-                                            <DetailRow
-                                                label="An construcție"
-                                                value={
-                                                    listing.construction_year
-                                                }
-                                            />
-                                        )}
-
-                                    {listing.heating_type && (
+                                    {hasValue(listing.construction_year) && (
                                         <DetailRow
-                                            label="Încălzire"
+                                            label="An construcție"
+                                            value={listing.construction_year}
+                                        />
+                                    )}
+
+                                    {hasValue(listing.heating_type) && (
+                                        <DetailRow
+                                            label="Tip încălzire"
                                             value={listing.heating_type}
                                         />
                                     )}
 
-                                    {listing.total_floors !== null &&
-                                        listing.total_floors !==
-                                            undefined && (
-                                            <DetailRow
-                                                label="Etaje clădire"
-                                                value={
-                                                    listing.total_floors
-                                                }
-                                            />
-                                        )}
+                                    {hasValue(listing.total_floors) && (
+                                        <DetailRow
+                                            label="Număr total de etaje"
+                                            value={listing.total_floors}
+                                        />
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -735,20 +560,15 @@ export default async function PropertyPage({ params }) {
                                         gap: "12px",
                                     }}
                                 >
-                                    {listing.max_tenants !== null &&
-                                        listing.max_tenants !==
-                                            undefined && (
-                                            <DetailRow
-                                                label="Număr maxim chiriași"
-                                                value={
-                                                    listing.max_tenants
-                                                }
-                                            />
-                                        )}
+                                    {hasValue(listing.max_tenants) && (
+                                        <DetailRow
+                                            label="Număr maxim de chiriași"
+                                            value={listing.max_tenants}
+                                        />
+                                    )}
 
                                     {listing.pets_allowed !== null &&
-                                        listing.pets_allowed !==
-                                            undefined && (
+                                        listing.pets_allowed !== undefined && (
                                             <DetailRow
                                                 label="Animale de companie"
                                                 value={
@@ -785,16 +605,14 @@ export default async function PropertyPage({ params }) {
                                             />
                                         )}
 
-                                    {listing.deposit_amount !== null &&
-                                        listing.deposit_amount !==
-                                            undefined && (
-                                            <DetailRow
-                                                label="Garanție"
-                                                value={`${formatMoney(
-                                                    listing.deposit_amount
-                                                )} €`}
-                                            />
-                                        )}
+                                    {hasValue(listing.deposit_amount) && (
+                                        <DetailRow
+                                            label="Garanție"
+                                            value={`${formatMoney(
+                                                listing.deposit_amount
+                                            )} €`}
+                                        />
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -828,8 +646,8 @@ export default async function PropertyPage({ params }) {
                                         lineHeight: "1.6",
                                     }}
                                 >
-                                    Nu există informații despre
-                                    universitățile din apropiere.
+                                    Nu există informații despre universitățile
+                                    din apropiere.
                                 </p>
                             ) : (
                                 <div
@@ -838,76 +656,102 @@ export default async function PropertyPage({ params }) {
                                         gap: "12px",
                                     }}
                                 >
-                                    {universities.map((university) => (
-                                        <div
-                                            key={university.id}
-                                            style={{
-                                                background: "#ffffff",
-                                                border:
-                                                    "1px solid #e5e7eb",
-                                                borderRadius: "13px",
-                                                padding: "16px 18px",
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent:
-                                                    "space-between",
-                                                gap: "20px",
-                                            }}
-                                        >
-                                            <div>
-                                                <div
-                                                    style={{
-                                                        fontSize: "15px",
-                                                        fontWeight: "800",
-                                                        color: "#111827",
-                                                    }}
-                                                >
-                                                    {university.short_name ||
-                                                        university.name}
+                                    {universities.map((university) => {
+                                        const hasWalking =
+                                            university.walking_minutes !==
+                                                null &&
+                                            university.walking_minutes !==
+                                                undefined;
+
+                                        const hasDistance =
+                                            university.distance_meters !==
+                                                null &&
+                                            university.distance_meters !==
+                                                undefined;
+
+                                        let distanceText = null;
+
+                                        if (hasDistance) {
+                                            const meters = Number(
+                                                university.distance_meters
+                                            );
+
+                                            distanceText =
+                                                meters >= 1000
+                                                    ? `${(
+                                                          meters / 1000
+                                                      ).toLocaleString(
+                                                          "ro-RO",
+                                                          {
+                                                              maximumFractionDigits: 1,
+                                                          }
+                                                      )} km`
+                                                    : `${Math.round(
+                                                          meters
+                                                      )} m`;
+                                        }
+
+                                        return (
+                                            <div
+                                                key={university.id}
+                                                style={{
+                                                    background: "#ffffff",
+                                                    border:
+                                                        "1px solid #e5e7eb",
+                                                    borderRadius: "13px",
+                                                    padding: "16px 18px",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent:
+                                                        "space-between",
+                                                    gap: "20px",
+                                                }}
+                                            >
+                                                <div>
+                                                    <div
+                                                        style={{
+                                                            fontSize: "15px",
+                                                            fontWeight: "800",
+                                                            color: "#111827",
+                                                        }}
+                                                    >
+                                                        {university.short_name ||
+                                                            university.name}
+                                                    </div>
+
+                                                    {university.short_name &&
+                                                        university.name && (
+                                                            <div
+                                                                style={{
+                                                                    marginTop:
+                                                                        "4px",
+                                                                    color:
+                                                                        "#6b7280",
+                                                                    fontSize:
+                                                                        "13px",
+                                                                    lineHeight:
+                                                                        "1.4",
+                                                                }}
+                                                            >
+                                                                {
+                                                                    university.name
+                                                                }
+                                                            </div>
+                                                        )}
                                                 </div>
 
-                                                {university.short_name &&
-                                                    university.name && (
-                                                        <div
-                                                            style={{
-                                                                marginTop:
-                                                                    "4px",
-                                                                color:
-                                                                    "#6b7280",
-                                                                fontSize:
-                                                                    "13px",
-                                                                lineHeight:
-                                                                    "1.4",
-                                                            }}
-                                                        >
-                                                            {
-                                                                university.name
-                                                            }
-                                                        </div>
-                                                    )}
-                                            </div>
-
-                                            {(university.walking_minutes !==
-                                                null &&
-                                                university.walking_minutes !==
-                                                    undefined) ||
-                                            (university.distance_meters !==
-                                                null &&
-                                                university.distance_meters !==
-                                                    undefined) ? (
-                                                <div
-                                                    style={{
-                                                        flexShrink: 0,
-                                                        textAlign: "right",
-                                                        color: "#4b5563",
-                                                        fontSize: "13px",
-                                                        lineHeight: "1.5",
-                                                    }}
-                                                >
-                                                    {university.walking_minutes !==
-                                                        null &&
-                                                        university.walking_minutes !==
-                                                            undefined && (
+                                                {(hasWalking ||
+                                                    hasDistance) && (
+                                                    <div
+                                                        style={{
+                                                            flexShrink: 0,
+                                                            textAlign: "right",
+                                                            color: "#4b5563",
+                                                            fontSize: "13px",
+                                                            lineHeight: "1.5",
+                                                        }}
+                                                    >
+                                                        {hasWalking && (
                                                             <div
                                                                 style={{
                                                                     fontWeight:
@@ -921,36 +765,16 @@ export default async function PropertyPage({ params }) {
                                                             </div>
                                                         )}
 
-                                                    {university.distance_meters !==
-                                                        null &&
-                                                        university.distance_meters !==
-                                                            undefined && (
+                                                        {hasDistance && (
                                                             <div>
-                                                                {Number(
-                                                                    university.distance_meters
-                                                                ) >= 1000
-                                                                    ? `${(
-                                                                          Number(
-                                                                              university.distance_meters
-                                                                          ) /
-                                                                          1000
-                                                                      ).toLocaleString(
-                                                                          "ro-RO",
-                                                                          {
-                                                                              maximumFractionDigits: 1,
-                                                                          }
-                                                                      )} km`
-                                                                    : `${Math.round(
-                                                                          Number(
-                                                                              university.distance_meters
-                                                                          )
-                                                                      )} m`}
+                                                                {distanceText}
                                                             </div>
                                                         )}
-                                                </div>
-                                            ) : null}
-                                        </div>
-                                    ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -1014,9 +838,7 @@ export default async function PropertyPage({ params }) {
                                         color: "#4b5563",
                                     }}
                                 >
-                                    {formatDate(
-                                        listing.available_from
-                                    )}
+                                    {formatDate(listing.available_from)}
                                 </strong>
                             </div>
                         )}
