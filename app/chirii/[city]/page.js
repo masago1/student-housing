@@ -166,17 +166,6 @@ function getCalendarStartDate(year, month) {
     1
   );
 
-  /*
-    JS:
-    Duminică = 0
-    Luni = 1
-
-    Noi vrem:
-    Luni = 0
-    ...
-    Duminică = 6
-  */
-
   const mondayIndex =
     (firstDay.getDay() + 6) % 7;
 
@@ -452,8 +441,6 @@ function DateCalendar({
           "0 14px 35px rgba(15, 23, 42, 0.14)",
       }}
     >
-      {/* HEADER CALENDAR */}
-
       <div
         style={{
           display: "flex",
@@ -535,8 +522,6 @@ function DateCalendar({
         </button>
       </div>
 
-      {/* ZILE SĂPTĂMÂNĂ */}
-
       <div
         style={{
           display: "grid",
@@ -561,8 +546,6 @@ function DateCalendar({
           </div>
         ))}
       </div>
-
-      {/* ZILE */}
 
       <div
         style={{
@@ -654,8 +637,6 @@ function DateCalendar({
         )}
       </div>
 
-      {/* ACȚIUNI CALENDAR */}
-
       <div
         style={{
           display: "flex",
@@ -730,6 +711,9 @@ export default function CityListingsPage() {
 
   const [listings, setListings] =
     useState([]);
+
+  const [imageIndexes, setImageIndexes] =
+    useState({});
 
   const [loading, setLoading] =
     useState(true);
@@ -1039,7 +1023,7 @@ export default function CityListingsPage() {
   }, [citySlug]);
 
   /* =========================
-     ÎNCĂRCARE ANUNȚURI
+     ÎNCĂRCARE ANUNȚURI + POZE
   ========================= */
 
   useEffect(() => {
@@ -1086,10 +1070,6 @@ export default function CityListingsPage() {
           throw error;
         }
 
-        if (cancelled) {
-          return;
-        }
-
         const cityListings =
           (data || []).filter(
             (listing) =>
@@ -1099,9 +1079,122 @@ export default function CityListingsPage() {
               normalizedRequestedCity
           );
 
+        const listingIds =
+          cityListings.map(
+            (listing) => listing.id
+          );
+
+        let imagesByListing = {};
+
+        if (listingIds.length > 0) {
+          const {
+            data: listingImages,
+            error: listingImagesError,
+          } = await supabase
+            .from("listing_images")
+            .select(
+              "listing_id, image_url"
+            )
+            .in(
+              "listing_id",
+              listingIds
+            );
+
+          if (listingImagesError) {
+            throw listingImagesError;
+          }
+
+          imagesByListing =
+            (
+              listingImages || []
+            ).reduce(
+              (
+                accumulator,
+                image
+              ) => {
+                if (
+                  !image?.listing_id ||
+                  !image?.image_url
+                ) {
+                  return accumulator;
+                }
+
+                if (
+                  !accumulator[
+                    image.listing_id
+                  ]
+                ) {
+                  accumulator[
+                    image.listing_id
+                  ] = [];
+                }
+
+                if (
+                  !accumulator[
+                    image.listing_id
+                  ].includes(
+                    image.image_url
+                  )
+                ) {
+                  accumulator[
+                    image.listing_id
+                  ].push(
+                    image.image_url
+                  );
+                }
+
+                return accumulator;
+              },
+              {}
+            );
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        const listingsWithImages =
+          cityListings.map(
+            (listing) => {
+              const galleryImages =
+                imagesByListing[
+                  listing.id
+                ] || [];
+
+              const allImages = [];
+
+              if (listing.image_url) {
+                allImages.push(
+                  listing.image_url
+                );
+              }
+
+              galleryImages.forEach(
+                (imageUrl) => {
+                  if (
+                    !allImages.includes(
+                      imageUrl
+                    )
+                  ) {
+                    allImages.push(
+                      imageUrl
+                    );
+                  }
+                }
+              );
+
+              return {
+                ...listing,
+                images: allImages,
+              };
+            }
+          );
+
         setListings(
-          cityListings
+          listingsWithImages
         );
+
+        setImageIndexes({});
       } catch (error) {
         if (cancelled) {
           return;
@@ -1468,288 +1561,248 @@ export default function CityListingsPage() {
   }
 
   /* =========================
+     CARUSEL POZE
+  ========================= */
+
+  function changeListingImage(
+    listingId,
+    direction,
+    imageCount
+  ) {
+    if (imageCount <= 1) {
+      return;
+    }
+
+    setImageIndexes((current) => {
+      const currentIndex =
+        current[listingId] || 0;
+
+      const nextIndex =
+        (
+          currentIndex +
+          direction +
+          imageCount
+        ) % imageCount;
+
+      return {
+        ...current,
+        [listingId]: nextIndex,
+      };
+    });
+  }
+
+  /* =========================
      FILTRARE + SORTARE
 
-     2/2 ÎNCEPE EXACT CU:
+     PARTEA 2/2 ÎNCEPE CU:
      const filteredListings =
        useMemo(() => {
   ========================= */
   const filteredListings =
     useMemo(() => {
-      let result = [
+      const result = [
         ...listings,
-      ];
-
-      const minimumPrice =
-        numberValue(
-          appliedFilters.minPrice
+      ].filter((listing) => {
+        const price = Number(
+          listing.price_monthly
         );
 
-      const maximumPrice =
-        numberValue(
-          appliedFilters.maxPrice
-        );
+        const listingRooms =
+          Number(listing.rooms);
 
-      const minimumSurface =
-        numberValue(
-          appliedFilters.minSurface
-        );
+        const listingBedrooms =
+          Number(listing.bedrooms);
 
-      const maximumSurface =
-        numberValue(
-          appliedFilters.maxSurface
-        );
+        const listingBathrooms =
+          Number(listing.bathrooms);
 
-      if (
-        minimumPrice !== null
-      ) {
-        result = result.filter(
-          (listing) =>
-            Number(
-              listing.price_monthly
-            ) >= minimumPrice
+        const surface = Number(
+          listing.surface_m2
         );
-      }
-
-      if (
-        maximumPrice !== null
-      ) {
-        result = result.filter(
-          (listing) =>
-            Number(
-              listing.price_monthly
-            ) <= maximumPrice
-        );
-      }
-
-      if (
-        appliedFilters.rooms
-      ) {
-        const selectedRooms =
-          Number(
-            appliedFilters.rooms
-          );
 
         if (
-          selectedRooms === 5
+          appliedFilters.minPrice &&
+          price <
+            Number(
+              appliedFilters.minPrice
+            )
         ) {
-          result = result.filter(
-            (listing) =>
-              Number(
-                listing.rooms
-              ) >= 5
-          );
-        } else {
-          result = result.filter(
-            (listing) =>
-              Number(
-                listing.rooms
-              ) === selectedRooms
-          );
+          return false;
         }
-      }
-
-      if (
-        appliedFilters.bedrooms
-      ) {
-        const selectedBedrooms =
-          Number(
-            appliedFilters.bedrooms
-          );
 
         if (
-          selectedBedrooms === 4
+          appliedFilters.maxPrice &&
+          price >
+            Number(
+              appliedFilters.maxPrice
+            )
         ) {
-          result = result.filter(
-            (listing) =>
-              Number(
-                listing.bedrooms
-              ) >= 4
-          );
-        } else {
-          result = result.filter(
-            (listing) =>
-              Number(
-                listing.bedrooms
-              ) ===
-              selectedBedrooms
-          );
+          return false;
         }
-      }
-
-      if (
-        appliedFilters.bathrooms
-      ) {
-        const selectedBathrooms =
-          Number(
-            appliedFilters.bathrooms
-          );
 
         if (
-          selectedBathrooms === 3
+          appliedFilters.rooms &&
+          listingRooms !==
+            Number(
+              appliedFilters.rooms
+            )
         ) {
-          result = result.filter(
-            (listing) =>
-              Number(
-                listing.bathrooms
-              ) >= 3
-          );
-        } else {
-          result = result.filter(
-            (listing) =>
-              Number(
-                listing.bathrooms
-              ) ===
-              selectedBathrooms
-          );
+          return false;
         }
-      }
 
-      if (
-        minimumSurface !== null
-      ) {
-        result = result.filter(
-          (listing) =>
+        if (
+          appliedFilters.bedrooms &&
+          listingBedrooms !==
             Number(
-              listing.surface_m2
-            ) >= minimumSurface
-        );
-      }
+              appliedFilters.bedrooms
+            )
+        ) {
+          return false;
+        }
 
-      if (
-        maximumSurface !== null
-      ) {
-        result = result.filter(
-          (listing) =>
+        if (
+          appliedFilters.bathrooms &&
+          listingBathrooms !==
             Number(
-              listing.surface_m2
-            ) <= maximumSurface
-        );
-      }
+              appliedFilters.bathrooms
+            )
+        ) {
+          return false;
+        }
 
-      if (
-        appliedFilters.propertyType
-      ) {
-        result = result.filter(
-          (listing) =>
-            listing.property_type ===
+        if (
+          appliedFilters.minSurface &&
+          surface <
+            Number(
+              appliedFilters.minSurface
+            )
+        ) {
+          return false;
+        }
+
+        if (
+          appliedFilters.maxSurface &&
+          surface >
+            Number(
+              appliedFilters.maxSurface
+            )
+        ) {
+          return false;
+        }
+
+        if (
+          appliedFilters.propertyType &&
+          listing.property_type !==
             appliedFilters.propertyType
-        );
-      }
-
-      if (
-        appliedFilters.furnished ===
-        "yes"
-      ) {
-        result = result.filter(
-          (listing) =>
-            listing.furnished === true
-        );
-      }
-
-      if (
-        appliedFilters.furnished ===
-        "no"
-      ) {
-        result = result.filter(
-          (listing) =>
-            listing.furnished === false
-        );
-      }
-
-      if (
-        appliedFilters.listingType
-      ) {
-        result = result.filter(
-          (listing) =>
-            listing.listing_type ===
-            appliedFilters.listingType
-        );
-      }
-
-      if (
-        appliedFilters.availableFrom
-      ) {
-        const isoDate =
-          romanianDateToISO(
-            appliedFilters.availableFrom
-          );
-
-        if (isoDate) {
-          result = result.filter(
-            (listing) =>
-              listing.available_from &&
-              listing.available_from <=
-                isoDate
-          );
+        ) {
+          return false;
         }
-      }
 
-      if (
-        appliedFilters.sort ===
-        "price_asc"
-      ) {
-        result.sort(
-          (a, b) =>
-            Number(
-              a.price_monthly
-            ) -
-            Number(
-              b.price_monthly
-            )
-        );
-      }
+        if (
+          appliedFilters.listingType &&
+          listing.listing_type !==
+            appliedFilters.listingType
+        ) {
+          return false;
+        }
 
-      if (
-        appliedFilters.sort ===
-        "price_desc"
-      ) {
-        result.sort(
-          (a, b) =>
-            Number(
-              b.price_monthly
-            ) -
-            Number(
-              a.price_monthly
-            )
-        );
-      }
+        if (
+          appliedFilters.furnished ===
+            "yes" &&
+          listing.furnished !== true
+        ) {
+          return false;
+        }
 
-      if (
-        appliedFilters.sort ===
-        "surface_desc"
-      ) {
-        result.sort(
-          (a, b) =>
-            Number(
-              b.surface_m2 || 0
-            ) -
-            Number(
-              a.surface_m2 || 0
-            )
-        );
-      }
+        if (
+          appliedFilters.furnished ===
+            "no" &&
+          listing.furnished !== false
+        ) {
+          return false;
+        }
 
-      if (
-        appliedFilters.sort ===
-        "newest"
-      ) {
-        result.sort(
-          (a, b) =>
-            new Date(
-              b.created_at
-            ).getTime() -
-            new Date(
-              a.created_at
-            ).getTime()
-        );
-      }
+        if (
+          appliedFilters.availableFrom
+        ) {
+          if (
+            !listing.available_from
+          ) {
+            return false;
+          }
+
+          const selectedISO =
+            romanianDateToISO(
+              appliedFilters.availableFrom
+            );
+
+          if (
+            listing.available_from >
+            selectedISO
+          ) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+
+      result.sort((a, b) => {
+        switch (
+          appliedFilters.sort
+        ) {
+          case "price_asc":
+            return (
+              Number(
+                a.price_monthly
+              ) -
+              Number(
+                b.price_monthly
+              )
+            );
+
+          case "price_desc":
+            return (
+              Number(
+                b.price_monthly
+              ) -
+              Number(
+                a.price_monthly
+              )
+            );
+
+          case "surface_desc":
+            return (
+              Number(
+                b.surface_m2 || 0
+              ) -
+              Number(
+                a.surface_m2 || 0
+              )
+            );
+
+          case "newest":
+          default:
+            return (
+              new Date(
+                b.created_at
+              ).getTime() -
+              new Date(
+                a.created_at
+              ).getTime()
+            );
+        }
+      });
 
       return result;
     }, [
       listings,
       appliedFilters,
     ]);
+
+  /* =========================
+     EXISTĂ FILTRE?
+  ========================= */
 
   const hasAppliedFilters =
     Boolean(
@@ -1772,15 +1825,18 @@ export default function CityListingsPage() {
     <main
       style={{
         minHeight: "100vh",
-        background: "#F4F7FB",
+        background: "#F8FAFC",
         color: "#0F172A",
+        fontFamily:
+          "Arial, Helvetica, sans-serif",
       }}
     >
       {/* HEADER */}
 
       <header
         style={{
-          height: "72px",
+          height: "64px",
+          boxSizing: "border-box",
           background: "#FFFFFF",
           borderBottom:
             "1px solid #E2E8F0",
@@ -1788,91 +1844,75 @@ export default function CityListingsPage() {
           alignItems: "center",
           justifyContent:
             "space-between",
-          padding: "0 6%",
-          boxSizing: "border-box",
+          padding: "0 5%",
+          position: "sticky",
+          top: 0,
+          zIndex: 50,
         }}
       >
         <a
           href="/"
           style={{
+            color: "#172554",
             textDecoration: "none",
-            fontSize: "25px",
-            fontWeight: "800",
-            letterSpacing: "-1px",
+            fontSize: "21px",
+            fontWeight: "900",
+            letterSpacing: "-0.8px",
           }}
         >
-          <span
-            style={{
-              color: "#172554",
-            }}
-          >
-            Student
-          </span>
-
-          <span
-            style={{
-              color: "#3B82F6",
-            }}
-          >
-            Housing
-          </span>
+          StudentHousing
         </a>
 
         <a
-          href="/"
+          href="/adaugaproprietate"
           style={{
-            color: "#64748B",
+            background: "#172554",
+            color: "#FFFFFF",
             textDecoration: "none",
-            fontSize: "13px",
-            fontWeight: "700",
+            borderRadius: "9px",
+            padding: "10px 15px",
+            fontSize: "11px",
+            fontWeight: "800",
           }}
         >
-          Înapoi la căutare
+          Adaugă proprietatea
         </a>
       </header>
 
-      {/* CONȚINUT */}
-
       <section
         style={{
-          maxWidth: "1080px",
+          maxWidth: "1120px",
           margin: "0 auto",
-          padding:
-            "42px 22px 80px",
-          boxSizing: "border-box",
+          padding: "28px 20px 60px",
         }}
       >
         {/* TITLU */}
 
         <div
           style={{
-            marginBottom: "24px",
+            marginBottom: "18px",
           }}
         >
-          <div
+          <a
+            href="/"
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              background: "#EFF6FF",
-              color: "#3B82F6",
-              borderRadius: "100px",
-              padding: "6px 11px",
+              color: "#64748B",
+              textDecoration: "none",
               fontSize: "11px",
-              fontWeight: "800",
-              marginBottom: "12px",
+              fontWeight: "700",
             }}
           >
-            Chirii pentru studenți
-          </div>
+            ← Înapoi la căutare
+          </a>
 
           <h1
             style={{
-              margin: 0,
+              margin: "12px 0 0",
               color: "#172554",
-              fontSize: "32px",
+              fontSize: "28px",
               lineHeight: "1.15",
-              letterSpacing: "-1.1px",
-              fontWeight: "800",
+              fontWeight: "900",
+              letterSpacing: "-1px",
             }}
           >
             Chirii în {cityName}
@@ -1880,16 +1920,16 @@ export default function CityListingsPage() {
 
           <p
             style={{
-              margin: "9px 0 0",
+              margin: "7px 0 0",
               color: "#64748B",
-              fontSize: "14px",
+              fontSize: "12px",
               lineHeight: "1.6",
             }}
           >
-            Descoperă locuințele disponibile
-            pentru închiriere în {cityName},
-            indiferent de universitatea la care
-            studiezi.
+            Descoperă locuințele
+            disponibile și filtrează
+            rezultatele după criteriile
+            tale.
           </p>
         </div>
 
@@ -1903,82 +1943,26 @@ export default function CityListingsPage() {
               "1px solid #E2E8F0",
             borderRadius: "14px",
             padding: "16px",
-            marginBottom: "18px",
-            boxShadow:
-              "0 5px 20px rgba(15, 23, 42, 0.035)",
+            marginBottom: "12px",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent:
-                "space-between",
-              gap: "15px",
-              marginBottom: "14px",
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  color: "#172554",
-                  fontSize: "15px",
-                  fontWeight: "800",
-                }}
-              >
-                Filtre
-              </div>
-
-              <div
-                style={{
-                  color: "#64748B",
-                  fontSize: "11px",
-                  marginTop: "3px",
-                }}
-              >
-                Găsește proprietatea potrivită
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={resetFilters}
-              style={{
-                border: "none",
-                background:
-                  "transparent",
-                color: "#3B82F6",
-                padding: "6px",
-                fontFamily:
-                  "inherit",
-                fontSize: "11px",
-                fontWeight: "800",
-                cursor: "pointer",
-              }}
-            >
-              Resetează
-            </button>
-          </div>
-
-          {/* RÂND 1 */}
-
           <div
             className="filter-grid"
             style={{
               display: "grid",
               gridTemplateColumns:
                 "repeat(4, minmax(0, 1fr))",
-              gap: "10px",
+              gap: "11px",
             }}
           >
             <div>
-              <label style={labelStyle}>
-                Preț minim
+              <label
+                style={labelStyle}
+              >
+                Preț minim (€)
               </label>
 
               <input
-                type="text"
-                inputMode="numeric"
                 value={minPrice}
                 onChange={(event) =>
                   handleIntegerChange(
@@ -1986,19 +1970,20 @@ export default function CityListingsPage() {
                     setMinPrice
                   )
                 }
-                placeholder="De la €"
+                inputMode="numeric"
+                placeholder="Ex. 250"
                 style={inputStyle}
               />
             </div>
 
             <div>
-              <label style={labelStyle}>
-                Preț maxim
+              <label
+                style={labelStyle}
+              >
+                Preț maxim (€)
               </label>
 
               <input
-                type="text"
-                inputMode="numeric"
                 value={maxPrice}
                 onChange={(event) =>
                   handleIntegerChange(
@@ -2006,13 +1991,16 @@ export default function CityListingsPage() {
                     setMaxPrice
                   )
                 }
-                placeholder="Până la €"
+                inputMode="numeric"
+                placeholder="Ex. 600"
                 style={inputStyle}
               />
             </div>
 
             <div>
-              <label style={labelStyle}>
+              <label
+                style={labelStyle}
+              >
                 Camere
               </label>
 
@@ -2026,7 +2014,7 @@ export default function CityListingsPage() {
                 style={inputStyle}
               >
                 <option value="">
-                  Oricare
+                  Oricâte
                 </option>
                 <option value="1">
                   1 cameră
@@ -2047,52 +2035,9 @@ export default function CityListingsPage() {
             </div>
 
             <div>
-              <label style={labelStyle}>
-                Tip proprietate
-              </label>
-
-              <select
-                value={propertyType}
-                onChange={(event) =>
-                  setPropertyType(
-                    event.target.value
-                  )
-                }
-                style={inputStyle}
+              <label
+                style={labelStyle}
               >
-                <option value="">
-                  Oricare
-                </option>
-                <option value="apartment">
-                  Apartament
-                </option>
-                <option value="studio">
-                  Garsonieră
-                </option>
-                <option value="room">
-                  Cameră
-                </option>
-                <option value="house">
-                  Casă
-                </option>
-              </select>
-            </div>
-          </div>
-
-          {/* RÂND 2 */}
-
-          <div
-            className="filter-grid"
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(4, minmax(0, 1fr))",
-              gap: "10px",
-              marginTop: "10px",
-            }}
-          >
-            <div>
-              <label style={labelStyle}>
                 Dormitoare
               </label>
 
@@ -2106,25 +2051,27 @@ export default function CityListingsPage() {
                 style={inputStyle}
               >
                 <option value="">
-                  Oricare
+                  Oricâte
                 </option>
                 <option value="1">
-                  1
+                  1 dormitor
                 </option>
                 <option value="2">
-                  2
+                  2 dormitoare
                 </option>
                 <option value="3">
-                  3
+                  3 dormitoare
                 </option>
                 <option value="4">
-                  4+
+                  4+ dormitoare
                 </option>
               </select>
             </div>
 
             <div>
-              <label style={labelStyle}>
+              <label
+                style={labelStyle}
+              >
                 Băi
               </label>
 
@@ -2138,28 +2085,28 @@ export default function CityListingsPage() {
                 style={inputStyle}
               >
                 <option value="">
-                  Oricare
+                  Oricâte
                 </option>
                 <option value="1">
-                  1
+                  1 baie
                 </option>
                 <option value="2">
-                  2
+                  2 băi
                 </option>
                 <option value="3">
-                  3+
+                  3+ băi
                 </option>
               </select>
             </div>
 
             <div>
-              <label style={labelStyle}>
-                Suprafață minimă
+              <label
+                style={labelStyle}
+              >
+                Suprafață minimă (m²)
               </label>
 
               <input
-                type="text"
-                inputMode="numeric"
                 value={minSurface}
                 onChange={(event) =>
                   handleIntegerChange(
@@ -2167,19 +2114,20 @@ export default function CityListingsPage() {
                     setMinSurface
                   )
                 }
-                placeholder="De la m²"
+                inputMode="numeric"
+                placeholder="Ex. 30"
                 style={inputStyle}
               />
             </div>
 
             <div>
-              <label style={labelStyle}>
-                Suprafață maximă
+              <label
+                style={labelStyle}
+              >
+                Suprafață maximă (m²)
               </label>
 
               <input
-                type="text"
-                inputMode="numeric"
                 value={maxSurface}
                 onChange={(event) =>
                   handleIntegerChange(
@@ -2187,26 +2135,50 @@ export default function CityListingsPage() {
                     setMaxSurface
                   )
                 }
-                placeholder="Până la m²"
+                inputMode="numeric"
+                placeholder="Ex. 100"
                 style={inputStyle}
               />
             </div>
-          </div>
 
-          {/* RÂND 3 */}
-
-          <div
-            className="filter-grid"
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(4, minmax(0, 1fr))",
-              gap: "10px",
-              marginTop: "10px",
-            }}
-          >
             <div>
-              <label style={labelStyle}>
+              <label
+                style={labelStyle}
+              >
+                Tip proprietate
+              </label>
+
+              <select
+                value={propertyType}
+                onChange={(event) =>
+                  setPropertyType(
+                    event.target.value
+                  )
+                }
+                style={inputStyle}
+              >
+                <option value="">
+                  Toate
+                </option>
+                <option value="apartment">
+                  Apartament
+                </option>
+                <option value="studio">
+                  Garsonieră
+                </option>
+                <option value="house">
+                  Casă
+                </option>
+                <option value="room">
+                  Cameră
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label
+                style={labelStyle}
+              >
                 Mobilat
               </label>
 
@@ -2232,7 +2204,9 @@ export default function CityListingsPage() {
             </div>
 
             <div>
-              <label style={labelStyle}>
+              <label
+                style={labelStyle}
+              >
                 Tip anunț
               </label>
 
@@ -2246,10 +2220,10 @@ export default function CityListingsPage() {
                 style={inputStyle}
               >
                 <option value="">
-                  Oricare
+                  Toate
                 </option>
-                <option value="rent">
-                  Închiriere
+                <option value="entire">
+                  Locuință întreagă
                 </option>
                 <option value="room">
                   Cameră
@@ -2263,8 +2237,10 @@ export default function CityListingsPage() {
                 position: "relative",
               }}
             >
-              <label style={labelStyle}>
-                Disponibil de la
+              <label
+                style={labelStyle}
+              >
+                Disponibil până la
               </label>
 
               <button
@@ -2277,13 +2253,12 @@ export default function CityListingsPage() {
                 }
                 style={{
                   ...inputStyle,
+                  cursor: "pointer",
+                  textAlign: "left",
                   display: "flex",
                   alignItems: "center",
                   justifyContent:
                     "space-between",
-                  textAlign: "left",
-                  cursor: "pointer",
-                  background: "#FFFFFF",
                 }}
               >
                 <span
@@ -2294,25 +2269,17 @@ export default function CityListingsPage() {
                   }}
                 >
                   {availableFrom ||
-                    "ZZ/LL/AAAA"}
+                    "Alege data"}
                 </span>
 
-                <span
-                  aria-hidden="true"
-                  style={{
-                    color: "#64748B",
-                    fontSize: "15px",
-                    lineHeight: 1,
-                    marginLeft: "8px",
-                  }}
-                >
-                  ▣
-                </span>
+                <span>▾</span>
               </button>
 
               {calendarOpen && (
                 <DateCalendar
-                  value={availableFrom}
+                  value={
+                    availableFrom
+                  }
                   onChange={
                     setAvailableFrom
                   }
@@ -2326,7 +2293,9 @@ export default function CityListingsPage() {
             </div>
 
             <div>
-              <label style={labelStyle}>
+              <label
+                style={labelStyle}
+              >
                 Sortare
               </label>
 
@@ -2360,29 +2329,23 @@ export default function CityListingsPage() {
               0 && (
               <div
                 style={{
-                  marginTop: "13px",
-                  background: "#FEF2F2",
+                  marginTop: "12px",
+                  padding: "10px 12px",
+                  background:
+                    "#FEF2F2",
                   border:
                     "1px solid #FECACA",
-                  borderRadius: "10px",
-                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  color: "#B91C1C",
+                  fontSize: "11px",
+                  fontWeight: "700",
+                  lineHeight: "1.6",
                 }}
               >
                 {validationErrors.map(
-                  (
-                    message,
-                    index
-                  ) => (
-                    <div
-                      key={index}
-                      style={{
-                        color: "#B91C1C",
-                        fontSize: "11px",
-                        lineHeight: "1.6",
-                        fontWeight: "700",
-                      }}
-                    >
-                      {message}
+                  (error, index) => (
+                    <div key={index}>
+                      {error}
                     </div>
                   )
                 )}
@@ -2392,11 +2355,37 @@ export default function CityListingsPage() {
           <div
             style={{
               display: "flex",
+              alignItems: "center",
               justifyContent:
                 "flex-end",
+              gap: "8px",
               marginTop: "14px",
             }}
           >
+            {hasAppliedFilters && (
+              <button
+                type="button"
+                onClick={resetFilters}
+                style={{
+                  border:
+                    "1px solid #CBD5E1",
+                  background:
+                    "#FFFFFF",
+                  color: "#475569",
+                  borderRadius: "9px",
+                  padding:
+                    "10px 15px",
+                  fontFamily:
+                    "inherit",
+                  fontSize: "11px",
+                  fontWeight: "800",
+                  cursor: "pointer",
+                }}
+              >
+                Resetează
+              </button>
+            )}
+
             <button
               type="submit"
               style={{
@@ -2404,7 +2393,8 @@ export default function CityListingsPage() {
                 background: "#172554",
                 color: "#FFFFFF",
                 borderRadius: "9px",
-                padding: "10px 18px",
+                padding:
+                  "10px 18px",
                 fontFamily: "inherit",
                 fontSize: "12px",
                 fontWeight: "800",
@@ -2615,6 +2605,36 @@ export default function CityListingsPage() {
                       ? `/chirii/${citySlug}${window.location.search}`
                       : `/chirii/${citySlug}`;
 
+                  const listingImages =
+                    Array.isArray(
+                      listing.images
+                    )
+                      ? listing.images
+                      : [];
+
+                  const currentImageIndex =
+                    Math.min(
+                      imageIndexes[
+                        listing.id
+                      ] || 0,
+                      Math.max(
+                        listingImages.length -
+                          1,
+                        0
+                      )
+                    );
+
+                  const currentImage =
+                    listingImages[
+                      currentImageIndex
+                    ] ||
+                    listing.image_url ||
+                    null;
+
+                  const hasMultipleImages =
+                    listingImages.length >
+                    1;
+
                   return (
                     <div
                       key={listing.id}
@@ -2638,7 +2658,7 @@ export default function CityListingsPage() {
                           "box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease",
                       }}
                     >
-                      {/* FOTO */}
+                      {/* FOTO + CARUSEL */}
 
                       <div
                         className="listing-image"
@@ -2657,14 +2677,15 @@ export default function CityListingsPage() {
                             "relative",
                         }}
                       >
-                        {listing.image_url ? (
+                        {currentImage ? (
                           <img
                             src={
-                              listing.image_url
+                              currentImage
                             }
                             alt={
                               listing.title
                             }
+                            draggable="false"
                             style={{
                               width:
                                 "100%",
@@ -2674,6 +2695,8 @@ export default function CityListingsPage() {
                                 "cover",
                               display:
                                 "block",
+                              userSelect:
+                                "none",
                             }}
                           />
                         ) : (
@@ -2699,6 +2722,168 @@ export default function CityListingsPage() {
                           >
                             Fără fotografie
                           </div>
+                        )}
+
+                        {hasMultipleImages && (
+                          <>
+                            <button
+                              type="button"
+                              aria-label="Fotografia anterioară"
+                              onClick={(
+                                event
+                              ) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+
+                                changeListingImage(
+                                  listing.id,
+                                  -1,
+                                  listingImages.length
+                                );
+                              }}
+                              className="listing-image-arrow listing-image-arrow-left"
+                              style={{
+                                position:
+                                  "absolute",
+                                left: "8px",
+                                top: "50%",
+                                transform:
+                                  "translateY(-50%)",
+                                zIndex: 5,
+                                width:
+                                  "31px",
+                                height:
+                                  "31px",
+                                border:
+                                  "1px solid rgba(255,255,255,0.75)",
+                                borderRadius:
+                                  "50%",
+                                background:
+                                  "rgba(15,23,42,0.62)",
+                                color:
+                                  "#FFFFFF",
+                                display:
+                                  "flex",
+                                alignItems:
+                                  "center",
+                                justifyContent:
+                                  "center",
+                                cursor:
+                                  "pointer",
+                                fontSize:
+                                  "22px",
+                                fontWeight:
+                                  "500",
+                                lineHeight:
+                                  "1",
+                                padding: 0,
+                                boxShadow:
+                                  "0 2px 8px rgba(15,23,42,0.18)",
+                              }}
+                            >
+                              ‹
+                            </button>
+
+                            <button
+                              type="button"
+                              aria-label="Fotografia următoare"
+                              onClick={(
+                                event
+                              ) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+
+                                changeListingImage(
+                                  listing.id,
+                                  1,
+                                  listingImages.length
+                                );
+                              }}
+                              className="listing-image-arrow listing-image-arrow-right"
+                              style={{
+                                position:
+                                  "absolute",
+                                right: "8px",
+                                top: "50%",
+                                transform:
+                                  "translateY(-50%)",
+                                zIndex: 5,
+                                width:
+                                  "31px",
+                                height:
+                                  "31px",
+                                border:
+                                  "1px solid rgba(255,255,255,0.75)",
+                                borderRadius:
+                                  "50%",
+                                background:
+                                  "rgba(15,23,42,0.62)",
+                                color:
+                                  "#FFFFFF",
+                                display:
+                                  "flex",
+                                alignItems:
+                                  "center",
+                                justifyContent:
+                                  "center",
+                                cursor:
+                                  "pointer",
+                                fontSize:
+                                  "22px",
+                                fontWeight:
+                                  "500",
+                                lineHeight:
+                                  "1",
+                                padding: 0,
+                                boxShadow:
+                                  "0 2px 8px rgba(15,23,42,0.18)",
+                              }}
+                            >
+                              ›
+                            </button>
+
+                            <div
+                              style={{
+                                position:
+                                  "absolute",
+                                left: "50%",
+                                bottom:
+                                  "8px",
+                                transform:
+                                  "translateX(-50%)",
+                                zIndex: 4,
+                                minWidth:
+                                  "38px",
+                                boxSizing:
+                                  "border-box",
+                                padding:
+                                  "4px 7px",
+                                borderRadius:
+                                  "999px",
+                                background:
+                                  "rgba(15,23,42,0.68)",
+                                color:
+                                  "#FFFFFF",
+                                fontSize:
+                                  "9px",
+                                fontWeight:
+                                  "800",
+                                lineHeight:
+                                  "1",
+                                textAlign:
+                                  "center",
+                                pointerEvents:
+                                  "none",
+                              }}
+                            >
+                              {currentImageIndex +
+                                1}
+                              /
+                              {
+                                listingImages.length
+                              }
+                            </div>
+                          </>
                         )}
 
                         <FavoriteButton
@@ -3068,6 +3253,38 @@ export default function CityListingsPage() {
           color: #2563eb !important;
         }
 
+        .listing-image-arrow {
+          opacity: 0;
+          transition:
+            opacity 0.15s ease,
+            background 0.15s ease,
+            transform 0.15s ease;
+        }
+
+        .listing-image:hover
+          .listing-image-arrow {
+          opacity: 1;
+        }
+
+        .listing-image-arrow:hover {
+          background: rgba(
+            15,
+            23,
+            42,
+            0.82
+          ) !important;
+        }
+
+        .listing-image-arrow-left:hover {
+          transform: translateY(-50%)
+            scale(1.06) !important;
+        }
+
+        .listing-image-arrow-right:hover {
+          transform: translateY(-50%)
+            scale(1.06) !important;
+        }
+
         input:focus,
         select:focus {
           outline: none;
@@ -3076,9 +3293,8 @@ export default function CityListingsPage() {
             rgba(59, 130, 246, 0.08);
         }
 
-        .filter-calendar button:not(
-            :disabled
-          ):hover {
+        .filter-calendar
+          button:not(:disabled):hover {
           background: #eff6ff !important;
           color: #2563eb !important;
         }
@@ -3120,6 +3336,10 @@ export default function CityListingsPage() {
             width: 100% !important;
             min-width: 100% !important;
             height: 210px !important;
+          }
+
+          .listing-image-arrow {
+            opacity: 1;
           }
 
           .listing-main-link {
