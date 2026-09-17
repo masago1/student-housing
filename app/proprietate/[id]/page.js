@@ -243,7 +243,7 @@ export default async function PropertyPage({ params }) {
                         letterSpacing: "-1px",
                     }}
                 >
-                    StudentHousing
+                    shaus
                 </a>
             </header>
 
