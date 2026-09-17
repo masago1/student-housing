@@ -18,7 +18,6 @@ export default function AdaugaProprietatePage() {
     const [loadingUniversities, setLoadingUniversities] = useState(true);
     const [selectedUniversityIds, setSelectedUniversityIds] = useState([]);
 
-    // NOU: orașele și cartierele vin din tabelele Supabase
     const [cities, setCities] = useState([]);
     const [neighborhoods, setNeighborhoods] = useState([]);
     const [loadingLocations, setLoadingLocations] = useState(true);
@@ -43,25 +42,51 @@ export default function AdaugaProprietatePage() {
     });
 
     /* =========================
-       AUTENTIFICARE
+       AUTENTIFICARE + PROFIL
     ========================= */
 
     useEffect(() => {
         const checkUser = async () => {
             const {
                 data: { user },
-                error,
+                error: authError,
             } = await supabase.auth.getUser();
 
-            if (error || !user) {
+            if (authError || !user) {
                 router.replace("/login");
                 return;
             }
 
             setUser(user);
 
+            const { data: profile, error: profileError } = await supabase
+                .from("profiles")
+                .select("name, phone")
+                .eq("id", user.id)
+                .maybeSingle();
+
+            if (profileError) {
+                console.error("Eroare profil:", profileError);
+                setError("Profilul nu a putut fi verificat.");
+                setCheckingAuth(false);
+                return;
+            }
+
+            const profilePhone = profile?.phone?.trim() || "";
+
+            if (!profilePhone) {
+                router.replace("/dashboard?section=profile&required=phone");
+                return;
+            }
+
             setForm((current) => ({
                 ...current,
+                owner_name:
+                    current.owner_name ||
+                    profile?.name ||
+                    user.user_metadata?.name ||
+                    "",
+                owner_phone: profilePhone,
                 owner_email: current.owner_email || user.email || "",
             }));
 
@@ -101,11 +126,7 @@ export default function AdaugaProprietatePage() {
                 .order("name", { ascending: true });
 
             if (error) {
-                console.error(
-                    "Eroare la încărcarea universităților:",
-                    error
-                );
-
+                console.error("Eroare la încărcarea universităților:", error);
                 setUniversities([]);
                 setLoadingUniversities(false);
                 return;
@@ -126,17 +147,13 @@ export default function AdaugaProprietatePage() {
         const loadLocations = async () => {
             setLoadingLocations(true);
 
-            const { data: citiesData, error: citiesError } =
-                await supabase
-                    .from("cities")
-                    .select("id, name, slug")
-                    .order("name", { ascending: true });
+            const { data: citiesData, error: citiesError } = await supabase
+                .from("cities")
+                .select("id, name, slug")
+                .order("name", { ascending: true });
 
             if (citiesError) {
-                console.error(
-                    "Eroare la încărcarea orașelor:",
-                    citiesError
-                );
+                console.error("Eroare la încărcarea orașelor:", citiesError);
                 setCities([]);
             } else {
                 setCities(citiesData || []);
@@ -164,28 +181,14 @@ export default function AdaugaProprietatePage() {
         loadLocations();
     }, []);
 
-    /* =========================
-       ORAȘ SELECTAT
-    ========================= */
-
     const selectedCity = useMemo(() => {
-        if (!form.city) {
-            return null;
-        }
+        if (!form.city) return null;
 
-        return (
-            cities.find((city) => city.name === form.city) || null
-        );
+        return cities.find((city) => city.name === form.city) || null;
     }, [cities, form.city]);
 
-    /* =========================
-       CARTIERE PENTRU ORAȘ
-    ========================= */
-
     const neighborhoodsForCity = useMemo(() => {
-        if (!selectedCity) {
-            return [];
-        }
+        if (!selectedCity) return [];
 
         return neighborhoods.filter(
             (neighborhood) =>
@@ -193,14 +196,8 @@ export default function AdaugaProprietatePage() {
         );
     }, [neighborhoods, selectedCity]);
 
-    /* =========================
-       UNIVERSITĂȚI PENTRU ORAȘ
-    ========================= */
-
     const universitiesForCity = useMemo(() => {
-        if (!form.city) {
-            return [];
-        }
+        if (!form.city) return [];
 
         return universities.filter(
             (university) => university.city === form.city
@@ -229,8 +226,6 @@ export default function AdaugaProprietatePage() {
             neighborhood_id: "",
         }));
 
-        // Când se schimbă orașul,
-        // resetăm și universitățile selectate.
         setSelectedUniversityIds([]);
     };
 
@@ -243,9 +238,7 @@ export default function AdaugaProprietatePage() {
 
         const selectedFiles = Array.from(event.target.files || []);
 
-        if (selectedFiles.length === 0) {
-            return;
-        }
+        if (selectedFiles.length === 0) return;
 
         const remainingSlots = 10 - images.length;
 
@@ -259,7 +252,6 @@ export default function AdaugaProprietatePage() {
             setError(
                 `Poți adăuga maximum 10 fotografii. Mai poți selecta ${remainingSlots}.`
             );
-
             event.target.value = "";
             return;
         }
@@ -277,7 +269,6 @@ export default function AdaugaProprietatePage() {
                 setError(
                     "Fiecare fotografie trebuie să aibă maximum 10 MB."
                 );
-
                 event.target.value = "";
                 return;
             }
@@ -288,11 +279,7 @@ export default function AdaugaProprietatePage() {
             });
         }
 
-        setImages((current) => [
-            ...current,
-            ...validFiles,
-        ]);
-
+        setImages((current) => [...current, ...validFiles]);
         event.target.value = "";
     };
 
@@ -304,9 +291,7 @@ export default function AdaugaProprietatePage() {
                 URL.revokeObjectURL(imageToRemove.preview);
             }
 
-            return current.filter(
-                (_, imageIndex) => imageIndex !== index
-            );
+            return current.filter((_, imageIndex) => imageIndex !== index);
         });
     };
 
@@ -316,23 +301,14 @@ export default function AdaugaProprietatePage() {
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
-
         router.push("/");
         router.refresh();
     };
 
-    /* =========================
-       CLEANUP STORAGE
-    ========================= */
-
     const cleanupUploadedFiles = async (paths) => {
-        if (!paths.length) {
-            return;
-        }
+        if (!paths.length) return;
 
-        await supabase.storage
-            .from("listing-images")
-            .remove(paths);
+        await supabase.storage.from("listing-images").remove(paths);
     };
 
     /* =========================
@@ -347,6 +323,33 @@ export default function AdaugaProprietatePage() {
 
         if (!user) {
             router.replace("/login");
+            return;
+        }
+
+        /*
+         * VERIFICARE DIN NOU A TELEFONULUI.
+         * Nu ne bazăm doar pe verificarea făcută la intrarea în pagină.
+         */
+
+        const { data: currentProfile, error: profileCheckError } =
+            await supabase
+                .from("profiles")
+                .select("name, phone")
+                .eq("id", user.id)
+                .maybeSingle();
+
+        if (profileCheckError) {
+            console.error("Eroare verificare profil:", profileCheckError);
+            setError(
+                "Profilul nu a putut fi verificat. Încearcă din nou."
+            );
+            return;
+        }
+
+        const currentPhone = currentProfile?.phone?.trim() || "";
+
+        if (!currentPhone) {
+            router.push("/dashboard?section=profile&required=phone");
             return;
         }
 
@@ -365,35 +368,18 @@ export default function AdaugaProprietatePage() {
             return;
         }
 
-        // UNIVERSITATEA RĂMÂNE OPȚIONALĂ
-
         if (!form.address.trim()) {
             setError("Completează adresa proprietății.");
             return;
         }
 
-        if (
-            !form.price_monthly ||
-            Number(form.price_monthly) <= 0
-        ) {
+        if (!form.price_monthly || Number(form.price_monthly) <= 0) {
             setError("Introdu un preț lunar valid.");
             return;
         }
 
-        if (!form.owner_name.trim()) {
-            setError("Completează numele persoanei de contact.");
-            return;
-        }
-
-        if (!form.owner_phone.trim()) {
-            setError("Completează numărul de telefon.");
-            return;
-        }
-
         if (images.length === 0) {
-            setError(
-                "Adaugă cel puțin o fotografie a proprietății."
-            );
+            setError("Adaugă cel puțin o fotografie a proprietății.");
             return;
         }
 
@@ -408,65 +394,36 @@ export default function AdaugaProprietatePage() {
         const uploadedPaths = [];
 
         try {
-            /* =========================
-               ANUNȚ
-            ========================= */
+            const ownerName =
+                currentProfile?.name?.trim() ||
+                form.owner_name.trim() ||
+                user.user_metadata?.name ||
+                "";
 
             const listingData = {
                 user_id: user.id,
-
                 title: form.title.trim(),
-
-                description:
-                    form.description.trim() || null,
-
+                description: form.description.trim() || null,
                 city: form.city.trim(),
-
-                neighborhood_id:
-                    Number(form.neighborhood_id),
-
+                neighborhood_id: Number(form.neighborhood_id),
                 address: form.address.trim(),
+                price_monthly: Number(form.price_monthly),
 
-                price_monthly:
-                    Number(form.price_monthly),
-
-                rooms: form.rooms
-                    ? Number(form.rooms)
-                    : null,
-
-                bedrooms: form.bedrooms
-                    ? Number(form.bedrooms)
-                    : null,
-
-                bathrooms: form.bathrooms
-                    ? Number(form.bathrooms)
-                    : null,
-
+                rooms: form.rooms ? Number(form.rooms) : null,
+                bedrooms: form.bedrooms ? Number(form.bedrooms) : null,
+                bathrooms: form.bathrooms ? Number(form.bathrooms) : null,
                 surface_m2: form.surface_m2
                     ? Number(form.surface_m2)
                     : null,
 
-                property_type:
-                    form.property_type,
-
+                property_type: form.property_type,
                 listing_type: "rent",
+                furnished: form.furnished === "true",
+                available_from: form.available_from || null,
 
-                furnished:
-                    form.furnished === "true",
-
-                available_from:
-                    form.available_from || null,
-
-                owner_name:
-                    form.owner_name.trim(),
-
-                owner_phone:
-                    form.owner_phone.trim(),
-
-                owner_email:
-                    form.owner_email.trim() ||
-                    user.email ||
-                    null,
+                owner_name: ownerName,
+                owner_phone: currentPhone,
+                owner_email: user.email || null,
 
                 active: true,
             };
@@ -488,24 +445,19 @@ export default function AdaugaProprietatePage() {
 
             listingId = createdListing.id;
 
-            /* =========================
-               UNIVERSITĂȚI - OPȚIONAL
-            ========================= */
+            /* UNIVERSITĂȚI - OPȚIONAL */
 
             if (selectedUniversityIds.length > 0) {
-                const universityLinks =
-                    selectedUniversityIds.map(
-                        (universityId) => ({
-                            listing_id: listingId,
-                            university_id: universityId,
-                            distance_meters: null,
-                            walking_minutes: null,
-                        })
-                    );
+                const universityLinks = selectedUniversityIds.map(
+                    (universityId) => ({
+                        listing_id: listingId,
+                        university_id: universityId,
+                        distance_meters: null,
+                        walking_minutes: null,
+                    })
+                );
 
-                const {
-                    error: universityLinkError,
-                } = await supabase
+                const { error: universityLinkError } = await supabase
                     .from("listing_universities")
                     .insert(universityLinks);
 
@@ -516,83 +468,55 @@ export default function AdaugaProprietatePage() {
                 }
             }
 
-            /* =========================
-               POZE
-            ========================= */
+            /* POZE */
 
             const uploadedImages = [];
 
-            for (
-                let index = 0;
-                index < images.length;
-                index++
-            ) {
+            for (let index = 0; index < images.length; index++) {
                 const image = images[index];
                 const file = image.file;
 
                 const extension =
-                    file.name
-                        .split(".")
-                        .pop()
-                        ?.toLowerCase() ||
-                    "jpg";
+                    file.name.split(".").pop()?.toLowerCase() || "jpg";
 
                 const safeExtension =
-                    extension.replace(
-                        /[^a-z0-9]/g,
-                        ""
-                    ) || "jpg";
+                    extension.replace(/[^a-z0-9]/g, "") || "jpg";
 
-                const fileName =
-                    `${Date.now()}-${index}-${crypto.randomUUID()}.${safeExtension}`;
+                const fileName = `${Date.now()}-${index}-${crypto.randomUUID()}.${safeExtension}`;
 
-                const storagePath =
-                    `${user.id}/${listingId}/${fileName}`;
+                const storagePath = `${user.id}/${listingId}/${fileName}`;
 
-                const {
-                    error: uploadError,
-                } = await supabase.storage
+                const { error: uploadError } = await supabase.storage
                     .from("listing-images")
-                    .upload(
-                        storagePath,
-                        file,
-                        {
-                            cacheControl: "3600",
-                            upsert: false,
-                            contentType: file.type,
-                        }
-                    );
+                    .upload(storagePath, file, {
+                        cacheControl: "3600",
+                        upsert: false,
+                        contentType: file.type,
+                    });
 
                 if (uploadError) {
                     throw new Error(
-                        `Fotografia ${index + 1} nu a putut fi încărcată: ${uploadError.message}`
+                        `Fotografia ${
+                            index + 1
+                        } nu a putut fi încărcată: ${uploadError.message}`
                     );
                 }
 
                 uploadedPaths.push(storagePath);
 
-                const {
-                    data: publicUrlData,
-                } = supabase.storage
+                const { data: publicUrlData } = supabase.storage
                     .from("listing-images")
                     .getPublicUrl(storagePath);
 
                 uploadedImages.push({
                     listing_id: listingId,
-                    image_url:
-                        publicUrlData.publicUrl,
+                    image_url: publicUrlData.publicUrl,
                     storage_path: storagePath,
                     position: index,
                 });
             }
 
-            /* =========================
-               SALVARE POZE
-            ========================= */
-
-            const {
-                error: imagesDatabaseError,
-            } = await supabase
+            const { error: imagesDatabaseError } = await supabase
                 .from("listing_images")
                 .insert(uploadedImages);
 
@@ -602,17 +526,9 @@ export default function AdaugaProprietatePage() {
                 );
             }
 
-            /* =========================
-               COPERTĂ
-            ========================= */
+            const coverImageUrl = uploadedImages[0]?.image_url || null;
 
-            const coverImageUrl =
-                uploadedImages[0]?.image_url ||
-                null;
-
-            const {
-                error: coverError,
-            } = await supabase
+            const { error: coverError } = await supabase
                 .from("listings")
                 .update({
                     image_url: coverImageUrl,
@@ -626,9 +542,7 @@ export default function AdaugaProprietatePage() {
                 );
             }
 
-            setSuccess(
-                "Proprietatea a fost publicată cu succes."
-            );
+            setSuccess("Proprietatea a fost publicată cu succes.");
 
             setTimeout(() => {
                 router.push("/dashboard");
@@ -637,9 +551,7 @@ export default function AdaugaProprietatePage() {
         } catch (submitError) {
             console.error(submitError);
 
-            await cleanupUploadedFiles(
-                uploadedPaths
-            );
+            await cleanupUploadedFiles(uploadedPaths);
 
             if (listingId) {
                 await supabase
@@ -651,16 +563,12 @@ export default function AdaugaProprietatePage() {
 
             setError(
                 submitError.message ||
-                "A apărut o eroare la publicarea anunțului."
+                    "A apărut o eroare la publicarea anunțului."
             );
 
             setPublishing(false);
         }
     };
-
-    /* =========================
-       LOADING
-    ========================= */
 
     if (checkingAuth) {
         return (
@@ -676,14 +584,10 @@ export default function AdaugaProprietatePage() {
                     fontWeight: "600",
                 }}
             >
-                Se verifică autentificarea...
+                Se verifică profilul...
             </main>
         );
     }
-
-    /* =========================
-       STILURI
-    ========================= */
 
     const inputStyle = {
         width: "100%",
@@ -718,10 +622,6 @@ export default function AdaugaProprietatePage() {
                 color: "#111827",
             }}
         >
-            {/* =========================
-                HEADER
-            ========================= */}
-
             <header
                 style={{
                     height: "72px",
@@ -783,10 +683,6 @@ export default function AdaugaProprietatePage() {
                 </div>
             </header>
 
-            {/* =========================
-                PAGINA
-            ========================= */}
-
             <section
                 style={{
                     maxWidth: "900px",
@@ -796,9 +692,7 @@ export default function AdaugaProprietatePage() {
             >
                 <button
                     type="button"
-                    onClick={() =>
-                        router.push("/dashboard")
-                    }
+                    onClick={() => router.push("/dashboard")}
                     style={{
                         display: "inline-flex",
                         alignItems: "center",
@@ -814,23 +708,11 @@ export default function AdaugaProprietatePage() {
                         cursor: "pointer",
                     }}
                 >
-                    <span
-                        style={{
-                            fontSize: "20px",
-                            lineHeight: 1,
-                        }}
-                    >
-                        ←
-                    </span>
-
+                    <span style={{ fontSize: "20px", lineHeight: 1 }}>←</span>
                     Înapoi la dashboard
                 </button>
 
-                <div
-                    style={{
-                        marginBottom: "35px",
-                    }}
-                >
+                <div style={{ marginBottom: "35px" }}>
                     <div
                         style={{
                             display: "inline-block",
@@ -867,14 +749,13 @@ export default function AdaugaProprietatePage() {
                             maxWidth: "650px",
                         }}
                     >
-                        Completează informațiile proprietății tale pentru a publica anunțul.
+                        Completează informațiile proprietății tale pentru a
+                        publica anunțul.
                     </p>
                 </div>
 
                 <form onSubmit={handleSubmit}>
-                    {/* =========================
-                        FOTOGRAFII
-                    ========================= */}
+                    {/* FOTOGRAFII */}
 
                     <div
                         style={{
@@ -882,7 +763,8 @@ export default function AdaugaProprietatePage() {
                             border: "1px solid #e5e7eb",
                             borderRadius: "20px",
                             padding: "32px",
-                            boxShadow: "0 12px 35px rgba(17,24,39,0.05)",
+                            boxShadow:
+                                "0 12px 35px rgba(17,24,39,0.05)",
                             marginBottom: "22px",
                         }}
                     >
@@ -904,8 +786,8 @@ export default function AdaugaProprietatePage() {
                                 margin: "8px 0 22px",
                             }}
                         >
-                            Adaugă între 1 și 10 fotografii. Prima fotografie va fi
-                            coperta anunțului.
+                            Adaugă între 1 și 10 fotografii. Prima fotografie va
+                            fi coperta anunțului.
                         </p>
 
                         <label
@@ -928,9 +810,7 @@ export default function AdaugaProprietatePage() {
                                 multiple
                                 disabled={images.length >= 10}
                                 onChange={handleImages}
-                                style={{
-                                    display: "none",
-                                }}
+                                style={{ display: "none" }}
                             />
 
                             <div
@@ -1035,9 +915,7 @@ export default function AdaugaProprietatePage() {
                         )}
                     </div>
 
-                    {/* =========================
-                        DETALII
-                    ========================= */}
+                    {/* DETALII */}
 
                     <div
                         style={{
@@ -1045,7 +923,8 @@ export default function AdaugaProprietatePage() {
                             border: "1px solid #e5e7eb",
                             borderRadius: "20px",
                             padding: "32px",
-                            boxShadow: "0 12px 35px rgba(17,24,39,0.05)",
+                            boxShadow:
+                                "0 12px 35px rgba(17,24,39,0.05)",
                             marginBottom: "22px",
                         }}
                     >
@@ -1060,9 +939,7 @@ export default function AdaugaProprietatePage() {
                         </h2>
 
                         <div style={fieldStyle}>
-                            <label style={labelStyle}>
-                                Titlul anunțului
-                            </label>
+                            <label style={labelStyle}>Titlul anunțului</label>
 
                             <input
                                 name="title"
@@ -1085,27 +962,12 @@ export default function AdaugaProprietatePage() {
                                 onChange={updateField}
                                 style={inputStyle}
                             >
-                                <option value="apartment">
-                                    Apartament
-                                </option>
-
-                                <option value="studio">
-                                    Garsonieră
-                                </option>
-
-                                <option value="room">
-                                    Cameră
-                                </option>
-
-                                <option value="house">
-                                    Casă
-                                </option>
+                                <option value="apartment">Apartament</option>
+                                <option value="studio">Garsonieră</option>
+                                <option value="room">Cameră</option>
+                                <option value="house">Casă</option>
                             </select>
                         </div>
-
-                        {/* =========================
-                            LOCAȚIE + UNIVERSITĂȚI
-                        ========================= */}
 
                         <div
                             className="location-grid"
@@ -1116,15 +978,9 @@ export default function AdaugaProprietatePage() {
                                 alignItems: "start",
                             }}
                         >
-                            {/* STÂNGA */}
-
                             <div>
-                                {/* ORAȘ */}
-
                                 <div style={fieldStyle}>
-                                    <label style={labelStyle}>
-                                        Oraș
-                                    </label>
+                                    <label style={labelStyle}>Oraș</label>
 
                                     <select
                                         value={form.city}
@@ -1135,9 +991,6 @@ export default function AdaugaProprietatePage() {
                                             cursor: loadingLocations
                                                 ? "wait"
                                                 : "pointer",
-                                            background: loadingLocations
-                                                ? "#f9fafb"
-                                                : "#ffffff",
                                         }}
                                     >
                                         <option value="">
@@ -1157,8 +1010,6 @@ export default function AdaugaProprietatePage() {
                                     </select>
                                 </div>
 
-                                {/* ZONĂ / CARTIER */}
-
                                 <div style={fieldStyle}>
                                     <label style={labelStyle}>
                                         Zonă / cartier
@@ -1169,27 +1020,21 @@ export default function AdaugaProprietatePage() {
                                         value={form.neighborhood_id}
                                         onChange={updateField}
                                         disabled={
-                                            !form.city ||
-                                            loadingLocations
+                                            !form.city || loadingLocations
                                         }
                                         style={{
                                             ...inputStyle,
                                             cursor:
-                                                !form.city ||
-                                                loadingLocations
+                                                !form.city || loadingLocations
                                                     ? "not-allowed"
                                                     : "pointer",
-                                            background:
-                                                !form.city ||
-                                                loadingLocations
-                                                    ? "#f9fafb"
-                                                    : "#ffffff",
                                         }}
                                     >
                                         <option value="">
                                             {!form.city
                                                 ? "Alege mai întâi orașul"
-                                                : neighborhoodsForCity.length === 0
+                                                : neighborhoodsForCity.length ===
+                                                  0
                                                 ? "Nu există cartiere introduse"
                                                 : "Alege zona / cartierul"}
                                         </option>
@@ -1207,8 +1052,6 @@ export default function AdaugaProprietatePage() {
                                     </select>
                                 </div>
 
-                                {/* ADRESĂ */}
-
                                 <div style={fieldStyle}>
                                     <label style={labelStyle}>
                                         Adresa proprietății
@@ -1224,8 +1067,6 @@ export default function AdaugaProprietatePage() {
                                     />
                                 </div>
                             </div>
-
-                            {/* DREAPTA - UNIVERSITĂȚI */}
 
                             <div style={fieldStyle}>
                                 <label style={labelStyle}>
@@ -1274,8 +1115,8 @@ export default function AdaugaProprietatePage() {
                                                 fontSize: "14px",
                                             }}
                                         >
-                                            Nu există universități disponibile pentru
-                                            acest oraș.
+                                            Nu există universități disponibile
+                                            pentru acest oraș.
                                         </div>
                                     ) : (
                                         universitiesForCity.map(
@@ -1330,8 +1171,7 @@ export default function AdaugaProprietatePage() {
                                                                     "2px",
                                                                 width: "16px",
                                                                 height: "16px",
-                                                                cursor:
-                                                                    "pointer",
+                                                                cursor: "pointer",
                                                             }}
                                                         />
 
@@ -1394,8 +1234,6 @@ export default function AdaugaProprietatePage() {
                             Universitățile apropiate sunt opționale.
                         </div>
 
-                        {/* PREȚ + DISPONIBIL */}
-
                         <div
                             style={{
                                 display: "grid",
@@ -1435,8 +1273,6 @@ export default function AdaugaProprietatePage() {
                             </div>
                         </div>
 
-                        {/* CAMERE */}
-
                         <div
                             style={{
                                 display: "grid",
@@ -1446,9 +1282,7 @@ export default function AdaugaProprietatePage() {
                             }}
                         >
                             <div style={fieldStyle}>
-                                <label style={labelStyle}>
-                                    Camere
-                                </label>
+                                <label style={labelStyle}>Camere</label>
 
                                 <input
                                     name="rooms"
@@ -1462,9 +1296,7 @@ export default function AdaugaProprietatePage() {
                             </div>
 
                             <div style={fieldStyle}>
-                                <label style={labelStyle}>
-                                    Dormitoare
-                                </label>
+                                <label style={labelStyle}>Dormitoare</label>
 
                                 <input
                                     name="bedrooms"
@@ -1478,9 +1310,7 @@ export default function AdaugaProprietatePage() {
                             </div>
 
                             <div style={fieldStyle}>
-                                <label style={labelStyle}>
-                                    Băi
-                                </label>
+                                <label style={labelStyle}>Băi</label>
 
                                 <input
                                     name="bathrooms"
@@ -1511,12 +1341,8 @@ export default function AdaugaProprietatePage() {
                             </div>
                         </div>
 
-                        {/* MOBILAT */}
-
                         <div style={fieldStyle}>
-                            <label style={labelStyle}>
-                                Mobilat
-                            </label>
+                            <label style={labelStyle}>Mobilat</label>
 
                             <select
                                 name="furnished"
@@ -1524,22 +1350,13 @@ export default function AdaugaProprietatePage() {
                                 onChange={updateField}
                                 style={inputStyle}
                             >
-                                <option value="true">
-                                    Da
-                                </option>
-
-                                <option value="false">
-                                    Nu
-                                </option>
+                                <option value="true">Da</option>
+                                <option value="false">Nu</option>
                             </select>
                         </div>
 
-                        {/* DESCRIERE */}
-
                         <div>
-                            <label style={labelStyle}>
-                                Descriere
-                            </label>
+                            <label style={labelStyle}>Descriere</label>
 
                             <textarea
                                 name="description"
@@ -1556,9 +1373,7 @@ export default function AdaugaProprietatePage() {
                         </div>
                     </div>
 
-                    {/* =========================
-                        CONTACT
-                    ========================= */}
+                    {/* DATE CONTACT DIN PROFIL */}
 
                     <div
                         style={{
@@ -1589,22 +1404,21 @@ export default function AdaugaProprietatePage() {
                                 lineHeight: "1.6",
                             }}
                         >
-                            Aceste informații vor permite persoanelor interesate
-                            să contacteze proprietarul.
+                            Datele sunt preluate automat din profilul tău.
                         </p>
 
                         <div style={fieldStyle}>
-                            <label style={labelStyle}>
-                                Nume
-                            </label>
+                            <label style={labelStyle}>Nume</label>
 
                             <input
-                                name="owner_name"
                                 type="text"
                                 value={form.owner_name}
-                                onChange={updateField}
-                                placeholder="Numele proprietarului"
-                                style={inputStyle}
+                                readOnly
+                                style={{
+                                    ...inputStyle,
+                                    background: "#f9fafb",
+                                    color: "#4b5563",
+                                }}
                             />
                         </div>
 
@@ -1616,40 +1430,56 @@ export default function AdaugaProprietatePage() {
                             }}
                         >
                             <div>
-                                <label style={labelStyle}>
-                                    Telefon
-                                </label>
+                                <label style={labelStyle}>Telefon</label>
 
                                 <input
-                                    name="owner_phone"
                                     type="tel"
                                     value={form.owner_phone}
-                                    onChange={updateField}
-                                    placeholder="07xx xxx xxx"
-                                    style={inputStyle}
+                                    readOnly
+                                    style={{
+                                        ...inputStyle,
+                                        background: "#f9fafb",
+                                        color: "#4b5563",
+                                    }}
                                 />
                             </div>
 
                             <div>
-                                <label style={labelStyle}>
-                                    Email
-                                </label>
+                                <label style={labelStyle}>Email</label>
 
                                 <input
-                                    name="owner_email"
                                     type="email"
                                     value={form.owner_email}
-                                    onChange={updateField}
-                                    placeholder="email@exemplu.ro"
-                                    style={inputStyle}
+                                    readOnly
+                                    style={{
+                                        ...inputStyle,
+                                        background: "#f9fafb",
+                                        color: "#4b5563",
+                                    }}
                                 />
                             </div>
                         </div>
-                    </div>
 
-                    {/* =========================
-                        MESAJE
-                    ========================= */}
+                        <button
+                            type="button"
+                            onClick={() =>
+                                router.push("/dashboard?section=profile")
+                            }
+                            style={{
+                                marginTop: "18px",
+                                border: "none",
+                                background: "transparent",
+                                padding: 0,
+                                color: "#2563eb",
+                                fontFamily: "inherit",
+                                fontSize: "13px",
+                                fontWeight: "700",
+                                cursor: "pointer",
+                            }}
+                        >
+                            Modifică datele în Profilul meu →
+                        </button>
+                    </div>
 
                     {error && (
                         <div
@@ -1685,10 +1515,6 @@ export default function AdaugaProprietatePage() {
                             {success}
                         </div>
                     )}
-
-                    {/* =========================
-                        PUBLICARE
-                    ========================= */}
 
                     <div
                         style={{
