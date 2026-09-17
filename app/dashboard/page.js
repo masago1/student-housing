@@ -841,10 +841,11 @@ export default function DashboardPage() {
               }}
               style={menuItemStyle("favorites")}
             >
-              Favorite
-              {favorites.length > 0
-                ? ` (${favorites.length})`
-                : ""}
+             Favorite
+{favorites.length > 0
+  ? ` ${favorites.length}`
+  : ""}
+              
             </button>
           </nav>
 
