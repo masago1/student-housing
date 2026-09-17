@@ -2,6 +2,7 @@ import { supabase } from "../../lib/supabase";
 import MessageOwnerButton from "../../components/MessageOwnerButton";
 import PhoneRevealButton from "../../components/PhoneRevealButton";
 import PropertyGallery from "../../components/PropertyGallery";
+import BackToSearch from "../../components/BackToSearch";
 
 export const dynamic = "force-dynamic";
 
@@ -199,17 +200,8 @@ export default async function PropertyPage({ params }) {
           StudentHousing
         </a>
 
-        <a
-          href="/"
-          style={{
-            color: "#374151",
-            textDecoration: "none",
-            fontSize: "14px",
-            fontWeight: "700",
-          }}
-        >
-          Înapoi la căutare
-        </a>
+        {/* ÎNAPOI LA LISTA DE ANUNȚURI */}
+        <BackToSearch city={listing.city} />
       </header>
 
       <section
@@ -219,7 +211,7 @@ export default async function PropertyPage({ params }) {
           padding: "38px 30px 90px",
         }}
       >
-        {/* GALERIE NOUĂ */}
+        {/* GALERIE */}
         <PropertyGallery
           images={allImages}
           title={listing.title}
