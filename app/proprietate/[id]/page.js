@@ -1,6 +1,7 @@
 import { supabase } from "../../lib/supabase";
 import MessageOwnerButton from "../../components/MessageOwnerButton";
 import PhoneRevealButton from "../../components/PhoneRevealButton";
+import PropertyGallery from "../../components/PropertyGallery";
 
 export const dynamic = "force-dynamic";
 
@@ -121,6 +122,7 @@ export default async function PropertyPage({ params }) {
       walking_minutes: item.walking_minutes,
     }));
 
+  // Construim lista completă de imagini
   const allImages = [];
 
   if (listing.image_url) {
@@ -138,7 +140,7 @@ export default async function PropertyPage({ params }) {
     }
   });
 
-  // Luăm numele și telefonul actual din profilul contului
+  // Luăm numele și telefonul actual din profil
   const { data: ownerProfile, error: ownerProfileError } =
     await supabase
       .from("profiles")
@@ -214,114 +216,14 @@ export default async function PropertyPage({ params }) {
         style={{
           maxWidth: "1180px",
           margin: "0 auto",
-          padding: "45px 30px 90px",
+          padding: "38px 30px 90px",
         }}
       >
-        {/* GALERIE */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              allImages.length > 1 ? "2fr 1fr" : "1fr",
-            gap: "10px",
-            height: "470px",
-            borderRadius: "20px",
-            overflow: "hidden",
-            background: "#e5e7eb",
-          }}
-        >
-          <div
-            style={{
-              minWidth: 0,
-              overflow: "hidden",
-            }}
-          >
-            {allImages[0] ? (
-              <img
-                src={allImages[0]}
-                alt={listing.title}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#6b7280",
-                  fontWeight: "700",
-                }}
-              >
-                Fotografie indisponibilă
-              </div>
-            )}
-          </div>
-
-          {allImages.length > 1 && (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateRows: "1fr 1fr",
-                gap: "10px",
-                minWidth: 0,
-              }}
-            >
-              <div
-                style={{
-                  overflow: "hidden",
-                }}
-              >
-                <img
-                  src={allImages[1]}
-                  alt={`${listing.title} - fotografia 2`}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                  }}
-                />
-              </div>
-
-              <div
-                style={{
-                  overflow: "hidden",
-                  background: "#e5e7eb",
-                }}
-              >
-                {allImages[2] ? (
-                  <img
-                    src={allImages[2]}
-                    alt={`${listing.title} - fotografia 3`}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      height: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#6b7280",
-                      fontWeight: "600",
-                    }}
-                  >
-                    {allImages.length} fotografii
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+        {/* GALERIE NOUĂ */}
+        <PropertyGallery
+          images={allImages}
+          title={listing.title}
+        />
 
         {/* CONȚINUT */}
         <div
@@ -329,7 +231,7 @@ export default async function PropertyPage({ params }) {
             display: "grid",
             gridTemplateColumns: "minmax(0, 1fr) 350px",
             gap: "45px",
-            marginTop: "40px",
+            marginTop: "36px",
             alignItems: "start",
           }}
         >
@@ -552,7 +454,7 @@ export default async function PropertyPage({ params }) {
             </div>
           </div>
 
-          {/* CARD PREȚ */}
+          {/* CARD DREAPTA */}
           <aside
             style={{
               background: "#ffffff",
@@ -565,6 +467,7 @@ export default async function PropertyPage({ params }) {
                 "0 10px 30px rgba(0,0,0,0.05)",
             }}
           >
+            {/* PREȚ */}
             <div
               style={{
                 fontSize: "32px",
@@ -588,6 +491,7 @@ export default async function PropertyPage({ params }) {
               </span>
             </div>
 
+            {/* DISPONIBILITATE */}
             {listing.available_from && (
               <div
                 style={{
@@ -629,7 +533,7 @@ export default async function PropertyPage({ params }) {
               </div>
             )}
 
-            {/* BUTON MESAJ */}
+            {/* MESAJ */}
             <MessageOwnerButton
               listingId={listing.id}
               ownerId={listing.user_id}
