@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 /* =========================
@@ -513,6 +513,38 @@ export default function SearchBox({
 
   const calendarWrapperRef = useRef(null);
 
+  /* CLICK OUTSIDE — DOAR ORAȘ + UNIVERSITATE */
+
+  const cityWrapperRef = useRef(null);
+  const universityWrapperRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        cityWrapperRef.current &&
+        !cityWrapperRef.current.contains(event.target)
+      ) {
+        setShowCitySuggestions(false);
+      }
+
+      if (
+        universityWrapperRef.current &&
+        !universityWrapperRef.current.contains(event.target)
+      ) {
+        setShowUniversitySuggestions(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutside
+      );
+    };
+  }, []);
+
   /* =========================
      NORMALIZARE
   ========================= */
@@ -934,9 +966,7 @@ export default function SearchBox({
     cursor: "pointer",
     boxSizing: "border-box",
   };
-
-  /* CONTINUĂ DIRECT CU 2/2 */
-  return (
+     return (
     <div
       style={{
         width: "100%",
@@ -967,6 +997,7 @@ export default function SearchBox({
         {/* ORAȘ */}
 
         <div
+          ref={cityWrapperRef}
           style={{
             position: "relative",
             minWidth: 0,
@@ -1056,6 +1087,7 @@ export default function SearchBox({
         {/* UNIVERSITATE */}
 
         <div
+          ref={universityWrapperRef}
           style={{
             position: "relative",
             minWidth: 0,
