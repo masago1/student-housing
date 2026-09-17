@@ -2241,7 +2241,7 @@ export default function UniversityListingsPage() {
                   labelStyle
                 }
               >
-                Disponibil până la
+                Disponibil de la
               </label>
 
               <input
