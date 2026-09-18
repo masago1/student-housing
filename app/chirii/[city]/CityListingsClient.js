@@ -1642,7 +1642,7 @@ export default function CityListingsPage() {
           Number(listing.rooms);
 
         const listingBedrooms =
-          Number(listing.bedrooms);
+                    Number(listing.bedrooms);
 
         const listingBathrooms =
           Number(listing.bathrooms);
@@ -1863,7 +1863,8 @@ export default function CityListingsPage() {
         appliedFilters.sort !==
           "newest"
     );
-    return (
+
+  return (
     <main
       style={{
         minHeight: "100vh",
@@ -1996,9 +1997,7 @@ export default function CityListingsPage() {
             }}
           >
             <div>
-              <label
-                style={labelStyle}
-              >
+              <label style={labelStyle}>
                 Preț minim (€)
               </label>
 
@@ -2017,9 +2016,7 @@ export default function CityListingsPage() {
             </div>
 
             <div>
-              <label
-                style={labelStyle}
-              >
+              <label style={labelStyle}>
                 Preț maxim (€)
               </label>
 
@@ -2038,9 +2035,7 @@ export default function CityListingsPage() {
             </div>
 
             <div>
-              <label
-                style={labelStyle}
-              >
+              <label style={labelStyle}>
                 Camere
               </label>
 
@@ -2075,9 +2070,7 @@ export default function CityListingsPage() {
             </div>
 
             <div>
-              <label
-                style={labelStyle}
-              >
+              <label style={labelStyle}>
                 Dormitoare
               </label>
 
@@ -2109,9 +2102,7 @@ export default function CityListingsPage() {
             </div>
 
             <div>
-              <label
-                style={labelStyle}
-              >
+              <label style={labelStyle}>
                 Băi
               </label>
 
@@ -2140,9 +2131,7 @@ export default function CityListingsPage() {
             </div>
 
             <div>
-              <label
-                style={labelStyle}
-              >
+              <label style={labelStyle}>
                 Suprafață minimă (m²)
               </label>
 
@@ -2161,9 +2150,7 @@ export default function CityListingsPage() {
             </div>
 
             <div>
-              <label
-                style={labelStyle}
-              >
+              <label style={labelStyle}>
                 Suprafață maximă (m²)
               </label>
 
@@ -2182,9 +2169,7 @@ export default function CityListingsPage() {
             </div>
 
             <div>
-              <label
-                style={labelStyle}
-              >
+              <label style={labelStyle}>
                 Tip proprietate
               </label>
 
@@ -2216,9 +2201,7 @@ export default function CityListingsPage() {
             </div>
 
             <div>
-              <label
-                style={labelStyle}
-              >
+              <label style={labelStyle}>
                 Mobilat
               </label>
 
@@ -2244,9 +2227,7 @@ export default function CityListingsPage() {
             </div>
 
             <div>
-              <label
-                style={labelStyle}
-              >
+              <label style={labelStyle}>
                 Tip anunț
               </label>
 
@@ -2277,9 +2258,7 @@ export default function CityListingsPage() {
                 position: "relative",
               }}
             >
-              <label
-                style={labelStyle}
-              >
+              <label style={labelStyle}>
                 Disponibil până la
               </label>
 
@@ -2333,9 +2312,7 @@ export default function CityListingsPage() {
             </div>
 
             <div>
-              <label
-                style={labelStyle}
-              >
+              <label style={labelStyle}>
                 Sortare
               </label>
 
@@ -2407,17 +2384,15 @@ export default function CityListingsPage() {
                 type="button"
                 onClick={resetFilters}
                 style={{
+                  height: "38px",
                   border:
                     "1px solid #CBD5E1",
+                  borderRadius: "8px",
                   background:
                     "#FFFFFF",
                   color: "#475569",
-                  borderRadius: "9px",
-                  padding:
-                    "10px 15px",
-                  fontFamily:
-                    "inherit",
-                  fontSize: "11px",
+                  padding: "0 13px",
+                  fontSize: "10px",
                   fontWeight: "800",
                   cursor: "pointer",
                 }}
@@ -2429,18 +2404,17 @@ export default function CityListingsPage() {
             <button
               type="submit"
               style={{
+                height: "38px",
                 border: "none",
+                borderRadius: "8px",
                 background: "#172554",
                 color: "#FFFFFF",
-                borderRadius: "9px",
-                padding:
-                  "10px 18px",
-                fontFamily: "inherit",
-                fontSize: "12px",
+                padding: "0 17px",
+                fontSize: "10px",
                 fontWeight: "800",
                 cursor: "pointer",
                 boxShadow:
-                  "0 5px 14px rgba(23, 37, 84, 0.16)",
+                  "0 4px 10px rgba(23,37,84,0.14)",
               }}
             >
               Aplică filtrele
@@ -2448,102 +2422,78 @@ export default function CityListingsPage() {
           </div>
         </form>
 
-        {/* REZUMAT REZULTATE */}
+        {/* REZULTATE */}
 
-        {!loading &&
-          !loadError && (
-            <div
-              style={{
-                minHeight: "35px",
-                boxSizing:
-                  "border-box",
-                background: "#FFFFFF",
-                border:
-                  "1px solid #E2E8F0",
-                borderRadius: "9px",
-                padding: "8px 12px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent:
-                  "space-between",
-                gap: "12px",
-                marginBottom: "11px",
-              }}
-            >
-              <div
-                style={{
-                  color: "#172554",
-                  fontSize: "11px",
-                  fontWeight: "800",
-                }}
-              >
-                {filteredListings.length ===
-                1
-                  ? "1 anunț găsit"
-                  : `${filteredListings.length} anunțuri găsite`}
-              </div>
-
-              <div
-                style={{
-                  color: "#94A3B8",
-                  fontSize: "10px",
-                  fontWeight: "700",
-                }}
-              >
-                {appliedFilters.sort ===
-                "price_asc"
-                  ? "Preț crescător"
-                  : appliedFilters.sort ===
-                    "price_desc"
-                  ? "Preț descrescător"
-                  : appliedFilters.sort ===
-                    "surface_desc"
-                  ? "Suprafață descrescător"
-                  : "Cele mai noi"}
-              </div>
-            </div>
-          )}
-
-        {/* LOADING */}
-
-        {loading && (
+        <div
+          style={{
+            minHeight: "38px",
+            background: "#FFFFFF",
+            border:
+              "1px solid #E2E8F0",
+            borderRadius: "10px",
+            padding: "0 13px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent:
+              "space-between",
+            gap: "10px",
+            marginBottom: "12px",
+          }}
+        >
           <div
             style={{
-              background: "#FFFFFF",
-              border:
-                "1px solid #E2E8F0",
-              borderRadius: "12px",
-              padding: "24px",
-              textAlign: "center",
-              color: "#64748B",
-              fontSize: "12px",
-              fontWeight: "700",
+              color: "#172554",
+              fontSize: "10px",
+              fontWeight: "800",
             }}
           >
-            Se încarcă anunțurile...
+            {loading
+              ? "Se încarcă..."
+              : `${filteredListings.length} ${
+                  filteredListings.length ===
+                  1
+                    ? "anunț găsit"
+                    : "anunțuri găsite"
+                }`}
           </div>
-        )}
 
-        {/* EROARE */}
+          {!loading && (
+            <div
+              style={{
+                color: "#94A3B8",
+                fontSize: "9px",
+                fontWeight: "700",
+              }}
+            >
+              {sort === "price_asc"
+                ? "Preț crescător"
+                : sort ===
+                  "price_desc"
+                ? "Preț descrescător"
+                : sort ===
+                  "surface_desc"
+                ? "Suprafață descrescător"
+                : "Cele mai noi"}
+            </div>
+          )}
+        </div>
 
-        {!loading && loadError && (
+        {loadError && (
           <div
             style={{
               background: "#FEF2F2",
               border:
                 "1px solid #FECACA",
-              borderRadius: "12px",
-              padding: "20px",
               color: "#B91C1C",
-              fontSize: "12px",
+              borderRadius: "10px",
+              padding: "13px",
+              fontSize: "11px",
               fontWeight: "700",
             }}
           >
             {loadError}
           </div>
         )}
-
-        {/* FĂRĂ REZULTATE */}
 
         {!loading &&
           !loadError &&
@@ -2555,7 +2505,7 @@ export default function CityListingsPage() {
                 border:
                   "1px solid #E2E8F0",
                 borderRadius: "12px",
-                padding: "28px",
+                padding: "32px 18px",
                 textAlign: "center",
               }}
             >
@@ -2564,27 +2514,26 @@ export default function CityListingsPage() {
                   color: "#172554",
                   fontSize: "15px",
                   fontWeight: "900",
-                  marginBottom: "6px",
                 }}
               >
-                Nu am găsit anunțuri
+                Nu am găsit proprietăți
               </div>
 
               <div
                 style={{
+                  marginTop: "7px",
                   color: "#64748B",
                   fontSize: "11px",
                   lineHeight: "1.6",
                 }}
               >
                 Încearcă să modifici
-                filtrele sau să le
-                resetezi.
+                filtrele sau să revii la
+                toate anunțurile din
+                oraș.
               </div>
             </div>
           )}
-
-        {/* LISTĂ ANUNȚURI */}
 
         {!loading &&
           !loadError &&
@@ -2608,15 +2557,14 @@ export default function CityListingsPage() {
                     images.length;
 
                   const currentImageIndex =
-                    Math.min(
-                      imageIndexes[
-                        listing.id
-                      ] || 0,
-                      Math.max(
-                        imageCount - 1,
-                        0
-                      )
-                    );
+                    imageCount > 0
+                      ? Math.min(
+                          imageIndexes[
+                            listing.id
+                          ] || 0,
+                          imageCount - 1
+                        )
+                      : 0;
 
                   const currentImage =
                     images[
@@ -2629,7 +2577,7 @@ export default function CityListingsPage() {
                     );
 
                   const listingUrl =
-                    `/anunt/${listing.id}`;
+                    `/proprietate/${listing.id}`;
 
                   return (
                     <article
@@ -2640,12 +2588,11 @@ export default function CityListingsPage() {
                         border:
                           "1px solid #E2E8F0",
                         borderRadius:
-                          "14px",
+                          "12px",
                         overflow:
                           "hidden",
                         boxShadow:
-                          "0 5px 16px rgba(15, 23, 42, 0.04)",
-                        minWidth: 0,
+                          "0 3px 12px rgba(15,23,42,0.05)",
                       }}
                     >
                       {/* IMAGINE */}
@@ -2654,54 +2601,54 @@ export default function CityListingsPage() {
                         style={{
                           position:
                             "relative",
-                          width: "100%",
-                          aspectRatio:
-                            "16 / 10",
+                          height:
+                            "220px",
                           background:
                             "#E2E8F0",
                           overflow:
                             "hidden",
                         }}
                       >
-                        <a
-                          href={
-                            listingUrl
-                          }
-                          onClick={() => {
-                            if (
-                              typeof window !==
-                              "undefined"
-                            ) {
-                              sessionStorage.setItem(
-                                "studenthousing-search-url",
-                                window.location.pathname +
-                                  window.location.search
-                              );
-
-                              sessionStorage.setItem(
-                                "studenthousing-search-scroll",
-                                String(
-                                  window.scrollY
-                                )
-                              );
+                        {currentImage ? (
+                          <a
+                            href={
+                              listingUrl
                             }
-                          }}
-                          style={{
-                            display:
-                              "block",
-                            width: "100%",
-                            height:
-                              "100%",
-                          }}
-                        >
-                          {currentImage ? (
+                            onClick={() => {
+                              if (
+                                typeof window !==
+                                "undefined"
+                              ) {
+                                sessionStorage.setItem(
+                                  "studenthousing-search-url",
+                                  window.location.pathname +
+                                    window.location.search
+                                );
+
+                                sessionStorage.setItem(
+                                  "studenthousing-search-scroll",
+                                  String(
+                                    window.scrollY
+                                  )
+                                );
+                              }
+                            }}
+                            style={{
+                              display:
+                                "block",
+                              width:
+                                "100%",
+                              height:
+                                "100%",
+                            }}
+                          >
                             <img
                               src={
                                 currentImage
                               }
                               alt={
                                 listing.title ||
-                                "Imagine proprietate"
+                                "Proprietate"
                               }
                               style={{
                                 width:
@@ -2714,31 +2661,55 @@ export default function CityListingsPage() {
                                   "block",
                               }}
                             />
-                          ) : (
-                            <div
-                              style={{
-                                width:
-                                  "100%",
-                                height:
-                                  "100%",
-                                display:
-                                  "flex",
-                                alignItems:
-                                  "center",
-                                justifyContent:
-                                  "center",
-                                color:
-                                  "#94A3B8",
-                                fontSize:
-                                  "11px",
-                                fontWeight:
-                                  "800",
-                              }}
-                            >
-                              Fără imagine
-                            </div>
-                          )}
-                        </a>
+                          </a>
+                        ) : (
+                          <a
+                            href={
+                              listingUrl
+                            }
+                            onClick={() => {
+                              if (
+                                typeof window !==
+                                "undefined"
+                              ) {
+                                sessionStorage.setItem(
+                                  "studenthousing-search-url",
+                                  window.location.pathname +
+                                    window.location.search
+                                );
+
+                                sessionStorage.setItem(
+                                  "studenthousing-search-scroll",
+                                  String(
+                                    window.scrollY
+                                  )
+                                );
+                              }
+                            }}
+                            style={{
+                              width:
+                                "100%",
+                              height:
+                                "100%",
+                              display:
+                                "flex",
+                              alignItems:
+                                "center",
+                              justifyContent:
+                                "center",
+                              color:
+                                "#94A3B8",
+                              textDecoration:
+                                "none",
+                              fontSize:
+                                "11px",
+                              fontWeight:
+                                "700",
+                            }}
+                          >
+                            Fără imagine
+                          </a>
+                        )}
 
                         {/* FAVORIT */}
 
@@ -2747,7 +2718,8 @@ export default function CityListingsPage() {
                             position:
                               "absolute",
                             top: "10px",
-                            right: "10px",
+                            right:
+                              "10px",
                             zIndex: 5,
                           }}
                         >
