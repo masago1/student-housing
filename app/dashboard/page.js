@@ -13,6 +13,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [error, setError] = useState("");
+  const [deleteConfirmationListing, setDeleteConfirmationListing] = useState(null);
 
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -1117,20 +1118,24 @@ export default function DashboardPage() {
     ȘTERGE ANUNȚ
   */
 
-  const deleteListing =
-    async (listing) => {
+  const deleteListing = (listing) => {
+    if (!user?.id || !listing?.id) {
+      return;
+    }
+
+    setDeleteConfirmationListing(listing);
+  };
+
+  const confirmDeleteListing =
+    async () => {
+      const listing =
+        deleteConfirmationListing;
+
       if (!user?.id || !listing?.id) {
         return;
       }
 
-      const confirmed = window.confirm(
-        `Sigur vrei să ștergi definitiv anunțul „${listing.title || "Anunț"}”? Această acțiune nu poate fi anulată.`
-      );
-
-      if (!confirmed) {
-        return;
-      }
-
+      setDeleteConfirmationListing(null);
       setError("");
 
       const { error: deleteError } =
@@ -3185,6 +3190,119 @@ export default function DashboardPage() {
           }
         }
       `}</style>
+
+      {deleteConfirmationListing && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-listing-title"
+          onClick={() =>
+            setDeleteConfirmationListing(null)
+          }
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "rgba(15, 23, 42, 0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+            boxSizing: "border-box",
+          }}
+        >
+          <div
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+            style={{
+              width: "100%",
+              maxWidth: "430px",
+              background: "#FFFFFF",
+              borderRadius: "16px",
+              padding: "25px",
+              boxSizing: "border-box",
+              boxShadow:
+                "0 20px 60px rgba(15, 23, 42, 0.20)",
+            }}
+          >
+            <h2
+              id="delete-listing-title"
+              style={{
+                margin: 0,
+                color: "#172554",
+                fontSize: "20px",
+                fontWeight: "800",
+              }}
+            >
+              Sigur vrei să ștergi anunțul?
+            </h2>
+
+            <p
+              style={{
+                margin: "10px 0 0",
+                color: "#64748B",
+                fontSize: "13px",
+                lineHeight: "1.6",
+              }}
+            >
+              Ești sigur că vrei să ștergi definitiv
+              anunțul „
+              {deleteConfirmationListing.title ||
+                "Anunț"}
+              ”? Această acțiune nu poate fi anulată.
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "9px",
+                marginTop: "22px",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  setDeleteConfirmationListing(null)
+                }
+                style={{
+                  border: "1px solid #E2E8F0",
+                  background: "#FFFFFF",
+                  borderRadius: "9px",
+                  padding: "10px 15px",
+                  color: "#334155",
+                  fontFamily: "inherit",
+                  fontSize: "12px",
+                  fontWeight: "800",
+                  cursor: "pointer",
+                }}
+              >
+                Anulează
+              </button>
+
+              <button
+                type="button"
+                onClick={confirmDeleteListing}
+                style={{
+                  border: "none",
+                  background: "#DC2626",
+                  borderRadius: "9px",
+                  padding: "10px 15px",
+                  color: "#FFFFFF",
+                  fontFamily: "inherit",
+                  fontSize: "12px",
+                  fontWeight: "800",
+                  cursor: "pointer",
+                }}
+              >
+                Da, șterge anunțul
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </main>
   );
 }
