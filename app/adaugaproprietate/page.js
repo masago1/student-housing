@@ -2132,7 +2132,7 @@ export default function AdaugaProprietatePage() {
                             "-1px",
                     }}
                 >
-                    StudentHousing
+                    shaus
                 </a>
 
                 <div
