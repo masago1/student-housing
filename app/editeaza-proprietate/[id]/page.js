@@ -87,6 +87,12 @@ export default function EditeazaProprietatePage() {
     const addressAbortControllerRef =
         useRef(null);
 
+    const addressFieldRef =
+        useRef(null);
+
+    const [addressFieldActive, setAddressFieldActive] =
+        useState(false);
+
     const [form, setForm] = useState({
         title: "",
         property_type: "apartment",
@@ -473,7 +479,7 @@ export default function EditeazaProprietatePage() {
     }, []);
 
     /* =========================
-       ÎNCĂRCARE ANUNȚ
+       ÎNCARCĂ ANUNȚUL
     ========================= */
 
     useEffect(() => {
@@ -500,7 +506,7 @@ export default function EditeazaProprietatePage() {
 
                     const {
                         data:
-                            listing,
+                            listingData,
                         error:
                             listingError,
                     } =
@@ -528,62 +534,11 @@ export default function EditeazaProprietatePage() {
                     }
 
                     if (
-                        !listing
+                        !listingData
                     ) {
                         throw new Error(
                             "Anunțul nu a fost găsit sau nu îți aparține."
                         );
-                    }
-
-                    const [
-                        imagesResult,
-                        universitiesResult,
-                    ] =
-                        await Promise.all(
-                            [
-                                supabase
-                                    .from(
-                                        "listing_images"
-                                    )
-                                    .select(
-                                        "id, image_url, storage_path, position"
-                                    )
-                                    .eq(
-                                        "listing_id",
-                                        listingId
-                                    )
-                                    .order(
-                                        "position",
-                                        {
-                                            ascending:
-                                                true,
-                                        }
-                                    ),
-
-                                supabase
-                                    .from(
-                                        "listing_universities"
-                                    )
-                                    .select(
-                                        "university_id"
-                                    )
-                                    .eq(
-                                        "listing_id",
-                                        listingId
-                                    ),
-                            ]
-                        );
-
-                    if (
-                        imagesResult.error
-                    ) {
-                        throw imagesResult.error;
-                    }
-
-                    if (
-                        universitiesResult.error
-                    ) {
-                        throw universitiesResult.error;
                     }
 
                     if (
@@ -593,198 +548,199 @@ export default function EditeazaProprietatePage() {
                     }
 
                     setForm(
-                        (
-                            current
-                        ) => ({
+                        (current) => ({
                             ...current,
 
                             title:
-                                listing.title ||
+                                listingData.title ||
                                 "",
 
                             property_type:
-                                listing.property_type ||
+                                listingData.property_type ||
                                 "apartment",
 
                             city:
-                                listing.city ||
+                                listingData.city ||
                                 "",
 
                             neighborhood_id:
-                                listing.neighborhood_id !=
-                                null
+                                listingData.neighborhood_id
                                     ? String(
-                                          listing.neighborhood_id
+                                          listingData.neighborhood_id
                                       )
                                     : "",
 
                             address:
-                                listing.address ||
+                                listingData.address ||
                                 "",
 
                             price_monthly:
-                                listing.price_monthly !=
+                                listingData.price_monthly !=
                                 null
                                     ? String(
-                                          listing.price_monthly
+                                          listingData.price_monthly
                                       )
                                     : "",
 
                             rooms:
-                                listing.rooms !=
+                                listingData.rooms !=
                                 null
                                     ? String(
-                                          listing.rooms
+                                          listingData.rooms
                                       )
                                     : "",
 
                             bedrooms:
-                                listing.bedrooms !=
+                                listingData.bedrooms !=
                                 null
                                     ? String(
-                                          listing.bedrooms
+                                          listingData.bedrooms
                                       )
                                     : "",
 
                             bathrooms:
-                                listing.bathrooms !=
+                                listingData.bathrooms !=
                                 null
                                     ? String(
-                                          listing.bathrooms
+                                          listingData.bathrooms
                                       )
                                     : "",
 
                             surface_m2:
-                                listing.surface_m2 !=
+                                listingData.surface_m2 !=
                                 null
                                     ? String(
-                                          listing.surface_m2
+                                          listingData.surface_m2
                                       )
                                     : "",
 
                             furnished:
-                                listing.furnished
+                                listingData.furnished
                                     ? "true"
                                     : "false",
 
                             available_from:
-                                listing.available_from ||
+                                listingData.available_from ||
                                 "",
 
                             description:
-                                listing.description ||
+                                listingData.description ||
                                 "",
 
                             floor:
-                                listing.floor !=
+                                listingData.floor !=
                                 null
                                     ? String(
-                                          listing.floor
+                                          listingData.floor
                                       )
                                     : "",
 
                             total_floors:
-                                listing.total_floors !=
+                                listingData.total_floors !=
                                 null
                                     ? String(
-                                          listing.total_floors
+                                          listingData.total_floors
                                       )
                                     : "",
 
                             construction_year:
-                                listing.construction_year !=
+                                listingData.construction_year !=
                                 null
                                     ? String(
-                                          listing.construction_year
+                                          listingData.construction_year
                                       )
                                     : "",
 
                             heating_type:
-                                listing.heating_type ||
+                                listingData.heating_type ||
                                 "",
 
                             air_conditioning:
-                                listing.air_conditioning
+                                listingData.air_conditioning
                                     ? "true"
                                     : "false",
 
                             balcony:
-                                listing.balcony
+                                listingData.balcony
                                     ? "true"
                                     : "false",
 
                             parking:
-                                listing.parking
+                                listingData.parking
                                     ? "true"
                                     : "false",
 
                             pets_allowed:
-                                listing.pets_allowed
+                                listingData.pets_allowed
                                     ? "true"
                                     : "false",
 
                             smoking_allowed:
-                                listing.smoking_allowed
+                                listingData.smoking_allowed
                                     ? "true"
                                     : "false",
 
                             max_tenants:
-                                listing.max_tenants !=
+                                listingData.max_tenants !=
                                 null
                                     ? String(
-                                          listing.max_tenants
+                                          listingData.max_tenants
                                       )
                                     : "",
 
                             deposit_amount:
-                                listing.deposit_amount !=
+                                listingData.deposit_amount !=
                                 null
                                     ? String(
-                                          listing.deposit_amount
+                                          listingData.deposit_amount
                                       )
                                     : "",
 
                             utilities_included:
-                                listing.utilities_included
+                                listingData.utilities_included
                                     ? "true"
                                     : "false",
 
                             owner_name:
-                                listing.owner_name ||
-                                current.owner_name,
+                                listingData.owner_name ||
+                                current.owner_name ||
+                                "",
 
                             owner_phone:
-                                listing.owner_phone ||
-                                current.owner_phone,
+                                listingData.owner_phone ||
+                                current.owner_phone ||
+                                "",
 
                             owner_email:
-                                listing.owner_email ||
-                                current.owner_email,
+                                listingData.owner_email ||
+                                current.owner_email ||
+                                "",
                         })
                     );
 
-                    const latitude =
-                        Number(
-                            listing.latitude
-                        );
-
-                    const longitude =
-                        Number(
-                            listing.longitude
-                        );
-
                     if (
                         Number.isFinite(
-                            latitude
+                            Number(
+                                listingData.latitude
+                            )
                         ) &&
                         Number.isFinite(
-                            longitude
+                            Number(
+                                listingData.longitude
+                            )
                         )
                     ) {
                         setSelectedAddressCoordinates(
                             {
-                                latitude,
-                                longitude,
+                                latitude:
+                                    Number(
+                                        listingData.latitude
+                                    ),
+
+                                longitude:
+                                    Number(
+                                        listingData.longitude
+                                    ),
                             }
                         );
                     } else {
@@ -793,75 +749,129 @@ export default function EditeazaProprietatePage() {
                         );
                     }
 
-                    setImages(
-                        (
-                            imagesResult.data ||
-                            []
-                        ).map(
+                    const {
+                        data:
+                            imageData,
+                        error:
+                            imageError,
+                    } =
+                        await supabase
+                            .from(
+                                "listing_images"
+                            )
+                            .select(
+                                "id, image_url, sort_order"
+                            )
+                            .eq(
+                                "listing_id",
+                                listingId
+                            )
+                            .order(
+                                "sort_order",
+                                {
+                                    ascending:
+                                        true,
+                                }
+                            );
+
+                    if (
+                        imageError
+                    ) {
+                        console.error(
+                            "Eroare imagini:",
+                            imageError
+                        );
+                    }
+
+                    if (
+                        mounted
+                    ) {
+                        setImages(
                             (
-                                image
-                            ) => ({
-                                id:
-                                    image.id,
-
-                                image_url:
-                                    image.image_url,
-
-                                storage_path:
-                                    image.storage_path,
-
-                                position:
-                                    image.position,
-
-                                existing:
-                                    true,
-                            })
-                        )
-                    );
-
-                    /*
-                        DEDUPLICĂM și ID-urile
-                        încărcate din baza de date.
-                    */
-
-                    const loadedUniversityIds =
-                        [
-                            ...new Set(
+                                imageData ||
+                                []
+                            ).map(
                                 (
-                                    universitiesResult.data ||
-                                    []
-                                ).map(
-                                    (
-                                        item
-                                    ) =>
-                                        String(
-                                            item.university_id
-                                        )
-                                )
-                            ),
-                        ];
+                                    image
+                                ) => ({
+                                    id:
+                                        image.id,
 
-                    setSelectedUniversityIds(
-                        loadedUniversityIds
-                    );
+                                    type:
+                                        "existing",
 
-                    setRemovedExistingImages(
-                        []
-                    );
+                                    image_url:
+                                        image.image_url,
+
+                                    sort_order:
+                                        image.sort_order,
+
+                                    file:
+                                        null,
+
+                                    preview:
+                                        image.image_url,
+                                })
+                            )
+                        );
+                    }
+
+                    const {
+                        data:
+                            universityLinks,
+                        error:
+                            universityLinksError,
+                    } =
+                        await supabase
+                            .from(
+                                "listing_universities"
+                            )
+                            .select(
+                                "university_id"
+                            )
+                            .eq(
+                                "listing_id",
+                                listingId
+                            );
+
+                    if (
+                        universityLinksError
+                    ) {
+                        console.error(
+                            "Eroare universități anunț:",
+                            universityLinksError
+                        );
+                    }
+
+                    if (
+                        mounted
+                    ) {
+                        setSelectedUniversityIds(
+                            (
+                                universityLinks ||
+                                []
+                            ).map(
+                                (
+                                    link
+                                ) =>
+                                    link.university_id
+                            )
+                        );
+                    }
                 } catch (
-                    loadError
+                    listingLoadError
                 ) {
                     console.error(
                         "Eroare încărcare anunț:",
-                        loadError
+                        listingLoadError
                     );
 
                     if (
                         mounted
                     ) {
                         setError(
-                            loadError.message ||
-                                "Anunțul nu a putut fi încărcat."
+                            listingLoadError?.message ||
+                                "Nu am putut încărca anunțul."
                         );
                     }
                 } finally {
@@ -887,20 +897,68 @@ export default function EditeazaProprietatePage() {
     ]);
 
     /* =========================
-       DATE DERIVATE
+       FILTRARE UNIVERSITĂȚI
+    ========================= */
+
+    const filteredUniversities =
+        useMemo(() => {
+            if (
+                !form.city
+            ) {
+                return [];
+            }
+
+            return universities.filter(
+                (
+                    university
+                ) =>
+                    String(
+                        university.city ||
+                            ""
+                    )
+                        .trim()
+                        .toLowerCase() ===
+                    String(
+                        form.city ||
+                            ""
+                    )
+                        .trim()
+                        .toLowerCase()
+            );
+        }, [
+            universities,
+            form.city,
+        ]);
+
+    /* =========================
+       ORAȘ SELECTAT
     ========================= */
 
     const selectedCity =
         useMemo(() => {
+            if (
+                !form.city
+            ) {
+                return null;
+            }
+
             return (
                 cities.find(
-                    (city) =>
+                    (
+                        city
+                    ) =>
                         String(
-                            city.name
-                        ).toLowerCase() ===
+                            city.name ||
+                                ""
+                        )
+                            .trim()
+                            .toLowerCase() ===
                         String(
-                            form.city
-                        ).toLowerCase()
+                            form.city ||
+                                ""
+                        )
+                            .trim()
+                            .toLowerCase()
                 ) || null
             );
         }, [
@@ -908,7 +966,11 @@ export default function EditeazaProprietatePage() {
             form.city,
         ]);
 
-    const neighborhoodsForCity =
+    /* =========================
+       CARTIERE FILTRATE
+    ========================= */
+
+    const filteredNeighborhoods =
         useMemo(() => {
             if (
                 !selectedCity
@@ -932,42 +994,18 @@ export default function EditeazaProprietatePage() {
             selectedCity,
         ]);
 
-    const universitiesForCity =
-        useMemo(() => {
-            if (
-                !form.city
-            ) {
-                return [];
-            }
-
-            return universities.filter(
-                (
-                    university
-                ) =>
-                    String(
-                        university.city ||
-                            ""
-                    ).toLowerCase() ===
-                    String(
-                        form.city
-                    ).toLowerCase()
-            );
-        }, [
-            universities,
-            form.city,
-        ]);
-
     /* =========================
-       FORM
+       INPUTURI GENERALE
     ========================= */
 
-    const updateField = (
+    const handleChange = (
         event
     ) => {
         const {
             name,
             value,
-        } = event.target;
+        } =
+            event.target;
 
         setForm(
             (current) => ({
@@ -986,6 +1024,10 @@ export default function EditeazaProprietatePage() {
             ""
         );
     };
+
+    /* =========================
+       SCHIMBARE ORAȘ
+    ========================= */
 
     const handleCityChange = (
         event
@@ -1046,6 +1088,10 @@ export default function EditeazaProprietatePage() {
         const value =
             event.target.value;
 
+        setAddressFieldActive(
+            true
+        );
+
         setForm(
             (current) => ({
                 ...current,
@@ -1075,6 +1121,35 @@ export default function EditeazaProprietatePage() {
     };
 
     useEffect(() => {
+        const handleClickOutsideAddress = (event) => {
+            if (
+                addressFieldRef.current &&
+                !addressFieldRef.current.contains(event.target)
+            ) {
+                setAddressSuggestionsOpen(false);
+                setAddressFieldActive(false);
+            }
+        };
+
+        document.addEventListener(
+            "mousedown",
+            handleClickOutsideAddress
+        );
+
+        return () => {
+            document.removeEventListener(
+                "mousedown",
+                handleClickOutsideAddress
+            );
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!addressFieldActive) {
+            setAddressSuggestionsOpen(false);
+            return;
+        }
+
         const address =
             form.address.trim();
 
@@ -1246,6 +1321,7 @@ export default function EditeazaProprietatePage() {
     }, [
         form.address,
         form.city,
+        addressFieldActive,
     ]);
 
     const selectAddressSuggestion =
@@ -1344,8 +1420,7 @@ export default function EditeazaProprietatePage() {
                     suggestion
                         ?.name ||
                     form.address;
-
-                setForm(
+                                setForm(
                     (current) => ({
                         ...current,
 
@@ -1366,6 +1441,10 @@ export default function EditeazaProprietatePage() {
                 );
 
                 setAddressSuggestionsOpen(
+                    false
+                );
+
+                setAddressFieldActive(
                     false
                 );
 
@@ -1808,46 +1887,58 @@ export default function EditeazaProprietatePage() {
             }
         };
 
-    const selectCalendarDate =
+    const selectCalendarDay =
         (
-            year,
-            monthIndex,
             day
         ) => {
-            const selectedDate =
-                new Date(
-                    year,
-                    monthIndex,
-                    day
-                );
-
             if (
-                selectedDate <
-                getTodayAtMidnight()
+                !day
             ) {
                 return;
             }
 
-            const value =
-                `${year}-${String(
-                    monthIndex +
+            const selectedDate =
+                new Date(
+                    calendarYear,
+                    calendarMonthIndex,
+                    day
+                );
+
+            const today =
+                getTodayAtMidnight();
+
+            if (
+                selectedDate <
+                today
+            ) {
+                return;
+            }
+
+            const month =
+                String(
+                    calendarMonthIndex +
                         1
                 ).padStart(
                     2,
                     "0"
-                )}-${String(
+                );
+
+            const dayString =
+                String(
                     day
                 ).padStart(
                     2,
                     "0"
-                )}`;
+                );
 
             setForm(
-                (current) => ({
+                (
+                    current
+                ) => ({
                     ...current,
 
                     available_from:
-                        value,
+                        `${calendarYear}-${month}-${dayString}`,
                 })
             );
 
@@ -1865,14 +1956,37 @@ export default function EditeazaProprietatePage() {
         };
 
     /* =========================
-       SALVARE MODIFICĂRI
+       UNIVERSITĂȚI SELECTATE
     ========================= */
 
-    const handleSubmit =
-        async (
-            event
+    const toggleUniversity =
+        (
+            universityId
         ) => {
-            event.preventDefault();
+            setSelectedUniversityIds(
+                (
+                    current
+                ) => {
+                    if (
+                        current.includes(
+                            universityId
+                        )
+                    ) {
+                        return current.filter(
+                            (
+                                id
+                            ) =>
+                                id !==
+                                universityId
+                        );
+                    }
+
+                    return [
+                        ...current,
+                        universityId,
+                    ];
+                }
+            );
 
             setError(
                 ""
@@ -1881,6 +1995,121 @@ export default function EditeazaProprietatePage() {
             setSuccess(
                 ""
             );
+        };
+
+    /* =========================
+       VALIDARE
+    ========================= */
+
+    const validateForm =
+        () => {
+            if (
+                !form.title.trim()
+            ) {
+                return "Completează titlul anunțului.";
+            }
+
+            if (
+                !form.city
+            ) {
+                return "Selectează orașul.";
+            }
+
+            if (
+                !form.address.trim()
+            ) {
+                return "Completează adresa.";
+            }
+
+            if (
+                !selectedAddressCoordinates
+            ) {
+                return "Selectează adresa din sugestiile afișate pentru a confirma locația.";
+            }
+
+            if (
+                !form.price_monthly ||
+                Number(
+                    form.price_monthly
+                ) <= 0
+            ) {
+                return "Completează un preț lunar valid.";
+            }
+
+            if (
+                !form.rooms ||
+                Number(
+                    form.rooms
+                ) <= 0
+            ) {
+                return "Completează numărul de camere.";
+            }
+
+            if (
+                !form.surface_m2 ||
+                Number(
+                    form.surface_m2
+                ) <= 0
+            ) {
+                return "Completează suprafața utilă.";
+            }
+
+            if (
+                images.length ===
+                0
+            ) {
+                return "Anunțul trebuie să aibă cel puțin o fotografie.";
+            }
+
+            return "";
+        };
+
+    /* =========================
+       SALVARE
+    ========================= */
+
+    const handleSubmit =
+        async (
+            event
+        ) => {
+            event.preventDefault();
+
+            if (
+                saving
+            ) {
+                return;
+            }
+
+            setError(
+                ""
+            );
+
+            setSuccess(
+                ""
+            );
+
+            const validationError =
+                validateForm();
+
+            if (
+                validationError
+            ) {
+                setError(
+                    validationError
+                );
+
+                window.scrollTo(
+                    {
+                        top:
+                            0,
+
+                        behavior:
+                            "smooth",
+                    }
+                );
+
+                return;
+            }
 
             if (
                 !user ||
@@ -1893,461 +2122,185 @@ export default function EditeazaProprietatePage() {
                 return;
             }
 
-            const {
-                data:
-                    currentProfile,
-                error:
-                    currentProfileError,
-            } = await supabase
-                .from(
-                    "profiles"
-                )
-                .select(
-                    "name, phone"
-                )
-                .eq(
-                    "id",
-                    user.id
-                )
-                .maybeSingle();
+            setSaving(
+                true
+            );
 
-            if (
-                currentProfileError
-            ) {
-                setError(
-                    "Profilul nu a putut fi verificat."
-                );
-
-                return;
-            }
-
-            const currentPhone =
-                currentProfile
-                    ?.phone
-                    ?.trim() ||
-                "";
-
-            if (
-                !currentPhone
-            ) {
-                router.push(
-                    "/dashboard?section=profile&required=phone"
-                );
-
-                return;
-            }
-
-            /* =========================
-               VALIDĂRI
-            ========================= */
-                    if (!form.title.trim()) {
-                setError(
-                    "Completează titlul anunțului."
-                );
-
-                return;
-            }
-
-            if (
-                !form.city.trim()
-            ) {
-                setError(
-                    "Alege orașul proprietății."
-                );
-
-                return;
-            }
-
-            if (
-                !form.neighborhood_id
-            ) {
-                setError(
-                    "Alege zona / cartierul proprietății."
-                );
-
-                return;
-            }
-
-            if (
-                !form.address.trim()
-            ) {
-                setError(
-                    "Completează adresa proprietății."
-                );
-
-                return;
-            }
-
-            if (
-                !form.price_monthly ||
-                Number(
-                    form.price_monthly
-                ) <= 0
-            ) {
-                setError(
-                    "Introdu un preț lunar valid."
-                );
-
-                return;
-            }
-
-            if (
-                form.floor !== "" &&
-                form.total_floors !== "" &&
-                Number(
-                    form.floor
-                ) >
-                    Number(
-                        form.total_floors
-                    )
-            ) {
-                setError(
-                    "Etajul proprietății nu poate fi mai mare decât numărul total de etaje."
-                );
-
-                return;
-            }
-
-            if (
-                form.construction_year !==
-                ""
-            ) {
-                const year =
-                    Number(
-                        form.construction_year
-                    );
-
-                const currentYear =
-                    new Date().getFullYear();
-
-                if (
-                    year < 1800 ||
-                    year > currentYear
-                ) {
-                    setError(
-                        `Anul construcției trebuie să fie între 1800 și ${currentYear}.`
-                    );
-
-                    return;
-                }
-            }
-
-            if (
-                form.max_tenants !== "" &&
-                Number(
-                    form.max_tenants
-                ) <= 0
-            ) {
-                setError(
-                    "Numărul maxim de chiriași trebuie să fie cel puțin 1."
-                );
-
-                return;
-            }
-
-            if (
-                form.deposit_amount !==
-                    "" &&
-                Number(
-                    form.deposit_amount
-                ) < 0
-            ) {
-                setError(
-                    "Garanția nu poate avea o valoare negativă."
-                );
-
-                return;
-            }
-
-            if (
-                images.length === 0
-            ) {
-                setError(
-                    "Anunțul trebuie să aibă cel puțin o fotografie."
-                );
-
-                return;
-            }
-
-            if (
-                images.length > 10
-            ) {
-                setError(
-                    "Poți avea maximum 10 fotografii."
-                );
-
-                return;
-            }
-
-            setSaving(true);
-
-            const uploadedPaths = [];
+            const uploadedPaths =
+                [];
 
             try {
-                /* =========================
-                   COORDONATE
-                ========================= */
+                const listingPayload =
+                    {
+                        title:
+                            form.title.trim(),
 
-                let latitude =
-                    selectedAddressCoordinates
-                        ?.latitude;
+                        property_type:
+                            form.property_type,
 
-                let longitude =
-                    selectedAddressCoordinates
-                        ?.longitude;
+                        city:
+                            form.city,
 
-                if (
-                    !Number.isFinite(
-                        latitude
-                    ) ||
-                    !Number.isFinite(
-                        longitude
-                    )
-                ) {
-                    const geocodeResponse =
-                        await fetch(
-                            "/api/geocode",
-                            {
-                                method:
-                                    "POST",
-
-                                headers: {
-                                    "Content-Type":
-                                        "application/json",
-                                },
-
-                                body:
-                                    JSON.stringify(
-                                        {
-                                            address:
-                                                form.address.trim(),
-
-                                            city:
-                                                form.city.trim(),
-                                        }
-                                    ),
-                            }
-                        );
-
-                    const geocodeData =
-                        await geocodeResponse.json();
-
-                    if (
-                        !geocodeResponse.ok
-                    ) {
-                        throw new Error(
-                            geocodeData?.error ||
-                                "Adresa proprietății nu a putut fi localizată."
-                        );
-                    }
-
-                    latitude =
-                        Number(
-                            geocodeData.latitude
-                        );
-
-                    longitude =
-                        Number(
-                            geocodeData.longitude
-                        );
-                }
-
-                if (
-                    !Number.isFinite(
-                        latitude
-                    ) ||
-                    !Number.isFinite(
-                        longitude
-                    )
-                ) {
-                    throw new Error(
-                        "Adresa proprietății nu a putut fi localizată corect."
-                    );
-                }
-
-                const ownerName =
-                    currentProfile?.name?.trim() ||
-                    form.owner_name.trim() ||
-                    user.user_metadata?.name ||
-                    "";
-
-                /* =========================
-                   DATE ANUNȚ
-                ========================= */
-
-                const listingData = {
-                    title:
-                        form.title.trim(),
-
-                    description:
-                        form.description.trim() ||
-                        null,
-
-                    city:
-                        form.city.trim(),
-
-                    neighborhood_id:
-                        Number(
+                        neighborhood_id:
                             form.neighborhood_id
-                        ),
+                                ? Number(
+                                      form.neighborhood_id
+                                  )
+                                : null,
 
-                    address:
-                        form.address.trim(),
+                        address:
+                            form.address.trim(),
 
-                    latitude:
-                        latitude,
+                        latitude:
+                            selectedAddressCoordinates.latitude,
 
-                    longitude:
-                        longitude,
+                        longitude:
+                            selectedAddressCoordinates.longitude,
 
-                    price_monthly:
-                        Number(
-                            form.price_monthly
-                        ),
+                        price_monthly:
+                            Number(
+                                form.price_monthly
+                            ),
 
-                    rooms:
-                        form.rooms !== ""
-                            ? Number(
-                                  form.rooms
-                              )
-                            : null,
+                        rooms:
+                            form.rooms
+                                ? Number(
+                                      form.rooms
+                                  )
+                                : null,
 
-                    bedrooms:
-                        form.bedrooms !== ""
-                            ? Number(
-                                  form.bedrooms
-                              )
-                            : null,
+                        bedrooms:
+                            form.bedrooms
+                                ? Number(
+                                      form.bedrooms
+                                  )
+                                : null,
 
-                    bathrooms:
-                        form.bathrooms !== ""
-                            ? Number(
-                                  form.bathrooms
-                              )
-                            : null,
+                        bathrooms:
+                            form.bathrooms
+                                ? Number(
+                                      form.bathrooms
+                                  )
+                                : null,
 
-                    surface_m2:
-                        form.surface_m2 !== ""
-                            ? Number(
-                                  form.surface_m2
-                              )
-                            : null,
+                        surface_m2:
+                            form.surface_m2
+                                ? Number(
+                                      form.surface_m2
+                                  )
+                                : null,
 
-                    property_type:
-                        form.property_type,
+                        furnished:
+                            form.furnished ===
+                            "true",
 
-                    listing_type:
-                        "rent",
+                        available_from:
+                            form.available_from ||
+                            null,
 
-                    furnished:
-                        form.furnished ===
-                        "true",
+                        description:
+                            form.description.trim(),
 
-                    available_from:
-                        form.available_from ||
-                        null,
+                        floor:
+                            form.floor !==
+                            ""
+                                ? Number(
+                                      form.floor
+                                  )
+                                : null,
 
-                    floor:
-                        form.floor !== ""
-                            ? Number(
-                                  form.floor
-                              )
-                            : null,
+                        total_floors:
+                            form.total_floors !==
+                            ""
+                                ? Number(
+                                      form.total_floors
+                                  )
+                                : null,
 
-                    total_floors:
-                        form.total_floors !== ""
-                            ? Number(
-                                  form.total_floors
-                              )
-                            : null,
+                        construction_year:
+                            form.construction_year
+                                ? Number(
+                                      form.construction_year
+                                  )
+                                : null,
 
-                    construction_year:
-                        form.construction_year !==
-                        ""
-                            ? Number(
-                                  form.construction_year
-                              )
-                            : null,
+                        heating_type:
+                            form.heating_type ||
+                            null,
 
-                    heating_type:
-                        form.heating_type.trim() ||
-                        null,
+                        air_conditioning:
+                            form.air_conditioning ===
+                            "true",
 
-                    air_conditioning:
-                        form.air_conditioning ===
-                        "true",
+                        balcony:
+                            form.balcony ===
+                            "true",
 
-                    balcony:
-                        form.balcony ===
-                        "true",
+                        parking:
+                            form.parking ===
+                            "true",
 
-                    parking:
-                        form.parking ===
-                        "true",
+                        pets_allowed:
+                            form.pets_allowed ===
+                            "true",
 
-                    pets_allowed:
-                        form.pets_allowed ===
-                        "true",
+                        smoking_allowed:
+                            form.smoking_allowed ===
+                            "true",
 
-                    smoking_allowed:
-                        form.smoking_allowed ===
-                        "true",
+                        max_tenants:
+                            form.max_tenants
+                                ? Number(
+                                      form.max_tenants
+                                  )
+                                : null,
 
-                    max_tenants:
-                        form.max_tenants !== ""
-                            ? Number(
-                                  form.max_tenants
-                              )
-                            : null,
+                        deposit_amount:
+                            form.deposit_amount
+                                ? Number(
+                                      form.deposit_amount
+                                  )
+                                : null,
 
-                    deposit_amount:
-                        form.deposit_amount !== ""
-                            ? Number(
-                                  form.deposit_amount
-                              )
-                            : null,
+                        utilities_included:
+                            form.utilities_included ===
+                            "true",
 
-                    utilities_included:
-                        form.utilities_included ===
-                        "true",
+                        owner_name:
+                            form.owner_name.trim(),
 
-                    owner_name:
-                        ownerName,
+                        owner_phone:
+                            form.owner_phone.trim(),
 
-                    owner_phone:
-                        currentPhone,
-
-                    owner_email:
-                        user.email ||
-                        null,
-                };
-
-                /* =========================
-                   UPDATE ANUNȚ
-                ========================= */
+                        owner_email:
+                            form.owner_email.trim(),
+                    };
 
                 const {
                     error:
-                        listingUpdateError,
-                } = await supabase
-                    .from("listings")
-                    .update(
-                        listingData
-                    )
-                    .eq(
-                        "id",
-                        listingId
-                    )
-                    .eq(
-                        "user_id",
-                        user.id
-                    );
+                        updateListingError,
+                } =
+                    await supabase
+                        .from(
+                            "listings"
+                        )
+                        .update(
+                            listingPayload
+                        )
+                        .eq(
+                            "id",
+                            listingId
+                        )
+                        .eq(
+                            "user_id",
+                            user.id
+                        );
 
                 if (
-                    listingUpdateError
+                    updateListingError
                 ) {
                     throw new Error(
-                        `Anunțul nu a putut fi actualizat: ${listingUpdateError.message}`
+                        `Anunțul nu a putut fi actualizat: ${updateListingError.message}`
                     );
                 }
 
@@ -2355,74 +2308,49 @@ export default function EditeazaProprietatePage() {
                    UNIVERSITĂȚI
                 ========================= */
 
-                /*
-                    Eliminăm duplicatele înainte
-                    de orice operație.
-                */
-
-                const uniqueUniversityIds = [
-                    ...new Set(
-                        selectedUniversityIds.map(
-                            (
-                                universityId
-                            ) =>
-                                String(
-                                    universityId
-                                )
-                        )
-                    ),
-                ];
-
-                /*
-                    Citim asocierile care există
-                    deja în baza de date.
-                */
+                const uniqueUniversityIds =
+                    [
+                        ...new Set(
+                            selectedUniversityIds
+                        ),
+                    ];
 
                 const {
                     data:
                         existingUniversityLinks,
                     error:
                         existingUniversityLinksError,
-                } = await supabase
-                    .from(
-                        "listing_universities"
-                    )
-                    .select(
-                        "university_id"
-                    )
-                    .eq(
-                        "listing_id",
-                        listingId
-                    );
+                } =
+                    await supabase
+                        .from(
+                            "listing_universities"
+                        )
+                        .select(
+                            "university_id"
+                        )
+                        .eq(
+                            "listing_id",
+                            listingId
+                        );
 
                 if (
                     existingUniversityLinksError
                 ) {
                     throw new Error(
-                        `Universitățile existente nu au putut fi verificate: ${existingUniversityLinksError.message}`
+                        `Asocierile cu universitățile nu au putut fi citite: ${existingUniversityLinksError.message}`
                     );
                 }
 
-                const existingUniversityIds = [
-                    ...new Set(
+                const existingUniversityIds =
+                    (
+                        existingUniversityLinks ||
+                        []
+                    ).map(
                         (
-                            existingUniversityLinks ||
-                            []
-                        ).map(
-                            (
-                                item
-                            ) =>
-                                String(
-                                    item.university_id
-                                )
-                        )
-                    ),
-                ];
-
-                /*
-                    Ștergem DOAR universitățile
-                    care au fost debifate.
-                */
+                            link
+                        ) =>
+                            link.university_id
+                    );
 
                 const universityIdsToDelete =
                     existingUniversityIds.filter(
@@ -2441,19 +2369,20 @@ export default function EditeazaProprietatePage() {
                     const {
                         error:
                             deleteUniversitiesError,
-                    } = await supabase
-                        .from(
-                            "listing_universities"
-                        )
-                        .delete()
-                        .eq(
-                            "listing_id",
-                            listingId
-                        )
-                        .in(
-                            "university_id",
-                            universityIdsToDelete
-                        );
+                    } =
+                        await supabase
+                            .from(
+                                "listing_universities"
+                            )
+                            .delete()
+                            .eq(
+                                "listing_id",
+                                listingId
+                            )
+                            .in(
+                                "university_id",
+                                universityIdsToDelete
+                            );
 
                     if (
                         deleteUniversitiesError
@@ -2509,13 +2438,14 @@ export default function EditeazaProprietatePage() {
                     const {
                         error:
                             universityLinkError,
-                    } = await supabase
-                        .from(
-                            "listing_universities"
-                        )
-                        .insert(
-                            universityLinks
-                        );
+                    } =
+                        await supabase
+                            .from(
+                                "listing_universities"
+                            )
+                            .insert(
+                                universityLinks
+                            );
 
                     if (
                         universityLinkError
@@ -2553,19 +2483,20 @@ export default function EditeazaProprietatePage() {
                         const {
                             error:
                                 deleteImagesDatabaseError,
-                        } = await supabase
-                            .from(
-                                "listing_images"
-                            )
-                            .delete()
-                            .in(
-                                "id",
-                                imageIdsToDelete
-                            )
-                            .eq(
-                                "listing_id",
-                                listingId
-                            );
+                        } =
+                            await supabase
+                                .from(
+                                    "listing_images"
+                                )
+                                .delete()
+                                .in(
+                                    "id",
+                                    imageIdsToDelete
+                                )
+                                .eq(
+                                    "listing_id",
+                                    listingId
+                                );
 
                         if (
                             deleteImagesDatabaseError
@@ -2729,11 +2660,10 @@ export default function EditeazaProprietatePage() {
 
                             image_url:
                                 publicUrlData.publicUrl,
-
-                            storage_path:
+                                                        storage_path:
                                 storagePath,
 
-                            position:
+                            sort_order:
                                 existingImages.length +
                                 index,
                         }
@@ -2746,89 +2676,60 @@ export default function EditeazaProprietatePage() {
                 ) {
                     const {
                         error:
-                            imagesDatabaseError,
-                    } = await supabase
-                        .from(
-                            "listing_images"
-                        )
-                        .insert(
-                            uploadedImages
-                        );
+                            insertImagesError,
+                    } =
+                        await supabase
+                            .from(
+                                "listing_images"
+                            )
+                            .insert(
+                                uploadedImages
+                            );
 
                     if (
-                        imagesDatabaseError
+                        insertImagesError
                     ) {
                         throw new Error(
-                            `Fotografiile noi nu au putut fi asociate anunțului: ${imagesDatabaseError.message}`
+                            `Fotografiile noi nu au putut fi salvate: ${insertImagesError.message}`
                         );
                     }
                 }
 
                 /* =========================
-                   REORDONARE POZE
+                   ORDINE IMAGINI EXISTENTE
                 ========================= */
-
-                const {
-                    data:
-                        finalImages,
-                    error:
-                        finalImagesError,
-                } = await supabase
-                    .from(
-                        "listing_images"
-                    )
-                    .select(
-                        "id, image_url, storage_path, position"
-                    )
-                    .eq(
-                        "listing_id",
-                        listingId
-                    )
-                    .order(
-                        "position",
-                        {
-                            ascending:
-                                true,
-                        }
-                    );
-
-                if (
-                    finalImagesError
-                ) {
-                    throw new Error(
-                        `Lista finală de fotografii nu a putut fi încărcată: ${finalImagesError.message}`
-                    );
-                }
 
                 for (
                     let index = 0;
                     index <
-                    (
-                        finalImages ||
-                        []
-                    ).length;
+                    existingImages.length;
                     index++
                 ) {
                     const image =
-                        finalImages[
+                        existingImages[
                             index
                         ];
 
                     if (
-                        image.position !==
-                        index
+                        !image.id
                     ) {
-                        const {
-                            error:
-                                positionError,
-                        } = await supabase
+                        continue;
+                    }
+
+                    const {
+                        error:
+                            orderError,
+                    } =
+                        await supabase
                             .from(
                                 "listing_images"
                             )
-                            .update({
-                                position:
-                                    index,
-                            })
+                            .update(
+                                {
+                                    sort_order:
+                                        index,
+                                }
+                            )
                             .eq(
                                 "id",
                                 image.id
@@ -2838,50 +2739,73 @@ export default function EditeazaProprietatePage() {
                                 listingId
                             );
 
-                        if (
-                            positionError
-                        ) {
-                            throw new Error(
-                                `Ordinea fotografiilor nu a putut fi actualizată: ${positionError.message}`
-                            );
-                        }
+                    if (
+                        orderError
+                    ) {
+                        console.error(
+                            "Eroare actualizare ordine fotografie:",
+                            orderError
+                        );
                     }
                 }
 
-                const coverImageUrl =
-                    finalImages?.[0]
-                        ?.image_url ||
-                    null;
-
                 /* =========================
-                   ACTUALIZARE COPERTĂ
+                   IMAGE_URL PRINCIPAL
                 ========================= */
+
+                let primaryImageUrl =
+                    "";
+
+                if (
+                    existingImages.length >
+                    0
+                ) {
+                    primaryImageUrl =
+                        existingImages[0]
+                            .image_url ||
+                        existingImages[0]
+                            .preview ||
+                        "";
+                } else if (
+                    uploadedImages.length >
+                    0
+                ) {
+                    primaryImageUrl =
+                        uploadedImages[0]
+                            .image_url ||
+                        "";
+                }
 
                 const {
                     error:
-                        coverError,
-                } = await supabase
-                    .from(
-                        "listings"
-                    )
-                    .update({
-                        image_url:
-                            coverImageUrl,
-                    })
-                    .eq(
-                        "id",
-                        listingId
-                    )
-                    .eq(
-                        "user_id",
-                        user.id
-                    );
+                        primaryImageError,
+                } =
+                    await supabase
+                        .from(
+                            "listings"
+                        )
+                        .update(
+                            {
+                                image_url:
+                                    primaryImageUrl ||
+                                    null,
+                            }
+                        )
+                        .eq(
+                            "id",
+                            listingId
+                        )
+                        .eq(
+                            "user_id",
+                            user.id
+                        );
 
                 if (
-                    coverError
+                    primaryImageError
                 ) {
-                    throw new Error(
-                        `Coperta anunțului nu a putut fi actualizată: ${coverError.message}`
+                    console.error(
+                        "Eroare actualizare imagine principală:",
+                        primaryImageError
                     );
                 }
 
@@ -2890,7 +2814,7 @@ export default function EditeazaProprietatePage() {
                 );
 
                 setSuccess(
-                    "Modificările au fost salvate cu succes."
+                    "Anunțul a fost actualizat cu succes."
                 );
 
                 setTimeout(
@@ -2901,13 +2825,13 @@ export default function EditeazaProprietatePage() {
 
                         router.refresh();
                     },
-                    1000
+                    700
                 );
             } catch (
                 submitError
             ) {
                 console.error(
-                    "Eroare salvare anunț:",
+                    "Eroare actualizare anunț:",
                     submitError
                 );
 
@@ -2916,10 +2840,20 @@ export default function EditeazaProprietatePage() {
                 );
 
                 setError(
-                    submitError.message ||
-                        "A apărut o eroare la salvarea modificărilor."
+                    submitError?.message ||
+                        "Anunțul nu a putut fi actualizat."
                 );
 
+                window.scrollTo(
+                    {
+                        top:
+                            0,
+
+                        behavior:
+                            "smooth",
+                    }
+                );
+            } finally {
                 setSaving(
                     false
                 );
@@ -2941,7 +2875,7 @@ export default function EditeazaProprietatePage() {
                         "100vh",
 
                     background:
-                        "#f7f8fa",
+                        "#F8FAFC",
 
                     display:
                         "flex",
@@ -2952,19 +2886,28 @@ export default function EditeazaProprietatePage() {
                     justifyContent:
                         "center",
 
-                    color:
-                        "#6b7280",
+                    padding:
+                        "24px",
 
-                    fontSize:
-                        "15px",
-
-                    fontWeight:
-                        "600",
+                    fontFamily:
+                        "Arial, sans-serif",
                 }}
             >
-                {checkingAuth
-                    ? "Se verifică profilul..."
-                    : "Se încarcă anunțul..."}
+                <div
+                    style={{
+                        color:
+                            "#64748B",
+
+                        fontSize:
+                            "15px",
+
+                        fontWeight:
+                            "700",
+                    }}
+                >
+                    Se încarcă
+                    anunțul...
+                </div>
             </main>
         );
     }
@@ -2977,55 +2920,112 @@ export default function EditeazaProprietatePage() {
         width:
             "100%",
 
+        height:
+            "52px",
+
         boxSizing:
             "border-box",
 
         border:
-            "1px solid #d1d5db",
+            "1px solid #DCE3EC",
 
         borderRadius:
-            "11px",
+            "10px",
+
+        background:
+            "#FFFFFF",
 
         padding:
-            "14px 15px",
+            "0 14px",
+
+        color:
+            "#0F172A",
+
+        fontSize:
+            "14px",
 
         fontFamily:
             "inherit",
 
-        fontSize:
-            "15px",
+        outline:
+            "none",
+    };
 
-        color:
-            "#111827",
+    const textareaStyle = {
+        width:
+            "100%",
+
+        minHeight:
+            "150px",
+
+        boxSizing:
+            "border-box",
+
+        border:
+            "1px solid #DCE3EC",
+
+        borderRadius:
+            "10px",
 
         background:
-            "#ffffff",
+            "#FFFFFF",
+
+        padding:
+            "14px",
+
+        color:
+            "#0F172A",
+
+        fontSize:
+            "14px",
+
+        fontFamily:
+            "inherit",
 
         outline:
             "none",
+
+        resize:
+            "vertical",
     };
 
     const labelStyle = {
         display:
             "block",
 
+        marginBottom:
+            "7px",
+
+        color:
+            "#334155",
+
         fontSize:
-            "14px",
+            "13px",
 
         fontWeight:
             "700",
-
-        marginBottom:
-            "8px",
-
-        color:
-            "#111827",
     };
 
-    const fieldStyle = {
-        marginBottom:
+    const sectionStyle = {
+        background:
+            "#FFFFFF",
+
+        border:
+            "1px solid #E2E8F0",
+
+        borderRadius:
+            "16px",
+
+        padding:
             "22px",
+
+        marginBottom:
+            "18px",
     };
+
+    /* =========================
+       UI
+    ========================= */
 
     return (
         <main
@@ -3034,110 +3034,236 @@ export default function EditeazaProprietatePage() {
                     "100vh",
 
                 background:
-                    "#f7f8fa",
+                    "#F8FAFC",
+
+                fontFamily:
+                    "Arial, sans-serif",
 
                 color:
-                    "#111827",
+                    "#0F172A",
             }}
         >
             {/* HEADER */}
 
             <header
                 style={{
-                    height:
-                        "72px",
-
                     background:
-                        "#ffffff",
+                        "#FFFFFF",
 
                     borderBottom:
-                        "1px solid #e5e7eb",
+                        "1px solid #E2E8F0",
 
-                    display:
-                        "flex",
+                    position:
+                        "sticky",
 
-                    alignItems:
-                        "center",
+                    top:
+                        0,
 
-                    justifyContent:
-                        "space-between",
-
-                    padding:
-                        "0 7%",
+                    zIndex:
+                        100,
                 }}
             >
-                <a
-                    href="/"
-                    style={{
-                        color:
-                            "#111827",
-
-                        textDecoration:
-                            "none",
-
-                        fontSize:
-                            "25px",
-
-                        fontWeight:
-                            "800",
-
-                        letterSpacing:
-                            "-1px",
-                    }}
-                >
-                    StudentHousing
-                </a>
-
                 <div
                     style={{
+                        maxWidth:
+                            "1180px",
+
+                        margin:
+                            "0 auto",
+
+                        padding:
+                            "0 24px",
+
+                        height:
+                            "72px",
+
                         display:
                             "flex",
 
                         alignItems:
                             "center",
 
-                        gap:
-                            "18px",
+                        justifyContent:
+                            "space-between",
                     }}
                 >
-                    <span
-                        style={{
-                            color:
-                                "#6b7280",
-
-                            fontSize:
-                                "13px",
-
-                            fontWeight:
-                                "600",
-                        }}
-                    >
-                        {user?.email}
-                    </span>
-
                     <button
                         type="button"
-                        onClick={
-                            handleLogout
+
+                        onClick={() =>
+                            router.push(
+                                "/"
+                            )
                         }
+
                         style={{
-                            background:
-                                "#ffffff",
-
-                            color:
-                                "#111827",
-
                             border:
-                                "1px solid #e5e7eb",
+                                "none",
 
-                            borderRadius:
-                                "10px",
+                            background:
+                                "transparent",
 
                             padding:
-                                "10px 15px",
+                                0,
 
-                            fontFamily:
-                                "inherit",
+                            cursor:
+                                "pointer",
+
+                            color:
+                                "#172554",
+
+                            fontSize:
+                                "26px",
+
+                            fontWeight:
+                                "900",
+
+                            letterSpacing:
+                                "-1px",
+                        }}
+                    >
+                        shaus
+                    </button>
+
+                    <div
+                        style={{
+                            display:
+                                "flex",
+
+                            alignItems:
+                                "center",
+
+                            gap:
+                                "10px",
+                        }}
+                    >
+                        <button
+                            type="button"
+
+                            onClick={() =>
+                                router.push(
+                                    "/dashboard"
+                                )
+                            }
+
+                            style={{
+                                height:
+                                    "42px",
+
+                                padding:
+                                    "0 15px",
+
+                                border:
+                                    "1px solid #DCE3EC",
+
+                                borderRadius:
+                                    "10px",
+
+                                background:
+                                    "#FFFFFF",
+
+                                color:
+                                    "#334155",
+
+                                fontSize:
+                                    "13px",
+
+                                fontWeight:
+                                    "700",
+
+                                cursor:
+                                    "pointer",
+                            }}
+                        >
+                            Contul meu
+                        </button>
+
+                        <button
+                            type="button"
+
+                            onClick={
+                                handleLogout
+                            }
+
+                            style={{
+                                height:
+                                    "42px",
+
+                                padding:
+                                    "0 15px",
+
+                                border:
+                                    "none",
+
+                                borderRadius:
+                                    "10px",
+
+                                background:
+                                    "#172554",
+
+                                color:
+                                    "#FFFFFF",
+
+                                fontSize:
+                                    "13px",
+
+                                fontWeight:
+                                    "700",
+
+                                cursor:
+                                    "pointer",
+                            }}
+                        >
+                            Ieși din cont
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            {/* CONTENT */}
+
+            <div
+                style={{
+                    maxWidth:
+                        "980px",
+
+                    margin:
+                        "0 auto",
+
+                    padding:
+                        "34px 24px 60px",
+                }}
+            >
+                <div
+                    style={{
+                        marginBottom:
+                            "24px",
+                    }}
+                >
+                    <button
+                        type="button"
+
+                        onClick={() =>
+                            router.push(
+                                "/dashboard"
+                            )
+                        }
+
+                        style={{
+                            border:
+                                "none",
+
+                            background:
+                                "transparent",
+
+                            padding:
+                                0,
+
+                            marginBottom:
+                                "12px",
+
+                            color:
+                                "#64748B",
 
                             fontSize:
                                 "13px",
@@ -3149,107 +3275,75 @@ export default function EditeazaProprietatePage() {
                                 "pointer",
                         }}
                     >
-                        Deconectare
+                        ← Înapoi la
+                        dashboard
                     </button>
-                </div>
-            </header>
 
-            {/* PAGINĂ */}
-
-            <section
-                style={{
-                    maxWidth:
-                        "900px",
-
-                    margin:
-                        "0 auto",
-
-                    padding:
-                        "60px 30px 100px",
-                }}
-            >
-                <button
-                    type="button"
-                    onClick={() =>
-                        router.push(
-                            "/dashboard"
-                        )
-                    }
-                    style={{
-                        display:
-                            "inline-flex",
-
-                        alignItems:
-                            "center",
-
-                        gap:
-                            "8px",
-
-                        border:
-                            "none",
-
-                        background:
-                            "transparent",
-
-                        padding:
-                            0,
-
-                        marginBottom:
-                            "28px",
-
-                        color:
-                            "#4b5563",
-
-                        fontFamily:
-                            "inherit",
-
-                        fontSize:
-                            "14px",
-
-                        fontWeight:
-                            "700",
-
-                        cursor:
-                            "pointer",
-                    }}
-                >
-                    <span
+                    <h1
                         style={{
-                            fontSize:
-                                "20px",
-
-                            lineHeight:
-                                1,
-                        }}
-                    >
-                        ←
-                    </span>
-
-                    Înapoi la dashboard
-                </button>
-
-                <div
-                    style={{
-                        marginBottom:
-                            "35px",
-                    }}
-                >
-                    <div
-                        style={{
-                            display:
-                                "inline-block",
-
-                            background:
-                                "#e8f1ff",
+                            margin:
+                                0,
 
                             color:
-                                "#2563eb",
+                                "#172554",
+
+                            fontSize:
+                                "30px",
+
+                            fontWeight:
+                                "900",
+
+                            letterSpacing:
+                                "-0.7px",
+                        }}
+                    >
+                        Editează
+                        proprietatea
+                    </h1>
+
+                    <p
+                        style={{
+                            margin:
+                                "8px 0 0",
+
+                            color:
+                                "#64748B",
+
+                            fontSize:
+                                "14px",
+
+                            lineHeight:
+                                "1.6",
+                        }}
+                    >
+                        Modifică
+                        informațiile
+                        anunțului și
+                        salvează
+                        schimbările.
+                    </p>
+                </div>
+
+                {error && (
+                    <div
+                        style={{
+                            marginBottom:
+                                "18px",
 
                             padding:
-                                "7px 12px",
+                                "13px 15px",
+
+                            border:
+                                "1px solid #FECACA",
 
                             borderRadius:
-                                "100px",
+                                "10px",
+
+                            background:
+                                "#FEF2F2",
+
+                            color:
+                                "#B91C1C",
 
                             fontSize:
                                 "13px",
@@ -3257,133 +3351,2495 @@ export default function EditeazaProprietatePage() {
                             fontWeight:
                                 "700",
 
-                            marginBottom:
-                                "16px",
-                        }}
-                    >
-                        Editează proprietatea
-                    </div>
-
-                    <h1
-                        style={{
-                            margin:
-                                0,
-
-                            fontSize:
-                                "40px",
-
                             lineHeight:
-                                "1.15",
-
-                            letterSpacing:
-                                "-1.5px",
-
-                            fontWeight:
-                                "800",
+                                "1.5",
                         }}
                     >
-                        Editează anunțul
-                    </h1>
+                        {error}
+                    </div>
+                )}
 
-                    <p
+                {success && (
+                    <div
                         style={{
-                            margin:
-                                "13px 0 0",
+                            marginBottom:
+                                "18px",
+
+                            padding:
+                                "13px 15px",
+
+                            border:
+                                "1px solid #BBF7D0",
+
+                            borderRadius:
+                                "10px",
+
+                            background:
+                                "#F0FDF4",
 
                             color:
-                                "#6b7280",
+                                "#166534",
 
                             fontSize:
-                                "16px",
+                                "13px",
+
+                            fontWeight:
+                                "700",
 
                             lineHeight:
-                                "1.6",
-
-                            maxWidth:
-                                "650px",
+                                "1.5",
                         }}
                     >
-                        Modifică informațiile proprietății și salvează schimbările.
-                    </p>
-                </div>
+                        {success}
+                    </div>
+                )}
 
                 <form
                     onSubmit={
                         handleSubmit
                     }
                 >
-                    {/* FOTOGRAFII */}
+                    {/* =========================
+                        INFORMAȚII DE BAZĂ
+                    ========================= */}
 
-                    <div
-                        style={{
-                            background:
-                                "#ffffff",
-
-                            border:
-                                "1px solid #e5e7eb",
-
-                            borderRadius:
-                                "20px",
-
-                            padding:
-                                "32px",
-
-                            boxShadow:
-                                "0 12px 35px rgba(17,24,39,0.05)",
-
-                            marginBottom:
-                                "22px",
-                        }}
+                    <section
+                        style={
+                            sectionStyle
+                        }
                     >
-                        <h2
+                        <div
                             style={{
-                                margin:
-                                    0,
-
-                                fontSize:
-                                    "20px",
-
-                                fontWeight:
-                                    "800",
+                                marginBottom:
+                                    "18px",
                             }}
                         >
-                            Fotografii
-                        </h2>
+                            <h2
+                                style={{
+                                    margin:
+                                        0,
 
-                        <p
+                                    color:
+                                        "#172554",
+
+                                    fontSize:
+                                        "18px",
+
+                                    fontWeight:
+                                        "900",
+                                }}
+                            >
+                                Informații
+                                de bază
+                            </h2>
+
+                            <p
+                                style={{
+                                    margin:
+                                        "5px 0 0",
+
+                                    color:
+                                        "#64748B",
+
+                                    fontSize:
+                                        "13px",
+                                }}
+                            >
+                                Datele
+                                principale
+                                ale
+                                proprietății.
+                            </p>
+                        </div>
+
+                        <div
                             style={{
-                                color:
-                                    "#6b7280",
+                                display:
+                                    "grid",
 
-                                fontSize:
-                                    "14px",
+                                gridTemplateColumns:
+                                    "2fr 1fr",
 
-                                lineHeight:
-                                    "1.6",
+                                gap:
+                                    "16px",
 
-                                margin:
-                                    "8px 0 22px",
+                                marginBottom:
+                                    "16px",
                             }}
                         >
-                            Poți păstra fotografiile existente, le poți șterge sau poți adăuga altele noi. Prima fotografie este coperta anunțului.
-                        </p>
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Titlu
+                                </label>
+
+                                <input
+                                    type="text"
+
+                                    name="title"
+
+                                    value={
+                                        form.title
+                                    }
+
+                                    onChange={
+                                        handleChange
+                                    }
+
+                                    placeholder="Ex: Apartament 2 camere aproape de centru"
+
+                                    style={
+                                        inputStyle
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Tip
+                                    proprietate
+                                </label>
+
+                                <select
+                                    name="property_type"
+
+                                    value={
+                                        form.property_type
+                                    }
+
+                                    onChange={
+                                        handleChange
+                                    }
+
+                                    style={{
+                                        ...inputStyle,
+
+                                        cursor:
+                                            "pointer",
+                                    }}
+                                >
+                                    <option value="apartment">
+                                        Apartament
+                                    </option>
+
+                                    <option value="studio">
+                                        Garsonieră
+                                    </option>
+
+                                    <option value="room">
+                                        Cameră
+                                    </option>
+
+                                    <option value="house">
+                                        Casă
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div
+                            style={{
+                                display:
+                                    "grid",
+
+                                gridTemplateColumns:
+                                    "repeat(4, 1fr)",
+
+                                gap:
+                                    "16px",
+                            }}
+                        >
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Preț
+                                    lunar
+                                    (€)
+                                </label>
+
+                                <input
+                                    type="number"
+
+                                    name="price_monthly"
+
+                                    value={
+                                        form.price_monthly
+                                    }
+
+                                    onChange={
+                                        handleChange
+                                    }
+
+                                    min="1"
+
+                                    placeholder="450"
+
+                                    style={
+                                        inputStyle
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Camere
+                                </label>
+
+                                <input
+                                    type="number"
+
+                                    name="rooms"
+
+                                    value={
+                                        form.rooms
+                                    }
+
+                                    onChange={
+                                        handleChange
+                                    }
+
+                                    min="1"
+
+                                    placeholder="2"
+
+                                    style={
+                                        inputStyle
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Dormitoare
+                                </label>
+
+                                <input
+                                    type="number"
+
+                                    name="bedrooms"
+
+                                    value={
+                                        form.bedrooms
+                                    }
+
+                                    onChange={
+                                        handleChange
+                                    }
+
+                                    min="0"
+
+                                    placeholder="1"
+
+                                    style={
+                                        inputStyle
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Băi
+                                </label>
+
+                                <input
+                                    type="number"
+
+                                    name="bathrooms"
+
+                                    value={
+                                        form.bathrooms
+                                    }
+
+                                    onChange={
+                                        handleChange
+                                    }
+
+                                    min="0"
+
+                                    placeholder="1"
+
+                                    style={
+                                        inputStyle
+                                    }
+                                />
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* =========================
+                        LOCAȚIE
+                    ========================= */}
+
+                    <section
+                        style={
+                            sectionStyle
+                        }
+                    >
+                        <div
+                            style={{
+                                marginBottom:
+                                    "18px",
+                            }}
+                        >
+                            <h2
+                                style={{
+                                    margin:
+                                        0,
+
+                                    color:
+                                        "#172554",
+
+                                    fontSize:
+                                        "18px",
+
+                                    fontWeight:
+                                        "900",
+                                }}
+                            >
+                                Locație
+                            </h2>
+
+                            <p
+                                style={{
+                                    margin:
+                                        "5px 0 0",
+
+                                    color:
+                                        "#64748B",
+
+                                    fontSize:
+                                        "13px",
+                                }}
+                            >
+                                Alege
+                                orașul,
+                                cartierul și
+                                adresa
+                                proprietății.
+                            </p>
+                        </div>
+
+                        <div
+                            style={{
+                                display:
+                                    "grid",
+
+                                gridTemplateColumns:
+                                    "1fr 1fr",
+
+                                gap:
+                                    "16px",
+
+                                marginBottom:
+                                    "16px",
+                            }}
+                        >
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Oraș
+                                </label>
+
+                                <select
+                                    name="city"
+
+                                    value={
+                                        form.city
+                                    }
+
+                                    onChange={
+                                        handleCityChange
+                                    }
+
+                                    disabled={
+                                        loadingLocations
+                                    }
+
+                                    style={{
+                                        ...inputStyle,
+
+                                        cursor:
+                                            loadingLocations
+                                                ? "not-allowed"
+                                                : "pointer",
+                                    }}
+                                >
+                                    <option value="">
+                                        {loadingLocations
+                                            ? "Se încarcă..."
+                                            : "Alege orașul"}
+                                    </option>
+
+                                    {cities.map(
+                                        (
+                                            city
+                                        ) => (
+                                            <option
+                                                key={
+                                                    city.id
+                                                }
+
+                                                value={
+                                                    city.name
+                                                }
+                                            >
+                                                {
+                                                    city.name
+                                                }
+                                            </option>
+                                        )
+                                    )}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Zonă /
+                                    cartier
+                                </label>
+
+                                <select
+                                    name="neighborhood_id"
+
+                                    value={
+                                        form.neighborhood_id
+                                    }
+
+                                    onChange={
+                                        handleChange
+                                    }
+
+                                    disabled={
+                                        !form.city ||
+                                        loadingLocations
+                                    }
+
+                                    style={{
+                                        ...inputStyle,
+
+                                        cursor:
+                                            !form.city ||
+                                            loadingLocations
+                                                ? "not-allowed"
+                                                : "pointer",
+                                    }}
+                                >
+                                    <option value="">
+                                        Toate
+                                        zonele
+                                    </option>
+
+                                    {filteredNeighborhoods.map(
+                                        (
+                                            neighborhood
+                                        ) => (
+                                            <option
+                                                key={
+                                                    neighborhood.id
+                                                }
+
+                                                value={
+                                                    neighborhood.id
+                                                }
+                                            >
+                                                {
+                                                    neighborhood.name
+                                                }
+                                            </option>
+                                        )
+                                    )}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* ADRESĂ */}
+
+                        <div
+                            ref={
+                                addressFieldRef
+                            }
+
+                            style={{
+                                position:
+                                    "relative",
+
+                                zIndex:
+                                    50,
+                            }}
+                        >
+                            <label
+                                style={
+                                    labelStyle
+                                }
+                            >
+                                Adresa
+                                exactă
+                            </label>
+
+                            <input
+                                type="text"
+
+                                name="address"
+
+                                value={
+                                    form.address
+                                }
+
+                                onChange={
+                                    handleAddressChange
+                                }
+
+                                onFocus={() => {
+                                    setAddressFieldActive(
+                                        true
+                                    );
+
+                                    if (
+                                        addressSuggestions.length >
+                                        0
+                                    ) {
+                                        setAddressSuggestionsOpen(
+                                            true
+                                        );
+                                    }
+                                }}
+
+                                onClick={() => {
+                                    setAddressFieldActive(
+                                        true
+                                    );
+
+                                    if (
+                                        addressSuggestions.length >
+                                        0
+                                    ) {
+                                        setAddressSuggestionsOpen(
+                                            true
+                                        );
+                                    }
+                                }}
+
+                                autoComplete="off"
+
+                                placeholder="Ex: Strada Exemplu 10"
+
+                                style={
+                                    inputStyle
+                                }
+                            />
+
+                            {loadingAddressSuggestions && (
+                                <div
+                                    style={{
+                                        position:
+                                            "absolute",
+
+                                        right:
+                                            "14px",
+
+                                        top:
+                                            "43px",
+
+                                        color:
+                                            "#64748B",
+
+                                        fontSize:
+                                            "11px",
+
+                                        fontWeight:
+                                            "700",
+
+                                        pointerEvents:
+                                            "none",
+                                    }}
+                                >
+                                    Se caută...
+                                </div>
+                            )}
+
+                            {addressSuggestionsOpen &&
+                                addressSuggestions.length >
+                                    0 && (
+                                    <div
+                                        style={{
+                                            position:
+                                                "absolute",
+
+                                            top:
+                                                "calc(100% + 6px)",
+
+                                            left:
+                                                0,
+
+                                            right:
+                                                0,
+
+                                            background:
+                                                "#FFFFFF",
+
+                                            border:
+                                                "1px solid #DCE3EC",
+
+                                            borderRadius:
+                                                "10px",
+
+                                            boxShadow:
+                                                "0 14px 30px rgba(15, 23, 42, 0.12)",
+
+                                            overflow:
+                                                "hidden",
+
+                                            zIndex:
+                                                1000,
+                                        }}
+                                    >
+                                        {addressSuggestions.map(
+                                            (
+                                                suggestion,
+                                                index
+                                            ) => {
+                                                const primaryText =
+                                                    suggestion.name ||
+                                                    suggestion.full_address ||
+                                                    "Adresă";
+
+                                                const secondaryText =
+                                                    suggestion.full_address &&
+                                                    suggestion.full_address !==
+                                                        primaryText
+                                                        ? suggestion.full_address
+                                                        : suggestion.place_formatted ||
+                                                          "";
+
+                                                return (
+                                                    <button
+                                                        key={
+                                                            suggestion.mapbox_id ||
+                                                            `${primaryText}-${index}`
+                                                        }
+
+                                                        type="button"
+
+                                                        onMouseDown={(
+                                                            event
+                                                        ) => {
+                                                            event.preventDefault();
+                                                        }}
+
+                                                        onClick={() =>
+                                                            selectAddressSuggestion(
+                                                                suggestion
+                                                            )
+                                                        }
+
+                                                        style={{
+                                                            width:
+                                                                "100%",
+
+                                                            border:
+                                                                "none",
+
+                                                            borderBottom:
+                                                                index ===
+                                                                addressSuggestions.length -
+                                                                    1
+                                                                    ? "none"
+                                                                    : "1px solid #EEF2F7",
+
+                                                            background:
+                                                                "#FFFFFF",
+
+                                                            padding:
+                                                                "12px 14px",
+
+                                                            textAlign:
+                                                                "left",
+
+                                                            cursor:
+                                                                "pointer",
+
+                                                            fontFamily:
+                                                                "inherit",
+                                                        }}
+                                                    >
+                                                        <div
+                                                            style={{
+                                                                color:
+                                                                    "#0F172A",
+
+                                                                fontSize:
+                                                                    "13px",
+
+                                                                fontWeight:
+                                                                    "800",
+
+                                                                lineHeight:
+                                                                    "1.35",
+                                                            }}
+                                                        >
+                                                            {
+                                                                primaryText
+                                                            }
+                                                        </div>
+
+                                                        {secondaryText && (
+                                                            <div
+                                                                style={{
+                                                                    marginTop:
+                                                                        "3px",
+
+                                                                    color:
+                                                                        "#64748B",
+
+                                                                    fontSize:
+                                                                        "11px",
+
+                                                                    lineHeight:
+                                                                        "1.4",
+                                                                }}
+                                                            >
+                                                                {
+                                                                    secondaryText
+                                                                }
+                                                            </div>
+                                                        )}
+                                                    </button>
+                                                );
+                                            }
+                                        )}
+                                    </div>
+                                )}
+                        </div>
+
+                        {selectedAddressCoordinates && (
+                            <div
+                                style={{
+                                    marginTop:
+                                        "10px",
+
+                                    color:
+                                        "#15803D",
+
+                                    fontSize:
+                                        "12px",
+
+                                    fontWeight:
+                                        "700",
+                                }}
+                            >
+                                ✓ Locația
+                                adresei este
+                                confirmată.
+                            </div>
+                        )}
+                    </section>
+
+                    {/* =========================
+                        DETALII PROPRIETATE
+                    ========================= */}
+
+                    <section
+                        style={
+                            sectionStyle
+                        }
+                    >
+                        <div
+                            style={{
+                                marginBottom:
+                                    "18px",
+                            }}
+                        >
+                            <h2
+                                style={{
+                                    margin:
+                                        0,
+
+                                    color:
+                                        "#172554",
+
+                                    fontSize:
+                                        "18px",
+
+                                    fontWeight:
+                                        "900",
+                                }}
+                            >
+                                Detalii
+                                proprietate
+                            </h2>
+
+                            <p
+                                style={{
+                                    margin:
+                                        "5px 0 0",
+
+                                    color:
+                                        "#64748B",
+
+                                    fontSize:
+                                        "13px",
+                                }}
+                            >
+                                Completează
+                                caracteristicile
+                                locuinței.
+                            </p>
+                        </div>
+
+                        <div
+                            style={{
+                                display:
+                                    "grid",
+
+                                gridTemplateColumns:
+                                    "repeat(3, 1fr)",
+
+                                gap:
+                                    "16px",
+
+                                marginBottom:
+                                    "16px",
+                            }}
+                        >
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Suprafață
+                                    utilă (m²)
+                                </label>
+
+                                <input
+                                    type="number"
+
+                                    name="surface_m2"
+
+                                    value={
+                                        form.surface_m2
+                                    }
+
+                                    onChange={
+                                        handleChange
+                                    }
+
+                                    min="1"
+
+                                    placeholder="55"
+
+                                    style={
+                                        inputStyle
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Etaj
+                                </label>
+
+                                <input
+                                    type="number"
+
+                                    name="floor"
+
+                                    value={
+                                        form.floor
+                                    }
+
+                                    onChange={
+                                        handleChange
+                                    }
+
+                                    placeholder="2"
+
+                                    style={
+                                        inputStyle
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Număr
+                                    total
+                                    etaje
+                                </label>
+
+                                <input
+                                    type="number"
+
+                                    name="total_floors"
+
+                                    value={
+                                        form.total_floors
+                                    }
+
+                                    onChange={
+                                        handleChange
+                                    }
+
+                                    min="0"
+
+                                    placeholder="4"
+
+                                    style={
+                                        inputStyle
+                                    }
+                                />
+                            </div>
+                        </div>
+
+                        <div
+                            style={{
+                                display:
+                                    "grid",
+
+                                gridTemplateColumns:
+                                    "repeat(3, 1fr)",
+
+                                gap:
+                                    "16px",
+
+                                marginBottom:
+                                    "16px",
+                            }}
+                        >
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    An
+                                    construcție
+                                </label>
+
+                                <input
+                                    type="number"
+
+                                    name="construction_year"
+
+                                    value={
+                                        form.construction_year
+                                    }
+
+                                    onChange={
+                                        handleChange
+                                    }
+
+                                    min="1800"
+
+                                    max={
+                                        new Date().getFullYear()
+                                    }
+
+                                    placeholder="2018"
+
+                                    style={
+                                        inputStyle
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Mobilat
+                                </label>
+
+                                <select
+                                    name="furnished"
+
+                                    value={
+                                        form.furnished
+                                    }
+
+                                    onChange={
+                                        handleChange
+                                    }
+
+                                    style={{
+                                        ...inputStyle,
+
+                                        cursor:
+                                            "pointer",
+                                    }}
+                                >
+                                    <option value="true">
+                                        Da
+                                    </option>
+
+                                    <option value="false">
+                                        Nu
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Tip
+                                    încălzire
+                                </label>
+
+                                <select
+                                    name="heating_type"
+
+                                    value={
+                                        form.heating_type
+                                    }
+
+                                    onChange={
+                                        handleChange
+                                    }
+
+                                    style={{
+                                        ...inputStyle,
+
+                                        cursor:
+                                            "pointer",
+                                    }}
+                                >
+                                    <option value="">
+                                        Nespecificat
+                                    </option>
+
+                                    <option value="central">
+                                        Centrală
+                                        proprie
+                                    </option>
+
+                                    <option value="district">
+                                        Termoficare
+                                    </option>
+
+                                    <option value="electric">
+                                        Electrică
+                                    </option>
+
+                                    <option value="gas">
+                                        Gaz
+                                    </option>
+
+                                    <option value="other">
+                                        Alt tip
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div
+                            style={{
+                                display:
+                                    "grid",
+
+                                gridTemplateColumns:
+                                    "repeat(3, 1fr)",
+
+                                gap:
+                                    "16px",
+                            }}
+                        >
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Aer
+                                    condiționat
+                                </label>
+
+                                <select
+                                    name="air_conditioning"
+
+                                    value={
+                                        form.air_conditioning
+                                    }
+
+                                    onChange={
+                                        handleChange
+                                    }
+
+                                    style={{
+                                        ...inputStyle,
+
+                                        cursor:
+                                            "pointer",
+                                    }}
+                                >
+                                    <option value="false">
+                                        Nu
+                                    </option>
+
+                                    <option value="true">
+                                        Da
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Balcon
+                                </label>
+
+                                <select
+                                    name="balcony"
+
+                                    value={
+                                        form.balcony
+                                    }
+
+                                    onChange={
+                                        handleChange
+                                    }
+
+                                    style={{
+                                        ...inputStyle,
+
+                                        cursor:
+                                            "pointer",
+                                    }}
+                                >
+                                    <option value="false">
+                                        Nu
+                                    </option>
+
+                                    <option value="true">
+                                        Da
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Parcare
+                                </label>
+
+                                <select
+                                    name="parking"
+
+                                    value={
+                                        form.parking
+                                    }
+
+                                    onChange={
+                                        handleChange
+                                    }
+
+                                    style={{
+                                        ...inputStyle,
+
+                                        cursor:
+                                            "pointer",
+                                    }}
+                                >
+                                    <option value="false">
+                                        Nu
+                                    </option>
+
+                                    <option value="true">
+                                        Da
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* =========================
+                        DISPONIBILITATE
+                    ========================= */}
+
+                    <section
+                        style={
+                            sectionStyle
+                        }
+                    >
+                        <div
+                            style={{
+                                marginBottom:
+                                    "18px",
+                            }}
+                        >
+                            <h2
+                                style={{
+                                    margin:
+                                        0,
+
+                                    color:
+                                        "#172554",
+
+                                    fontSize:
+                                        "18px",
+
+                                    fontWeight:
+                                        "900",
+                                }}
+                            >
+                                Disponibilitate
+                                și condiții
+                            </h2>
+
+                            <p
+                                style={{
+                                    margin:
+                                        "5px 0 0",
+
+                                    color:
+                                        "#64748B",
+
+                                    fontSize:
+                                        "13px",
+                                }}
+                            >
+                                Data
+                                disponibilității
+                                și condițiile
+                                proprietății.
+                            </p>
+                        </div>
+
+                        <div
+                            style={{
+                                display:
+                                    "grid",
+
+                                gridTemplateColumns:
+                                    "repeat(3, 1fr)",
+
+                                gap:
+                                    "16px",
+
+                                marginBottom:
+                                    "16px",
+                            }}
+                        >
+                            <div
+                                style={{
+                                    position:
+                                        "relative",
+                                }}
+                            >
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Disponibil
+                                    de la
+                                </label>
+
+                                <button
+                                    type="button"
+
+                                    onClick={
+                                        openCalendar
+                                    }
+
+                                    style={{
+                                        ...inputStyle,
+
+                                        cursor:
+                                            "pointer",
+
+                                        textAlign:
+                                            "left",
+
+                                        display:
+                                            "flex",
+
+                                        alignItems:
+                                            "center",
+
+                                        justifyContent:
+                                            "space-between",
+
+                                        color:
+                                            form.available_from
+                                                ? "#0F172A"
+                                                : "#94A3B8",
+                                    }}
+                                >
+                                    <span>
+                                        {form.available_from
+                                            ? formatRomanianDate(
+                                                  form.available_from
+                                              )
+                                            : "ZZ/LL/AAAA"}
+                                    </span>
+
+                                    <span>
+                                        ▣
+                                    </span>
+                                </button>
+
+                                {calendarOpen && (
+                                    <div
+                                        style={{
+                                            position:
+                                                "absolute",
+
+                                            top:
+                                                "calc(100% + 7px)",
+
+                                            left:
+                                                0,
+
+                                            zIndex:
+                                                1000,
+
+                                            width:
+                                                "292px",
+
+                                            boxSizing:
+                                                "border-box",
+
+                                            background:
+                                                "#FFFFFF",
+
+                                            border:
+                                                "1px solid #E2E8F0",
+
+                                            borderRadius:
+                                                "12px",
+
+                                            padding:
+                                                "13px",
+
+                                            boxShadow:
+                                                "0 14px 35px rgba(15, 23, 42, 0.14)",
+                                        }}
+                                    >
+                                        <div
+                                            style={{
+                                                display:
+                                                    "flex",
+
+                                                alignItems:
+                                                    "center",
+
+                                                justifyContent:
+                                                    "space-between",
+
+                                                marginBottom:
+                                                    "12px",
+                                            }}
+                                        >
+                                            <button
+                                                type="button"
+
+                                                onClick={
+                                                    previousCalendarMonth
+                                                }
+
+                                                disabled={
+                                                    !canGoToPreviousMonth
+                                                }
+
+                                                style={{
+                                                    width:
+                                                        "32px",
+
+                                                    height:
+                                                        "32px",
+
+                                                    border:
+                                                        "1px solid #E2E8F0",
+
+                                                    borderRadius:
+                                                        "8px",
+
+                                                    background:
+                                                        !canGoToPreviousMonth
+                                                            ? "#F8FAFC"
+                                                            : "#FFFFFF",
+
+                                                    color:
+                                                        !canGoToPreviousMonth
+                                                            ? "#CBD5E1"
+                                                            : "#172554",
+
+                                                    cursor:
+                                                        !canGoToPreviousMonth
+                                                            ? "not-allowed"
+                                                            : "pointer",
+
+                                                    fontSize:
+                                                        "18px",
+                                                }}
+                                            >
+                                                ‹
+                                            </button>
+
+                                            <div
+                                                style={{
+                                                    color:
+                                                        "#172554",
+
+                                                    fontSize:
+                                                        "13px",
+
+                                                    fontWeight:
+                                                        "800",
+                                                }}
+                                            >
+                                                {
+                                                    romanianMonths[
+                                                        calendarMonthIndex
+                                                    ]
+                                                }{" "}
+                                                {
+                                                    calendarYear
+                                                }
+                                            </div>
+
+                                            <button
+                                                type="button"
+
+                                                onClick={
+                                                    nextCalendarMonth
+                                                }
+
+                                                style={{
+                                                    width:
+                                                        "32px",
+
+                                                    height:
+                                                        "32px",
+
+                                                    border:
+                                                        "1px solid #E2E8F0",
+
+                                                    borderRadius:
+                                                        "8px",
+
+                                                    background:
+                                                        "#FFFFFF",
+
+                                                    color:
+                                                        "#172554",
+
+                                                    cursor:
+                                                        "pointer",
+
+                                                    fontSize:
+                                                        "18px",
+                                                }}
+                                            >
+                                                ›
+                                            </button>
+                                        </div>
+
+                                        <div
+                                            style={{
+                                                display:
+                                                    "grid",
+
+                                                gridTemplateColumns:
+                                                    "repeat(7, 1fr)",
+
+                                                gap:
+                                                    "3px",
+
+                                                marginBottom:
+                                                    "5px",
+                                            }}
+                                        >
+                                            {[
+                                                "Lu",
+                                                "Ma",
+                                                "Mi",
+                                                "Jo",
+                                                "Vi",
+                                                "Sâ",
+                                                "Du",
+                                            ].map(
+                                                (
+                                                    dayName
+                                                ) => (
+                                                    <div
+                                                        key={
+                                                            dayName
+                                                        }
+
+                                                        style={{
+                                                            textAlign:
+                                                                "center",
+
+                                                            color:
+                                                                "#94A3B8",
+
+                                                            fontSize:
+                                                                "9px",
+
+                                                            fontWeight:
+                                                                "800",
+
+                                                            padding:
+                                                                "4px 0",
+                                                        }}
+                                                    >
+                                                        {
+                                                            dayName
+                                                        }
+                                                    </div>
+                                                )
+                                            )}
+                                        </div>
+
+                                        <div
+                                            style={{
+                                                display:
+                                                    "grid",
+
+                                                gridTemplateColumns:
+                                                    "repeat(7, 1fr)",
+
+                                                gap:
+                                                    "3px",
+                                            }}
+                                        >
+                                            {calendarCells.map(
+                                                (
+                                                    day,
+                                                    index
+                                                ) => {
+                                                    if (
+                                                        !day
+                                                    ) {
+                                                        return (
+                                                            <div
+                                                                key={
+                                                                    `empty-${index}`
+                                                                }
+                                                            />
+                                                        );
+                                                    }
+
+                                                    const cellDate =
+                                                        new Date(
+                                                            calendarYear,
+                                                            calendarMonthIndex,
+                                                            day
+                                                        );
+
+                                                    const today =
+                                                        getTodayAtMidnight();
+
+                                                    const disabled =
+                                                        cellDate <
+                                                        today;
+
+                                                    const selected =
+                                                        form.available_from ===
+                                                        `${calendarYear}-${String(
+                                                            calendarMonthIndex +
+                                                                1
+                                                        ).padStart(
+                                                            2,
+                                                            "0"
+                                                        )}-${String(
+                                                            day
+                                                        ).padStart(
+                                                            2,
+                                                            "0"
+                                                        )}`;
+
+                                                    return (
+                                                        <button
+                                                            key={
+                                                                day
+                                                            }
+
+                                                            type="button"
+
+                                                            disabled={
+                                                                disabled
+                                                            }
+
+                                                            onClick={() =>
+                                                                selectCalendarDay(
+                                                                    day
+                                                                )
+                                                            }
+
+                                                            style={{
+                                                                width:
+                                                                    "100%",
+
+                                                                aspectRatio:
+                                                                    "1 / 1",
+
+                                                                border:
+                                                                    selected
+                                                                        ? "1px solid #2563EB"
+                                                                        : "1px solid transparent",
+
+                                                                borderRadius:
+                                                                    "7px",
+
+                                                                background:
+                                                                    selected
+                                                                        ? "#2563EB"
+                                                                        : "#FFFFFF",
+
+                                                                color:
+                                                                    selected
+                                                                        ? "#FFFFFF"
+                                                                        : disabled
+                                                                        ? "#CBD5E1"
+                                                                        : "#334155",
+
+                                                                fontFamily:
+                                                                    "inherit",
+
+                                                                fontSize:
+                                                                    "10px",
+
+                                                                fontWeight:
+                                                                    selected
+                                                                        ? "800"
+                                                                        : "600",
+
+                                                                cursor:
+                                                                    disabled
+                                                                        ? "not-allowed"
+                                                                        : "pointer",
+                                                            }}
+                                                        >
+                                                            {
+                                                                day
+                                                            }
+                                                        </button>
+                                                    );
+                                                }
+                                            )}
+                                        </div>
+
+                                        <div
+                                            style={{
+                                                display:
+                                                    "flex",
+
+                                                justifyContent:
+                                                    "space-between",
+
+                                                alignItems:
+                                                    "center",
+
+                                                gap:
+                                                    "8px",
+
+                                                marginTop:
+                                                    "11px",
+
+                                                paddingTop:
+                                                    "10px",
+
+                                                borderTop:
+                                                    "1px solid #F1F5F9",
+                                            }}
+                                        >
+                                            <button
+                                                type="button"
+
+                                                onClick={() => {
+                                                    setForm(
+                                                        (
+                                                            current
+                                                        ) => ({
+                                                            ...current,
+
+                                                            available_from:
+                                                                "",
+                                                        })
+                                                    );
+
+                                                    setCalendarOpen(
+                                                        false
+                                                    );
+                                                }}
+
+                                                style={{
+                                                    border:
+                                                        "none",
+
+                                                    background:
+                                                        "transparent",
+
+                                                    color:
+                                                        "#64748B",
+
+                                                    padding:
+                                                        "5px 2px",
+
+                                                    fontFamily:
+                                                        "inherit",
+
+                                                    fontSize:
+                                                        "10px",
+
+                                                    fontWeight:
+                                                        "800",
+
+                                                    cursor:
+                                                        "pointer",
+                                                }}
+                                            >
+                                                Șterge
+                                                data
+                                            </button>
+
+                                            <button
+                                                type="button"
+
+                                                onClick={() => {
+                                                    const today =
+                                                        getTodayAtMidnight();
+
+                                                    const year =
+                                                        today.getFullYear();
+
+                                                    const month =
+                                                        String(
+                                                            today.getMonth() +
+                                                                1
+                                                        ).padStart(
+                                                            2,
+                                                            "0"
+                                                        );
+
+                                                    const day =
+                                                        String(
+                                                            today.getDate()
+                                                        ).padStart(
+                                                            2,
+                                                            "0"
+                                                        );
+
+                                                    setForm(
+                                                        (
+                                                            current
+                                                        ) => ({
+                                                            ...current,
+
+                                                            available_from:
+                                                                `${year}-${month}-${day}`,
+                                                        })
+                                                    );
+
+                                                    setCalendarOpen(
+                                                        false
+                                                    );
+                                                }}
+
+                                                style={{
+                                                    border:
+                                                        "1px solid #BFDBFE",
+
+                                                    background:
+                                                        "#EFF6FF",
+
+                                                    color:
+                                                        "#2563EB",
+
+                                                    borderRadius:
+                                                        "7px",
+
+                                                    padding:
+                                                        "6px 9px",
+
+                                                    fontFamily:
+                                                        "inherit",
+
+                                                    fontSize:
+                                                        "10px",
+
+                                                    fontWeight:
+                                                        "800",
+
+                                                    cursor:
+                                                        "pointer",
+                                                }}
+                                            >
+                                                Astăzi
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Număr
+                                    maxim
+                                    chiriași
+                                </label>
+
+                                <input
+                                    type="number"
+
+                                    name="max_tenants"
+
+                                    value={
+                                        form.max_tenants
+                                    }
+
+                                    onChange={
+                                        handleChange
+                                    }
+
+                                    min="1"
+
+                                    placeholder="2"
+
+                                    style={
+                                        inputStyle
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Garanție
+                                    (€)
+                                </label>
+
+                                <input
+                                    type="number"
+
+                                    name="deposit_amount"
+
+                                    value={
+                                        form.deposit_amount
+                                    }
+
+                                    onChange={
+                                        handleChange
+                                    }
+
+                                    min="0"
+
+                                    placeholder="450"
+
+                                    style={
+                                        inputStyle
+                                    }
+                                />
+                            </div>
+                        </div>
+
+                        <div
+                            style={{
+                                display:
+                                    "grid",
+
+                                gridTemplateColumns:
+                                    "repeat(3, 1fr)",
+
+                                gap:
+                                    "16px",
+                            }}
+                        >
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Animale
+                                    acceptate
+                                </label>
+
+                                <select
+                                    name="pets_allowed"
+
+                                    value={
+                                        form.pets_allowed
+                                    }
+
+                                    onChange={
+                                        handleChange
+                                    }
+
+                                    style={{
+                                        ...inputStyle,
+
+                                        cursor:
+                                            "pointer",
+                                    }}
+                                >
+                                    <option value="false">
+                                        Nu
+                                    </option>
+
+                                    <option value="true">
+                                        Da
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Fumat
+                                    permis
+                                </label>
+
+                                <select
+                                    name="smoking_allowed"
+
+                                    value={
+                                        form.smoking_allowed
+                                    }
+
+                                    onChange={
+                                        handleChange
+                                    }
+
+                                    style={{
+                                        ...inputStyle,
+
+                                        cursor:
+                                            "pointer",
+                                    }}
+                                >
+                                    <option value="false">
+                                        Nu
+                                    </option>
+
+                                    <option value="true">
+                                        Da
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Utilități
+                                    incluse
+                                </label>
+
+                                <select
+                                    name="utilities_included"
+
+                                    value={
+                                        form.utilities_included
+                                    }
+
+                                    onChange={
+                                        handleChange
+                                    }
+
+                                    style={{
+                                        ...inputStyle,
+
+                                        cursor:
+                                            "pointer",
+                                    }}
+                                >
+                                    <option value="false">
+                                        Nu
+                                    </option>
+
+                                    <option value="true">
+                                        Da
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                    </section>
+                    {/* =========================
+                        UNIVERSITĂȚI
+                    ========================= */}
+
+                    <section
+                        style={
+                            sectionStyle
+                        }
+                    >
+                        <div
+                            style={{
+                                marginBottom:
+                                    "18px",
+                            }}
+                        >
+                            <h2
+                                style={{
+                                    margin:
+                                        0,
+
+                                    color:
+                                        "#172554",
+
+                                    fontSize:
+                                        "18px",
+
+                                    fontWeight:
+                                        "900",
+                                }}
+                            >
+                                Universități
+                                apropiate
+                            </h2>
+
+                            <p
+                                style={{
+                                    margin:
+                                        "5px 0 0",
+
+                                    color:
+                                        "#64748B",
+
+                                    fontSize:
+                                        "13px",
+
+                                    lineHeight:
+                                        "1.5",
+                                }}
+                            >
+                                Poți asocia
+                                anunțul cu una
+                                sau mai multe
+                                universități
+                                din oraș.
+                            </p>
+                        </div>
+
+                        {!form.city ? (
+                            <div
+                                style={{
+                                    padding:
+                                        "14px",
+
+                                    border:
+                                        "1px dashed #CBD5E1",
+
+                                    borderRadius:
+                                        "10px",
+
+                                    color:
+                                        "#64748B",
+
+                                    fontSize:
+                                        "13px",
+                                }}
+                            >
+                                Selectează
+                                mai întâi
+                                orașul.
+                            </div>
+                        ) : loadingUniversities ? (
+                            <div
+                                style={{
+                                    color:
+                                        "#64748B",
+
+                                    fontSize:
+                                        "13px",
+                                }}
+                            >
+                                Se încarcă
+                                universitățile...
+                            </div>
+                        ) : filteredUniversities.length ===
+                          0 ? (
+                            <div
+                                style={{
+                                    padding:
+                                        "14px",
+
+                                    border:
+                                        "1px dashed #CBD5E1",
+
+                                    borderRadius:
+                                        "10px",
+
+                                    color:
+                                        "#64748B",
+
+                                    fontSize:
+                                        "13px",
+                                }}
+                            >
+                                Nu există
+                                universități
+                                disponibile
+                                pentru acest
+                                oraș.
+                            </div>
+                        ) : (
+                            <div
+                                style={{
+                                    display:
+                                        "grid",
+
+                                    gridTemplateColumns:
+                                        "repeat(2, minmax(0, 1fr))",
+
+                                    gap:
+                                        "10px",
+                                }}
+                            >
+                                {filteredUniversities.map(
+                                    (
+                                        university
+                                    ) => {
+                                        const checked =
+                                            selectedUniversityIds.includes(
+                                                university.id
+                                            );
+
+                                        return (
+                                            <label
+                                                key={
+                                                    university.id
+                                                }
+
+                                                style={{
+                                                    display:
+                                                        "flex",
+
+                                                    alignItems:
+                                                        "flex-start",
+
+                                                    gap:
+                                                        "10px",
+
+                                                    padding:
+                                                        "12px",
+
+                                                    border:
+                                                        checked
+                                                            ? "1px solid #93C5FD"
+                                                            : "1px solid #E2E8F0",
+
+                                                    borderRadius:
+                                                        "10px",
+
+                                                    background:
+                                                        checked
+                                                            ? "#EFF6FF"
+                                                            : "#FFFFFF",
+
+                                                    cursor:
+                                                        "pointer",
+                                                }}
+                                            >
+                                                <input
+                                                    type="checkbox"
+
+                                                    checked={
+                                                        checked
+                                                    }
+
+                                                    onChange={() =>
+                                                        toggleUniversity(
+                                                            university.id
+                                                        )
+                                                    }
+
+                                                    style={{
+                                                        marginTop:
+                                                            "2px",
+
+                                                        width:
+                                                            "16px",
+
+                                                        height:
+                                                            "16px",
+
+                                                        cursor:
+                                                            "pointer",
+                                                    }}
+                                                />
+
+                                                <span
+                                                    style={{
+                                                        minWidth:
+                                                            0,
+                                                    }}
+                                                >
+                                                    <span
+                                                        style={{
+                                                            display:
+                                                                "block",
+
+                                                            color:
+                                                                "#0F172A",
+
+                                                            fontSize:
+                                                                "13px",
+
+                                                            fontWeight:
+                                                                "800",
+
+                                                            lineHeight:
+                                                                "1.4",
+                                                        }}
+                                                    >
+                                                        {university.short_name ||
+                                                            university.name}
+                                                    </span>
+
+                                                    {university.short_name &&
+                                                        university.name && (
+                                                            <span
+                                                                style={{
+                                                                    display:
+                                                                        "block",
+
+                                                                    marginTop:
+                                                                        "2px",
+
+                                                                    color:
+                                                                        "#64748B",
+
+                                                                    fontSize:
+                                                                        "11px",
+
+                                                                    lineHeight:
+                                                                        "1.4",
+                                                                }}
+                                                            >
+                                                                {
+                                                                    university.name
+                                                                }
+                                                            </span>
+                                                        )}
+                                                </span>
+                                            </label>
+                                        );
+                                    }
+                                )}
+                            </div>
+                        )}
+                    </section>
+
+                    {/* =========================
+                        DESCRIERE
+                    ========================= */}
+
+                    <section
+                        style={
+                            sectionStyle
+                        }
+                    >
+                        <div
+                            style={{
+                                marginBottom:
+                                    "18px",
+                            }}
+                        >
+                            <h2
+                                style={{
+                                    margin:
+                                        0,
+
+                                    color:
+                                        "#172554",
+
+                                    fontSize:
+                                        "18px",
+
+                                    fontWeight:
+                                        "900",
+                                }}
+                            >
+                                Descriere
+                            </h2>
+
+                            <p
+                                style={{
+                                    margin:
+                                        "5px 0 0",
+
+                                    color:
+                                        "#64748B",
+
+                                    fontSize:
+                                        "13px",
+                                }}
+                            >
+                                Prezintă
+                                proprietatea
+                                cât mai clar
+                                pentru
+                                studenți.
+                            </p>
+                        </div>
+
+                        <textarea
+                            name="description"
+
+                            value={
+                                form.description
+                            }
+
+                            onChange={
+                                handleChange
+                            }
+
+                            placeholder="Descrie proprietatea, facilitățile, zona, transportul și orice alte informații utile..."
+
+                            style={
+                                textareaStyle
+                            }
+                        />
+                    </section>
+
+                    {/* =========================
+                        FOTOGRAFII
+                    ========================= */}
+
+                    <section
+                        style={
+                            sectionStyle
+                        }
+                    >
+                        <div
+                            style={{
+                                marginBottom:
+                                    "18px",
+                            }}
+                        >
+                            <h2
+                                style={{
+                                    margin:
+                                        0,
+
+                                    color:
+                                        "#172554",
+
+                                    fontSize:
+                                        "18px",
+
+                                    fontWeight:
+                                        "900",
+                                }}
+                            >
+                                Fotografii
+                            </h2>
+
+                            <p
+                                style={{
+                                    margin:
+                                        "5px 0 0",
+
+                                    color:
+                                        "#64748B",
+
+                                    fontSize:
+                                        "13px",
+
+                                    lineHeight:
+                                        "1.5",
+                                }}
+                            >
+                                Poți păstra
+                                fotografiile
+                                existente,
+                                elimina unele
+                                sau adăuga
+                                altele noi.
+                                Maximum 10
+                                fotografii.
+                            </p>
+                        </div>
 
                         <label
                             style={{
                                 display:
-                                    "block",
+                                    "flex",
 
-                                border:
-                                    "2px dashed #d1d5db",
+                                alignItems:
+                                    "center",
 
-                                borderRadius:
-                                    "14px",
+                                justifyContent:
+                                    "center",
+
+                                minHeight:
+                                    "110px",
 
                                 padding:
-                                    "28px 20px",
+                                    "18px",
 
-                                textAlign:
-                                    "center",
+                                border:
+                                    "1px dashed #94A3B8",
+
+                                borderRadius:
+                                    "12px",
+
+                                background:
+                                    "#F8FAFC",
 
                                 cursor:
                                     images.length >=
@@ -3391,58 +5847,72 @@ export default function EditeazaProprietatePage() {
                                         ? "not-allowed"
                                         : "pointer",
 
-                                background:
-                                    "#fafafa",
+                                opacity:
+                                    images.length >=
+                                    10
+                                        ? 0.6
+                                        : 1,
+
+                                textAlign:
+                                    "center",
                             }}
                         >
                             <input
                                 type="file"
+
                                 accept="image/*"
+
                                 multiple
+
                                 disabled={
                                     images.length >=
                                     10
                                 }
+
                                 onChange={
                                     handleImages
                                 }
+
                                 style={{
                                     display:
                                         "none",
                                 }}
                             />
 
-                            <div
-                                style={{
-                                    fontSize:
-                                        "15px",
+                            <div>
+                                <div
+                                    style={{
+                                        color:
+                                            "#172554",
 
-                                    fontWeight:
-                                        "800",
+                                        fontSize:
+                                            "14px",
 
-                                    color:
-                                        "#111827",
-                                }}
-                            >
-                                {images.length >=
-                                10
-                                    ? "Ai numărul maxim de fotografii"
-                                    : "Adaugă fotografii"}
-                            </div>
+                                        fontWeight:
+                                            "800",
+                                    }}
+                                >
+                                    {images.length >=
+                                    10
+                                        ? "Ai ajuns la limita de 10 fotografii"
+                                        : "Adaugă fotografii"}
+                                </div>
 
-                            <div
-                                style={{
-                                    color:
-                                        "#6b7280",
+                                <div
+                                    style={{
+                                        marginTop:
+                                            "5px",
 
-                                    fontSize:
-                                        "13px",
+                                        color:
+                                            "#64748B",
 
-                                    marginTop:
-                                        "7px",
-                                }}
-                            >
-                                {images.length}/10 fotografii
+                                        fontSize:
+                                            "12px",
+                                    }}
+                                >
+                                    {images.length}/10
+                                    fotografii
+                                </div>
                             </div>
                         </label>
 
@@ -3454,13 +5924,13 @@ export default function EditeazaProprietatePage() {
                                         "grid",
 
                                     gridTemplateColumns:
-                                        "repeat(auto-fill, minmax(150px, 1fr))",
+                                        "repeat(4, minmax(0, 1fr))",
 
                                     gap:
-                                        "14px",
+                                        "12px",
 
                                     marginTop:
-                                        "22px",
+                                        "16px",
                                 }}
                             >
                                 {images.map(
@@ -3470,34 +5940,42 @@ export default function EditeazaProprietatePage() {
                                     ) => (
                                         <div
                                             key={
-                                                image.existing
-                                                    ? `existing-${image.id}`
-                                                    : `new-${image.file?.name}-${index}`
+                                                image.id ||
+                                                image.preview ||
+                                                index
                                             }
+
                                             style={{
                                                 position:
                                                     "relative",
 
+                                                aspectRatio:
+                                                    "4 / 3",
+
+                                                border:
+                                                    "1px solid #E2E8F0",
+
                                                 borderRadius:
-                                                    "12px",
+                                                    "10px",
 
                                                 overflow:
                                                     "hidden",
 
                                                 background:
-                                                    "#f3f4f6",
-
-                                                aspectRatio:
-                                                    "1 / 1",
+                                                    "#F1F5F9",
                                             }}
                                         >
                                             <img
                                                 src={
-                                                    image.existing
-                                                        ? image.image_url
-                                                        : image.preview
+                                                    image.image_url ||
+                                                    image.preview
                                                 }
-                                                alt={`Fotografie ${index + 1}`}
+
+                                                alt={`Fotografie ${
+                                                    index +
+                                                    1
+                                                }`}
+
                                                 style={{
                                                     width:
                                                         "100%",
@@ -3520,26 +5998,26 @@ export default function EditeazaProprietatePage() {
                                                         position:
                                                             "absolute",
 
+                                                        top:
+                                                            "8px",
+
                                                         left:
                                                             "8px",
 
-                                                        bottom:
-                                                            "8px",
-
-                                                        background:
-                                                            "#111827",
-
-                                                        color:
-                                                            "#ffffff",
-
                                                         padding:
-                                                            "6px 9px",
+                                                            "5px 8px",
 
                                                         borderRadius:
                                                             "7px",
 
+                                                        background:
+                                                            "rgba(15, 23, 42, 0.82)",
+
+                                                        color:
+                                                            "#FFFFFF",
+
                                                         fontSize:
-                                                            "11px",
+                                                            "10px",
 
                                                         fontWeight:
                                                             "800",
@@ -3551,11 +6029,18 @@ export default function EditeazaProprietatePage() {
 
                                             <button
                                                 type="button"
+
                                                 onClick={() =>
                                                     removeImage(
                                                         index
                                                     )
                                                 }
+
+                                                aria-label={`Șterge fotografia ${
+                                                    index +
+                                                    1
+                                                }`}
+
                                                 style={{
                                                     position:
                                                         "absolute",
@@ -3572,6 +6057,15 @@ export default function EditeazaProprietatePage() {
                                                     height:
                                                         "30px",
 
+                                                    display:
+                                                        "flex",
+
+                                                    alignItems:
+                                                        "center",
+
+                                                    justifyContent:
+                                                        "center",
+
                                                     border:
                                                         "none",
 
@@ -3579,25 +6073,22 @@ export default function EditeazaProprietatePage() {
                                                         "50%",
 
                                                     background:
-                                                        "#ffffff",
+                                                        "rgba(255, 255, 255, 0.94)",
 
                                                     color:
-                                                        "#111827",
-
-                                                    fontFamily:
-                                                        "inherit",
+                                                        "#B91C1C",
 
                                                     fontSize:
-                                                        "17px",
+                                                        "16px",
 
                                                     fontWeight:
-                                                        "800",
+                                                        "900",
 
                                                     cursor:
                                                         "pointer",
 
                                                     boxShadow:
-                                                        "0 2px 8px rgba(0,0,0,0.18)",
+                                                        "0 2px 8px rgba(15, 23, 42, 0.16)",
                                                 }}
                                             >
                                                 ×
@@ -3607,1597 +6098,60 @@ export default function EditeazaProprietatePage() {
                                 )}
                             </div>
                         )}
-                    </div>
+                    </section>
 
-                    {/* DETALII PROPRIETATE */}
+                    {/* =========================
+                        DATE CONTACT
+                    ========================= */}
 
-                    <div
-                        style={{
-                            background:
-                                "#ffffff",
-
-                            border:
-                                "1px solid #e5e7eb",
-
-                            borderRadius:
-                                "20px",
-
-                            padding:
-                                "32px",
-
-                            boxShadow:
-                                "0 12px 35px rgba(17,24,39,0.05)",
-
-                            marginBottom:
-                                "22px",
-                        }}
+                    <section
+                        style={
+                            sectionStyle
+                        }
                     >
-                        <h2
-                            style={{
-                                margin:
-                                    "0 0 27px",
-
-                                fontSize:
-                                    "20px",
-
-                                fontWeight:
-                                    "800",
-                            }}
-                        >
-                            Detalii proprietate
-                        </h2>
-
-                        <div
-                            style={
-                                fieldStyle
-                            }
-                        >
-                            <label
-                                style={
-                                    labelStyle
-                                }
-                            >
-                                Titlul anunțului
-                            </label>
-
-                            <input
-                                name="title"
-                                type="text"
-                                value={
-                                    form.title
-                                }
-                                onChange={
-                                    updateField
-                                }
-                                placeholder="Ex: Apartament 2 camere în Timișoara"
-                                style={
-                                    inputStyle
-                                }
-                            />
-                        </div>
-
                         <div
                             style={{
-                                display:
-                                    "grid",
-
-                                gridTemplateColumns:
-                                    "repeat(2, minmax(0, 1fr))",
-
-                                gap:
+                                marginBottom:
                                     "18px",
                             }}
                         >
-                            <div
-                                style={
-                                    fieldStyle
-                                }
-                            >
-                                <label
-                                    style={
-                                        labelStyle
-                                    }
-                                >
-                                    Tip proprietate
-                                </label>
-
-                                <select
-                                    name="property_type"
-                                    value={
-                                        form.property_type
-                                    }
-                                    onChange={
-                                        updateField
-                                    }
-                                    style={
-                                        inputStyle
-                                    }
-                                >
-                                    <option value="apartment">
-                                        Apartament
-                                    </option>
-
-                                    <option value="house">
-                                        Casă
-                                    </option>
-
-                                    <option value="studio">
-                                        Garsonieră
-                                    </option>
-
-                                    <option value="room">
-                                        Cameră
-                                    </option>
-                                </select>
-                            </div>
-
-                            <div
-                                style={
-                                    fieldStyle
-                                }
-                            >
-                                <label
-                                    style={
-                                        labelStyle
-                                    }
-                                >
-                                    Preț lunar (€)
-                                </label>
-
-                                <input
-                                    name="price_monthly"
-                                    type="number"
-                                    min="0"
-                                    value={
-                                        form.price_monthly
-                                    }
-                                    onChange={
-                                        updateField
-                                    }
-                                    placeholder="Ex: 450"
-                                    style={
-                                        inputStyle
-                                    }
-                                />
-                            </div>
-                        </div>
-
-                        <div
-                            style={{
-                                display:
-                                    "grid",
-
-                                gridTemplateColumns:
-                                    "repeat(2, minmax(0, 1fr))",
-
-                                gap:
-                                    "18px",
-                            }}
-                        >
-                            <div
-                                style={
-                                    fieldStyle
-                                }
-                            >
-                                <label
-                                    style={
-                                        labelStyle
-                                    }
-                                >
-                                    Oraș
-                                </label>
-
-                                <select
-                                    name="city"
-                                    value={
-                                        form.city
-                                    }
-                                    onChange={
-                                        handleCityChange
-                                    }
-                                    disabled={
-                                        loadingLocations
-                                    }
-                                    style={
-                                        inputStyle
-                                    }
-                                >
-                                    <option value="">
-                                        Selectează orașul
-                                    </option>
-
-                                    {cities.map(
-                                        (
-                                            city
-                                        ) => (
-                                            <option
-                                                key={
-                                                    city.id
-                                                }
-                                                value={
-                                                    city.name
-                                                }
-                                            >
-                                                {
-                                                    city.name
-                                                }
-                                            </option>
-                                        )
-                                    )}
-                                </select>
-                            </div>
-
-                            <div
-                                style={
-                                    fieldStyle
-                                }
-                            >
-                                <label
-                                    style={
-                                        labelStyle
-                                    }
-                                >
-                                    Zonă / cartier
-                                </label>
-
-                                <select
-                                    name="neighborhood_id"
-                                    value={
-                                        form.neighborhood_id
-                                    }
-                                    onChange={
-                                        updateField
-                                    }
-                                    disabled={
-                                        !form.city ||
-                                        loadingLocations
-                                    }
-                                    style={
-                                        inputStyle
-                                    }
-                                >
-                                    <option value="">
-                                        Selectează zona
-                                    </option>
-
-                                    {neighborhoodsForCity.map(
-                                        (
-                                            neighborhood
-                                        ) => (
-                                            <option
-                                                key={
-                                                    neighborhood.id
-                                                }
-                                                value={
-                                                    neighborhood.id
-                                                }
-                                            >
-                                                {
-                                                    neighborhood.name
-                                                }
-                                            </option>
-                                        )
-                                    )}
-                                </select>
-                            </div>
-                        </div>
-
-                        <div
-                            style={{
-                                ...fieldStyle,
-
-                                position:
-                                    "relative",
-                            }}
-                        >
-                            <label
-                                style={
-                                    labelStyle
-                                }
-                            >
-                                Adresa exactă
-                            </label>
-
-                            <input
-                                name="address"
-                                type="text"
-                                autoComplete="off"
-                                value={
-                                    form.address
-                                }
-                                onChange={
-                                    handleAddressChange
-                                }
-                                onFocus={() => {
-                                    if (
-                                        addressSuggestions.length >
-                                        0
-                                    ) {
-                                        setAddressSuggestionsOpen(
-                                            true
-                                        );
-                                    }
-                                }}
-                                placeholder="Ex: Strada Arieș 10"
-                                style={
-                                    inputStyle
-                                }
-                            />
-
-                            {loadingAddressSuggestions && (
-                                <div
-                                    style={{
-                                        color:
-                                            "#6b7280",
-
-                                        fontSize:
-                                            "12px",
-
-                                        marginTop:
-                                            "7px",
-                                    }}
-                                >
-                                    Se caută adresa...
-                                </div>
-                            )}
-
-                            {addressSuggestionsOpen &&
-                                addressSuggestions.length >
-                                    0 && (
-                                    <div
-                                        style={{
-                                            position:
-                                                "absolute",
-
-                                            zIndex:
-                                                30,
-
-                                            left:
-                                                0,
-
-                                            right:
-                                                0,
-
-                                            top:
-                                                "78px",
-
-                                            background:
-                                                "#ffffff",
-
-                                            border:
-                                                "1px solid #e5e7eb",
-
-                                            borderRadius:
-                                                "12px",
-
-                                            overflow:
-                                                "hidden",
-
-                                            boxShadow:
-                                                "0 15px 35px rgba(0,0,0,0.12)",
-                                        }}
-                                    >
-                                        {addressSuggestions.map(
-                                            (
-                                                suggestion,
-                                                index
-                                            ) => (
-                                                <button
-                                                    key={
-                                                        suggestion.mapbox_id ||
-                                                        index
-                                                    }
-                                                    type="button"
-                                                    onClick={() =>
-                                                        selectAddressSuggestion(
-                                                            suggestion
-                                                        )
-                                                    }
-                                                    style={{
-                                                        display:
-                                                            "block",
-
-                                                        width:
-                                                            "100%",
-
-                                                        textAlign:
-                                                            "left",
-
-                                                        border:
-                                                            "none",
-
-                                                        borderBottom:
-                                                            index ===
-                                                            addressSuggestions.length -
-                                                                1
-                                                                ? "none"
-                                                                : "1px solid #f3f4f6",
-
-                                                        background:
-                                                            "#ffffff",
-
-                                                        padding:
-                                                            "13px 15px",
-
-                                                        cursor:
-                                                            "pointer",
-
-                                                        fontFamily:
-                                                            "inherit",
-                                                    }}
-                                                >
-                                                    <div
-                                                        style={{
-                                                            color:
-                                                                "#111827",
-
-                                                            fontSize:
-                                                                "14px",
-
-                                                            fontWeight:
-                                                                "700",
-                                                        }}
-                                                    >
-                                                        {suggestion.name ||
-                                                            suggestion.full_address}
-                                                    </div>
-
-                                                    {(suggestion.full_address ||
-                                                        suggestion.place_formatted) && (
-                                                        <div
-                                                            style={{
-                                                                color:
-                                                                    "#6b7280",
-
-                                                                fontSize:
-                                                                    "12px",
-
-                                                                marginTop:
-                                                                    "4px",
-                                                            }}
-                                                        >
-                                                            {suggestion.full_address ||
-                                                                suggestion.place_formatted}
-                                                        </div>
-                                                    )}
-                                                </button>
-                                            )
-                                        )}
-                                    </div>
-                                )}
-
-                            <div
+                            <h2
                                 style={{
+                                    margin:
+                                        0,
+
                                     color:
-                                        "#6b7280",
+                                        "#172554",
 
                                     fontSize:
-                                        "12px",
+                                        "18px",
 
-                                    lineHeight:
-                                        "1.5",
-
-                                    marginTop:
-                                        "7px",
+                                    fontWeight:
+                                        "900",
                                 }}
                             >
-                                Introdu strada și numărul proprietății.
-                            </div>
-                        </div>
+                                Date de
+                                contact
+                            </h2>
 
-                        <div
-                            style={{
-                                display:
-                                    "grid",
-
-                                gridTemplateColumns:
-                                    "repeat(4, minmax(0, 1fr))",
-
-                                gap:
-                                    "18px",
-                            }}
-                        >
-                            <div
-                                style={
-                                    fieldStyle
-                                }
-                            >
-                                <label
-                                    style={
-                                        labelStyle
-                                    }
-                                >
-                                    Camere
-                                </label>
-
-                                <input
-                                    name="rooms"
-                                    type="number"
-                                    min="0"
-                                    value={
-                                        form.rooms
-                                    }
-                                    onChange={
-                                        updateField
-                                    }
-                                    style={
-                                        inputStyle
-                                    }
-                                />
-                            </div>
-
-                            <div
-                                style={
-                                    fieldStyle
-                                }
-                            >
-                                <label
-                                    style={
-                                        labelStyle
-                                    }
-                                >
-                                    Dormitoare
-                                </label>
-
-                                <input
-                                    name="bedrooms"
-                                    type="number"
-                                    min="0"
-                                    value={
-                                        form.bedrooms
-                                    }
-                                    onChange={
-                                        updateField
-                                    }
-                                    style={
-                                        inputStyle
-                                    }
-                                />
-                            </div>
-
-                            <div
-                                style={
-                                    fieldStyle
-                                }
-                            >
-                                <label
-                                    style={
-                                        labelStyle
-                                    }
-                                >
-                                    Băi
-                                </label>
-
-                                <input
-                                    name="bathrooms"
-                                    type="number"
-                                    min="0"
-                                    value={
-                                        form.bathrooms
-                                    }
-                                    onChange={
-                                        updateField
-                                    }
-                                    style={
-                                        inputStyle
-                                    }
-                                />
-                            </div>
-
-                            <div
-                                style={
-                                    fieldStyle
-                                }
-                            >
-                                <label
-                                    style={
-                                        labelStyle
-                                    }
-                                >
-                                    Suprafață m²
-                                </label>
-
-                                <input
-                                    name="surface_m2"
-                                    type="number"
-                                    min="0"
-                                    value={
-                                        form.surface_m2
-                                    }
-                                    onChange={
-                                        updateField
-                                    }
-                                    style={
-                                        inputStyle
-                                    }
-                                />
-                            </div>
-                        </div>
-
-                        <div
-                            style={{
-                                display:
-                                    "grid",
-
-                                gridTemplateColumns:
-                                    "repeat(3, minmax(0, 1fr))",
-
-                                gap:
-                                    "18px",
-                            }}
-                        >
-                            <div
-                                style={
-                                    fieldStyle
-                                }
-                            >
-                                <label
-                                    style={
-                                        labelStyle
-                                    }
-                                >
-                                    Etaj
-                                </label>
-
-                                <input
-                                    name="floor"
-                                    type="number"
-                                    value={
-                                        form.floor
-                                    }
-                                    onChange={
-                                        updateField
-                                    }
-                                    style={
-                                        inputStyle
-                                    }
-                                />
-                            </div>
-
-                            <div
-                                style={
-                                    fieldStyle
-                                }
-                            >
-                                <label
-                                    style={
-                                        labelStyle
-                                    }
-                                >
-                                    Total etaje
-                                </label>
-
-                                <input
-                                    name="total_floors"
-                                    type="number"
-                                    min="0"
-                                    value={
-                                        form.total_floors
-                                    }
-                                    onChange={
-                                        updateField
-                                    }
-                                    style={
-                                        inputStyle
-                                    }
-                                />
-                            </div>
-
-                            <div
-                                style={
-                                    fieldStyle
-                                }
-                            >
-                                <label
-                                    style={
-                                        labelStyle
-                                    }
-                                >
-                                    An construcție
-                                </label>
-
-                                <input
-                                    name="construction_year"
-                                    type="number"
-                                    min="1800"
-                                    max={
-                                        new Date().getFullYear()
-                                    }
-                                    value={
-                                        form.construction_year
-                                    }
-                                    onChange={
-                                        updateField
-                                    }
-                                    style={
-                                        inputStyle
-                                    }
-                                />
-                            </div>
-                        </div>
-
-                        <div
-                            style={{
-                                display:
-                                    "grid",
-
-                                gridTemplateColumns:
-                                    "repeat(2, minmax(0, 1fr))",
-
-                                gap:
-                                    "18px",
-                            }}
-                        >
-                            <div
-                                style={
-                                    fieldStyle
-                                }
-                            >
-                                <label
-                                    style={
-                                        labelStyle
-                                    }
-                                >
-                                    Mobilat
-                                </label>
-
-                                <select
-                                    name="furnished"
-                                    value={
-                                        form.furnished
-                                    }
-                                    onChange={
-                                        updateField
-                                    }
-                                    style={
-                                        inputStyle
-                                    }
-                                >
-                                    <option value="true">
-                                        Da
-                                    </option>
-
-                                    <option value="false">
-                                        Nu
-                                    </option>
-                                </select>
-                            </div>
-
-                            <div
-                                style={
-                                    fieldStyle
-                                }
-                            >
-                                <label
-                                    style={
-                                        labelStyle
-                                    }
-                                >
-                                    Tip încălzire
-                                </label>
-
-                                <input
-                                    name="heating_type"
-                                    type="text"
-                                    value={
-                                        form.heating_type
-                                    }
-                                    onChange={
-                                        updateField
-                                    }
-                                    placeholder="Ex: Centrală proprie"
-                                    style={
-                                        inputStyle
-                                    }
-                                />
-                            </div>
-                        </div>
-
-                        {/* DATA DISPONIBILITATE */}
-
-                        <div
-                            style={{
-                                ...fieldStyle,
-
-                                position:
-                                    "relative",
-                            }}
-                        >
-                            <label
-                                style={
-                                    labelStyle
-                                }
-                            >
-                                Disponibil de la
-                            </label>
-
-                            <button
-                                type="button"
-                                onClick={
-                                    openCalendar
-                                }
+                            <p
                                 style={{
-                                    ...inputStyle,
-
-                                    textAlign:
-                                        "left",
-
-                                    cursor:
-                                        "pointer",
+                                    margin:
+                                        "5px 0 0",
 
                                     color:
-                                        form.available_from
-                                            ? "#111827"
-                                            : "#9ca3af",
-                                }}
-                            >
-                                {form.available_from
-                                    ? formatRomanianDate(
-                                          form.available_from
-                                      )
-                                    : "Selectează data"}
-                            </button>
-
-                            {calendarOpen && (
-                                <div
-                                    style={{
-                                        position:
-                                            "absolute",
-
-                                        zIndex:
-                                            40,
-
-                                        top:
-                                            "82px",
-
-                                        left:
-                                            0,
-
-                                        width:
-                                            "330px",
-
-                                        background:
-                                            "#ffffff",
-
-                                        border:
-                                            "1px solid #e5e7eb",
-
-                                        borderRadius:
-                                            "15px",
-
-                                        padding:
-                                            "17px",
-
-                                        boxShadow:
-                                            "0 18px 40px rgba(0,0,0,0.15)",
-                                    }}
-                                >
-                                    <div
-                                        style={{
-                                            display:
-                                                "flex",
-
-                                            alignItems:
-                                                "center",
-
-                                            justifyContent:
-                                                "space-between",
-
-                                            marginBottom:
-                                                "15px",
-                                        }}
-                                    >
-                                        <button
-                                            type="button"
-                                            disabled={
-                                                !canGoToPreviousMonth
-                                            }
-                                            onClick={
-                                                previousCalendarMonth
-                                            }
-                                            style={{
-                                                border:
-                                                    "none",
-
-                                                background:
-                                                    "transparent",
-
-                                                fontSize:
-                                                    "20px",
-
-                                                cursor:
-                                                    canGoToPreviousMonth
-                                                        ? "pointer"
-                                                        : "not-allowed",
-
-                                                opacity:
-                                                    canGoToPreviousMonth
-                                                        ? 1
-                                                        : 0.3,
-                                            }}
-                                        >
-                                            ‹
-                                        </button>
-
-                                        <strong>
-                                            {
-                                                romanianMonths[
-                                                    calendarMonthIndex
-                                                ]
-                                            }{" "}
-                                            {
-                                                calendarYear
-                                            }
-                                        </strong>
-
-                                        <button
-                                            type="button"
-                                            onClick={
-                                                nextCalendarMonth
-                                            }
-                                            style={{
-                                                border:
-                                                    "none",
-
-                                                background:
-                                                    "transparent",
-
-                                                fontSize:
-                                                    "20px",
-
-                                                cursor:
-                                                    "pointer",
-                                            }}
-                                        >
-                                            ›
-                                        </button>
-                                    </div>
-
-                                    <div
-                                        style={{
-                                            display:
-                                                "grid",
-
-                                            gridTemplateColumns:
-                                                "repeat(7, 1fr)",
-
-                                            gap:
-                                                "5px",
-
-                                            textAlign:
-                                                "center",
-
-                                            fontSize:
-                                                "12px",
-                                        }}
-                                    >
-                                        {[
-                                            "L",
-                                            "Ma",
-                                            "Mi",
-                                            "J",
-                                            "V",
-                                            "S",
-                                            "D",
-                                        ].map(
-                                            (
-                                                day
-                                            ) => (
-                                                <div
-                                                    key={
-                                                        day
-                                                    }
-                                                    style={{
-                                                        color:
-                                                            "#9ca3af",
-
-                                                        fontWeight:
-                                                            "700",
-
-                                                        padding:
-                                                            "6px 0",
-                                                    }}
-                                                >
-                                                    {
-                                                        day
-                                                    }
-                                                </div>
-                                            )
-                                        )}
-
-                                        {calendarCells.map(
-                                            (
-                                                day,
-                                                index
-                                            ) => {
-                                                if (
-                                                    !day
-                                                ) {
-                                                    return (
-                                                        <div
-                                                            key={`empty-${index}`}
-                                                        />
-                                                    );
-                                                }
-
-                                                const date =
-                                                    new Date(
-                                                        calendarYear,
-                                                        calendarMonthIndex,
-                                                        day
-                                                    );
-
-                                                const disabled =
-                                                    date <
-                                                    getTodayAtMidnight();
-
-                                                const selected =
-                                                    form.available_from ===
-                                                    `${calendarYear}-${String(
-                                                        calendarMonthIndex +
-                                                            1
-                                                    ).padStart(
-                                                        2,
-                                                        "0"
-                                                    )}-${String(
-                                                        day
-                                                    ).padStart(
-                                                        2,
-                                                        "0"
-                                                    )}`;
-
-                                                return (
-                                                    <button
-                                                        key={
-                                                            day
-                                                        }
-                                                        type="button"
-                                                        disabled={
-                                                            disabled
-                                                        }
-                                                        onClick={() =>
-                                                            selectCalendarDate(
-                                                                calendarYear,
-                                                                calendarMonthIndex,
-                                                                day
-                                                            )
-                                                        }
-                                                        style={{
-                                                            height:
-                                                                "34px",
-
-                                                            border:
-                                                                "none",
-
-                                                            borderRadius:
-                                                                "8px",
-
-                                                            background:
-                                                                selected
-                                                                    ? "#111827"
-                                                                    : "transparent",
-
-                                                            color:
-                                                                selected
-                                                                    ? "#ffffff"
-                                                                    : disabled
-                                                                      ? "#d1d5db"
-                                                                      : "#111827",
-
-                                                            cursor:
-                                                                disabled
-                                                                    ? "not-allowed"
-                                                                    : "pointer",
-
-                                                            fontWeight:
-                                                                selected
-                                                                    ? "800"
-                                                                    : "600",
-                                                        }}
-                                                    >
-                                                        {
-                                                            day
-                                                        }
-                                                    </button>
-                                                );
-                                            }
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div
-                            style={
-                                fieldStyle
-                            }
-                        >
-                            <label
-                                style={
-                                    labelStyle
-                                }
-                            >
-                                Descriere
-                            </label>
-
-                            <textarea
-                                name="description"
-                                value={
-                                    form.description
-                                }
-                                onChange={
-                                    updateField
-                                }
-                                placeholder="Descrie proprietatea..."
-                                rows={7}
-                                style={{
-                                    ...inputStyle,
-
-                                    resize:
-                                        "vertical",
-
-                                    lineHeight:
-                                        "1.6",
-                                }}
-                            />
-                        </div>
-                    </div>
-
-                    {/* FACILITĂȚI */}
-
-                    <div
-                        style={{
-                            background:
-                                "#ffffff",
-
-                            border:
-                                "1px solid #e5e7eb",
-
-                            borderRadius:
-                                "20px",
-
-                            padding:
-                                "32px",
-
-                            boxShadow:
-                                "0 12px 35px rgba(17,24,39,0.05)",
-
-                            marginBottom:
-                                "22px",
-                        }}
-                    >
-                        <h2
-                            style={{
-                                margin:
-                                    "0 0 25px",
-
-                                fontSize:
-                                    "20px",
-
-                                fontWeight:
-                                    "800",
-                            }}
-                        >
-                            Facilități și reguli
-                        </h2>
-
-                        <div
-                            style={{
-                                display:
-                                    "grid",
-
-                                gridTemplateColumns:
-                                    "repeat(2, minmax(0, 1fr))",
-
-                                gap:
-                                    "18px",
-                            }}
-                        >
-                            {[
-                                [
-                                    "air_conditioning",
-                                    "Aer condiționat",
-                                ],
-                                [
-                                    "balcony",
-                                    "Balcon",
-                                ],
-                                [
-                                    "parking",
-                                    "Parcare",
-                                ],
-                                [
-                                    "pets_allowed",
-                                    "Animale acceptate",
-                                ],
-                                [
-                                    "smoking_allowed",
-                                    "Fumat permis",
-                                ],
-                                [
-                                    "utilities_included",
-                                    "Utilități incluse",
-                                ],
-                            ].map(
-                                ([
-                                    name,
-                                    label,
-                                ]) => (
-                                    <div
-                                        key={
-                                            name
-                                        }
-                                        style={
-                                            fieldStyle
-                                        }
-                                    >
-                                        <label
-                                            style={
-                                                labelStyle
-                                            }
-                                        >
-                                            {
-                                                label
-                                            }
-                                        </label>
-
-                                        <select
-                                            name={
-                                                name
-                                            }
-                                            value={
-                                                form[
-                                                    name
-                                                ]
-                                            }
-                                            onChange={
-                                                updateField
-                                            }
-                                            style={
-                                                inputStyle
-                                            }
-                                        >
-                                            <option value="false">
-                                                Nu
-                                            </option>
-
-                                            <option value="true">
-                                                Da
-                                            </option>
-                                        </select>
-                                    </div>
-                                )
-                            )}
-                        </div>
-
-                        <div
-                            style={{
-                                display:
-                                    "grid",
-
-                                gridTemplateColumns:
-                                    "repeat(2, minmax(0, 1fr))",
-
-                                gap:
-                                    "18px",
-                            }}
-                        >
-                            <div
-                                style={
-                                    fieldStyle
-                                }
-                            >
-                                <label
-                                    style={
-                                        labelStyle
-                                    }
-                                >
-                                    Număr maxim chiriași
-                                </label>
-
-                                <input
-                                    name="max_tenants"
-                                    type="number"
-                                    min="1"
-                                    value={
-                                        form.max_tenants
-                                    }
-                                    onChange={
-                                        updateField
-                                    }
-                                    style={
-                                        inputStyle
-                                    }
-                                />
-                            </div>
-
-                            <div
-                                style={
-                                    fieldStyle
-                                }
-                            >
-                                <label
-                                    style={
-                                        labelStyle
-                                    }
-                                >
-                                    Garanție (€)
-                                </label>
-
-                                <input
-                                    name="deposit_amount"
-                                    type="number"
-                                    min="0"
-                                    value={
-                                        form.deposit_amount
-                                    }
-                                    onChange={
-                                        updateField
-                                    }
-                                    style={
-                                        inputStyle
-                                    }
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* UNIVERSITĂȚI */}
-
-                    <div
-                        style={{
-                            background:
-                                "#ffffff",
-
-                            border:
-                                "1px solid #e5e7eb",
-
-                            borderRadius:
-                                "20px",
-
-                            padding:
-                                "32px",
-
-                            boxShadow:
-                                "0 12px 35px rgba(17,24,39,0.05)",
-
-                            marginBottom:
-                                "22px",
-                        }}
-                    >
-                        <h2
-                            style={{
-                                margin:
-                                    0,
-
-                                fontSize:
-                                    "20px",
-
-                                fontWeight:
-                                    "800",
-                            }}
-                        >
-                            Universități apropiate
-                        </h2>
-
-                        <p
-                            style={{
-                                color:
-                                    "#6b7280",
-
-                                fontSize:
-                                    "14px",
-
-                                lineHeight:
-                                    "1.6",
-
-                                margin:
-                                    "8px 0 22px",
-                            }}
-                        >
-                            Opțional. Poți asocia proprietatea cu una sau mai multe universități.
-                        </p>
-
-                        {loadingUniversities ? (
-                            <div
-                                style={{
-                                    color:
-                                        "#6b7280",
+                                        "#64748B",
 
                                     fontSize:
-                                        "14px",
+                                        "13px",
                                 }}
                             >
-                                Se încarcă universitățile...
-                            </div>
-                        ) : universitiesForCity.length ===
-                          0 ? (
-                            <div
-                                style={{
-                                    color:
-                                        "#6b7280",
-
-                                    fontSize:
-                                        "14px",
-                                }}
-                            >
-                                Nu există universități disponibile pentru orașul selectat.
-                            </div>
-                        ) : (
-                            <div
-                                style={{
-                                    display:
-                                        "grid",
-
-                                    gap:
-                                        "10px",
-                                }}
-                            >
-                                {universitiesForCity.map(
-                                    (
-                                        university
-                                    ) => {
-                                        const universityId =
-                                            String(
-                                                university.id
-                                            );
-
-                                        const checked =
-                                            selectedUniversityIds.includes(
-                                                universityId
-                                            );
-
-                                        return (
-                                            <label
-                                                key={
-                                                    university.id
-                                                }
-                                                style={{
-                                                    display:
-                                                        "flex",
-
-                                                    alignItems:
-                                                        "center",
-
-                                                    gap:
-                                                        "11px",
-
-                                                    padding:
-                                                        "13px 14px",
-
-                                                    border:
-                                                        checked
-                                                            ? "1px solid #2563eb"
-                                                            : "1px solid #e5e7eb",
-
-                                                    borderRadius:
-                                                        "11px",
-
-                                                    cursor:
-                                                        "pointer",
-
-                                                    background:
-                                                        checked
-                                                            ? "#f5f9ff"
-                                                            : "#ffffff",
-                                                }}
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={
-                                                        checked
-                                                    }
-                                                    onChange={() => {
-                                                        setSelectedUniversityIds(
-                                                            (
-                                                                current
-                                                            ) => {
-                                                                const normalized =
-                                                                    [
-                                                                        ...new Set(
-                                                                            current.map(
-                                                                                (
-                                                                                    id
-                                                                                ) =>
-                                                                                    String(
-                                                                                        id
-                                                                                    )
-                                                                            )
-                                                                        ),
-                                                                    ];
-
-                                                                if (
-                                                                    normalized.includes(
-                                                                        universityId
-                                                                    )
-                                                                ) {
-                                                                    return normalized.filter(
-                                                                        (
-                                                                            id
-                                                                        ) =>
-                                                                            id !==
-                                                                            universityId
-                                                                    );
-                                                                }
-
-                                                                return [
-                                                                    ...normalized,
-                                                                    universityId,
-                                                                ];
-                                                            }
-                                                        );
-
-                                                        setError(
-                                                            ""
-                                                        );
-
-                                                        setSuccess(
-                                                            ""
-                                                        );
-                                                    }}
-                                                />
-
-                                                <span
-                                                    style={{
-                                                        fontSize:
-                                                            "14px",
-
-                                                        fontWeight:
-                                                            "700",
-
-                                                        color:
-                                                            "#111827",
-                                                    }}
-                                                >
-                                                    {
-                                                        university.name
-                                                    }
-                                                </span>
-                                            </label>
-                                        );
-                                    }
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* CONTACT */}
-
-                    <div
-                        style={{
-                            background:
-                                "#ffffff",
-
-                            border:
-                                "1px solid #e5e7eb",
-
-                            borderRadius:
-                                "20px",
-
-                            padding:
-                                "32px",
-
-                            boxShadow:
-                                "0 12px 35px rgba(17,24,39,0.05)",
-
-                            marginBottom:
-                                "22px",
-                        }}
-                    >
-                        <h2
-                            style={{
-                                margin:
-                                    "0 0 25px",
-
-                                fontSize:
-                                    "20px",
-
-                                fontWeight:
-                                    "800",
-                            }}
-                        >
-                            Date de contact
-                        </h2>
+                                Informațiile
+                                prin care
+                                studenții te
+                                pot contacta.
+                            </p>
+                        </div>
 
                         <div
                             style={{
@@ -5205,17 +6159,13 @@ export default function EditeazaProprietatePage() {
                                     "grid",
 
                                 gridTemplateColumns:
-                                    "repeat(2, minmax(0, 1fr))",
+                                    "repeat(3, 1fr)",
 
                                 gap:
-                                    "18px",
+                                    "16px",
                             }}
                         >
-                            <div
-                                style={
-                                    fieldStyle
-                                }
-                            >
+                            <div>
                                 <label
                                     style={
                                         labelStyle
@@ -5226,27 +6176,26 @@ export default function EditeazaProprietatePage() {
 
                                 <input
                                     type="text"
+
+                                    name="owner_name"
+
                                     value={
                                         form.owner_name
                                     }
-                                    readOnly
-                                    style={{
-                                        ...inputStyle,
 
-                                        background:
-                                            "#f9fafb",
+                                    onChange={
+                                        handleChange
+                                    }
 
-                                        color:
-                                            "#6b7280",
-                                    }}
+                                    placeholder="Numele proprietarului"
+
+                                    style={
+                                        inputStyle
+                                    }
                                 />
                             </div>
 
-                            <div
-                                style={
-                                    fieldStyle
-                                }
-                            >
+                            <div>
                                 <label
                                     style={
                                         labelStyle
@@ -5256,139 +6205,69 @@ export default function EditeazaProprietatePage() {
                                 </label>
 
                                 <input
-                                    type="text"
+                                    type="tel"
+
+                                    name="owner_phone"
+
                                     value={
                                         form.owner_phone
                                     }
-                                    readOnly
-                                    style={{
-                                        ...inputStyle,
 
-                                        background:
-                                            "#f9fafb",
+                                    onChange={
+                                        handleChange
+                                    }
 
-                                        color:
-                                            "#6b7280",
-                                    }}
+                                    placeholder="07xx xxx xxx"
+
+                                    style={
+                                        inputStyle
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    style={
+                                        labelStyle
+                                    }
+                                >
+                                    Email
+                                </label>
+
+                                <input
+                                    type="email"
+
+                                    name="owner_email"
+
+                                    value={
+                                        form.owner_email
+                                    }
+
+                                    onChange={
+                                        handleChange
+                                    }
+
+                                    placeholder="email@exemplu.ro"
+
+                                    style={
+                                        inputStyle
+                                    }
                                 />
                             </div>
                         </div>
+                    </section>
 
-                        <div
-                            style={{
-                                ...fieldStyle,
-
-                                marginBottom:
-                                    0,
-                            }}
-                        >
-                            <label
-                                style={
-                                    labelStyle
-                                }
-                            >
-                                Email
-                            </label>
-
-                            <input
-                                type="email"
-                                value={
-                                    form.owner_email
-                                }
-                                readOnly
-                                style={{
-                                    ...inputStyle,
-
-                                    background:
-                                        "#f9fafb",
-
-                                    color:
-                                        "#6b7280",
-                                }}
-                            />
-                        </div>
-                    </div>
-
-                    {/* MESAJE */}
-
-                    {error && (
-                        <div
-                            style={{
-                                background:
-                                    "#fff1f2",
-
-                                border:
-                                    "1px solid #fecdd3",
-
-                                color:
-                                    "#be123c",
-
-                                padding:
-                                    "14px 16px",
-
-                                borderRadius:
-                                    "11px",
-
-                                marginBottom:
-                                    "16px",
-
-                                fontSize:
-                                    "14px",
-
-                                lineHeight:
-                                    "1.5",
-
-                                fontWeight:
-                                    "600",
-                            }}
-                        >
-                            {error}
-                        </div>
-                    )}
-
-                    {success && (
-                        <div
-                            style={{
-                                background:
-                                    "#ecfdf5",
-
-                                border:
-                                    "1px solid #a7f3d0",
-
-                                color:
-                                    "#047857",
-
-                                padding:
-                                    "14px 16px",
-
-                                borderRadius:
-                                    "11px",
-
-                                marginBottom:
-                                    "16px",
-
-                                fontSize:
-                                    "14px",
-
-                                lineHeight:
-                                    "1.5",
-
-                                fontWeight:
-                                    "600",
-                            }}
-                        >
-                            {
-                                success
-                            }
-                        </div>
-                    )}
-
-                    {/* BUTOANE */}
+                    {/* =========================
+                        BUTOANE
+                    ========================= */}
 
                     <div
                         style={{
                             display:
                                 "flex",
+
+                            alignItems:
+                                "center",
 
                             justifyContent:
                                 "flex-end",
@@ -5397,40 +6276,46 @@ export default function EditeazaProprietatePage() {
                                 "12px",
 
                             marginTop:
-                                "25px",
+                                "22px",
                         }}
                     >
                         <button
                             type="button"
-                            disabled={
-                                saving
-                            }
+
                             onClick={() =>
                                 router.push(
                                     "/dashboard"
                                 )
                             }
+
+                            disabled={
+                                saving
+                            }
+
                             style={{
-                                border:
-                                    "1px solid #d1d5db",
-
-                                background:
-                                    "#ffffff",
-
-                                color:
-                                    "#111827",
-
-                                borderRadius:
-                                    "11px",
+                                height:
+                                    "48px",
 
                                 padding:
-                                    "14px 20px",
+                                    "0 20px",
+
+                                border:
+                                    "1px solid #DCE3EC",
+
+                                borderRadius:
+                                    "10px",
+
+                                background:
+                                    "#FFFFFF",
+
+                                color:
+                                    "#475569",
 
                                 fontFamily:
                                     "inherit",
 
                                 fontSize:
-                                    "14px",
+                                    "13px",
 
                                 fontWeight:
                                     "800",
@@ -5446,35 +6331,45 @@ export default function EditeazaProprietatePage() {
                                         : 1,
                             }}
                         >
-                            Anulează
+                            Renunță
                         </button>
 
                         <button
                             type="submit"
+
                             disabled={
                                 saving
                             }
+
                             style={{
+                                minWidth:
+                                    "190px",
+
+                                height:
+                                    "48px",
+
+                                padding:
+                                    "0 22px",
+
                                 border:
                                     "none",
 
+                                borderRadius:
+                                    "10px",
+
                                 background:
-                                    "#111827",
+                                    saving
+                                        ? "#94A3B8"
+                                        : "#172554",
 
                                 color:
-                                    "#ffffff",
-
-                                borderRadius:
-                                    "11px",
-
-                                padding:
-                                    "14px 22px",
+                                    "#FFFFFF",
 
                                 fontFamily:
                                     "inherit",
 
                                 fontSize:
-                                    "14px",
+                                    "13px",
 
                                 fontWeight:
                                     "800",
@@ -5483,11 +6378,6 @@ export default function EditeazaProprietatePage() {
                                     saving
                                         ? "not-allowed"
                                         : "pointer",
-
-                                opacity:
-                                    saving
-                                        ? 0.7
-                                        : 1,
                             }}
                         >
                             {saving
@@ -5496,7 +6386,56 @@ export default function EditeazaProprietatePage() {
                         </button>
                     </div>
                 </form>
-            </section>
+            </div>
+
+            {/* =========================
+                RESPONSIVE
+            ========================= */}
+
+            <style jsx global>{`
+                @media (max-width: 820px) {
+                    main form section > div[style*="grid-template-columns: 2fr 1fr"],
+                    main form section > div[style*="grid-template-columns: repeat(4"],
+                    main form section > div[style*="grid-template-columns: repeat(3"],
+                    main form section > div[style*="grid-template-columns: 1fr 1fr"],
+                    main form section > div[style*="grid-template-columns: repeat(2"] {
+                        grid-template-columns: 1fr !important;
+                    }
+                }
+
+                @media (max-width: 620px) {
+                    main header > div {
+                        padding-left: 16px !important;
+                        padding-right: 16px !important;
+                    }
+
+                    main header > div > div {
+                        gap: 6px !important;
+                    }
+
+                    main header button {
+                        padding-left: 10px !important;
+                        padding-right: 10px !important;
+                    }
+
+                    main > div {
+                        padding-left: 14px !important;
+                        padding-right: 14px !important;
+                    }
+
+                    main form section {
+                        padding: 16px !important;
+                    }
+
+                    main form section > div[style*="grid-template-columns"] {
+                        grid-template-columns: 1fr !important;
+                    }
+
+                    main form + div {
+                        flex-direction: column !important;
+                    }
+                }
+            `}</style>
         </main>
     );
 }
