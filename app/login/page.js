@@ -325,7 +325,7 @@ export default function LoginPage() {
             letterSpacing: "-1px",
           }}
         >
-          StudentHousing
+          shaus
         </a>
 
         <a
