@@ -1114,8 +1114,61 @@ export default function DashboardPage() {
     };
 
   /*
-    ELIMINĂ FAVORIT
+    ȘTERGE ANUNȚ
   */
+
+  const deleteListing =
+    async (listing) => {
+      if (!user?.id || !listing?.id) {
+        return;
+      }
+
+      const confirmed = window.confirm(
+        `Sigur vrei să ștergi definitiv anunțul „${listing.title || "Anunț"}”? Această acțiune nu poate fi anulată.`
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      setError("");
+
+      const { error: deleteError } =
+        await supabase
+          .from("listings")
+          .delete()
+          .eq("id", listing.id)
+          .eq("user_id", user.id);
+
+      if (deleteError) {
+        console.error(
+          "Eroare ștergere anunț:",
+          deleteError
+        );
+
+        setError(
+          "Anunțul nu a putut fi șters."
+        );
+
+        return;
+      }
+
+      setListings((current) =>
+        current.filter(
+          (item) => item.id !== listing.id
+        )
+      );
+
+      setFavorites((current) =>
+        current.filter(
+          (item) => item.id !== listing.id
+        )
+      );
+    };
+
+  /*
+    ELIMINĂ FAVORIT
+    */
 
   const removeFavorite =
     async (listing) => {
@@ -1250,12 +1303,12 @@ export default function DashboardPage() {
           }}
         >
           <span
-  style={{
-    color: "#172554",
-  }}
->
-  shaus
-</span>
+            style={{
+              color: "#172554",
+            }}
+          >
+            shaus
+          </span>
         </a>
 
         <div
@@ -1691,6 +1744,9 @@ export default function DashboardPage() {
                 toggleListing={
                   toggleListing
                 }
+                deleteListing={
+                  deleteListing
+                }
                 profilePhone={
                   profilePhone
                 }
@@ -1808,6 +1864,9 @@ export default function DashboardPage() {
                 toggleListing={
                   toggleListing
                 }
+                deleteListing={
+                  deleteListing
+                }
                 profilePhone={
                   profilePhone
                 }
@@ -1820,6 +1879,7 @@ export default function DashboardPage() {
               />
             </>
           )}
+
           {activeSection ===
             "profile" && (
             <>
@@ -2485,7 +2545,7 @@ export default function DashboardPage() {
                                 }}
                               >
                                 {listing?.title ||
-                                  "Anunț indisponibil"}
+                                  "Anunț"}
                               </div>
 
                               <div
@@ -2511,8 +2571,8 @@ export default function DashboardPage() {
                                 }}
                               >
                                 {lastMessage
-                                  ?.content ||
-                                  "Niciun mesaj"}
+                                  ? lastMessage.content
+                                  : "Conversație nouă"}
                               </div>
                             </div>
                           </button>
@@ -2525,36 +2585,32 @@ export default function DashboardPage() {
                     className="chat-panel"
                     style={{
                       minWidth: 0,
-                      display: "flex",
-                      flexDirection: "column",
-                      height: "100%",
+                      display:
+                        "flex",
+                      flexDirection:
+                        "column",
+                      background:
+                        "#F8FAFC",
                     }}
                   >
-                    {!selectedConversation ? (
-                      <div
-                        style={{
-                          flex: 1,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "#94A3B8",
-                          fontSize: "14px",
-                        }}
-                      >
-                        Selectează o conversație.
-                      </div>
-                    ) : (
+                    {selectedConversation ? (
                       <>
                         <div
                           style={{
-                            minHeight: "74px",
-                            borderBottom: "1px solid #E2E8F0",
-                            padding: "14px 20px",
-                            boxSizing: "border-box",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: "15px",
+                            padding:
+                              "16px 20px",
+                            background:
+                              "#FFFFFF",
+                            borderBottom:
+                              "1px solid #E2E8F0",
+                            display:
+                              "flex",
+                            alignItems:
+                              "center",
+                            justifyContent:
+                              "space-between",
+                            gap:
+                              "15px",
                           }}
                         >
                           <div
@@ -2564,40 +2620,48 @@ export default function DashboardPage() {
                           >
                             <div
                               style={{
-                                color: "#172554",
-                                fontSize: "15px",
-                                fontWeight: "900",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
+                                color:
+                                  "#172554",
+                                fontSize:
+                                  "14px",
+                                fontWeight:
+                                  "900",
                               }}
                             >
                               {conversationDetails[
                                 selectedConversation.id
-                              ]?.otherUserName || "Utilizator"}
+                              ]?.otherUserName ||
+                                "Utilizator"}
                             </div>
 
                             <div
                               style={{
-                                marginTop: "4px",
-                                color: "#64748B",
-                                fontSize: "11px",
-                                fontWeight: "600",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
+                                marginTop:
+                                  "3px",
+                                color:
+                                  "#64748B",
+                                fontSize:
+                                  "11px",
+                                fontWeight:
+                                  "600",
+                                overflow:
+                                  "hidden",
+                                textOverflow:
+                                  "ellipsis",
+                                whiteSpace:
+                                  "nowrap",
                               }}
                             >
-                              {selectedConversation.listings?.title ||
-                                "Anunț indisponibil"}
-
-                              {selectedConversation.listings?.city
-                                ? ` · ${selectedConversation.listings.city}`
-                                : ""}
+                              {selectedConversation
+                                .listings
+                                ?.title ||
+                                "Anunț"}
                             </div>
                           </div>
 
-                          {selectedConversation.listings?.id && (
+                          {selectedConversation
+                            .listings
+                            ?.id && (
                             <button
                               type="button"
                               onClick={() =>
@@ -2606,16 +2670,26 @@ export default function DashboardPage() {
                                 )
                               }
                               style={{
-                                flexShrink: 0,
-                                border: "1px solid #CBD5E1",
-                                background: "#FFFFFF",
-                                borderRadius: "9px",
-                                padding: "9px 12px",
-                                color: "#172554",
-                                fontFamily: "inherit",
-                                fontSize: "11px",
-                                fontWeight: "800",
-                                cursor: "pointer",
+                                border:
+                                  "1px solid #CBD5E1",
+                                background:
+                                  "#FFFFFF",
+                                borderRadius:
+                                  "9px",
+                                padding:
+                                  "8px 11px",
+                                color:
+                                  "#172554",
+                                fontFamily:
+                                  "inherit",
+                                fontSize:
+                                  "10px",
+                                fontWeight:
+                                  "800",
+                                cursor:
+                                  "pointer",
+                                whiteSpace:
+                                  "nowrap",
                               }}
                             >
                               Vezi anunțul
@@ -2626,153 +2700,240 @@ export default function DashboardPage() {
                         <div
                           style={{
                             flex: 1,
-                            overflowY: "auto",
-                            padding: "20px",
-                            background: "#F8FAFC",
+                            overflowY:
+                              "auto",
+                            padding:
+                              "20px",
+                            display:
+                              "flex",
+                            flexDirection:
+                              "column",
+                            gap:
+                              "10px",
                           }}
                         >
                           {messagesLoading ? (
                             <div
                               style={{
-                                color: "#94A3B8",
-                                fontSize: "13px",
+                                color:
+                                  "#94A3B8",
+                                fontSize:
+                                  "12px",
+                                textAlign:
+                                  "center",
+                                marginTop:
+                                  "20px",
                               }}
                             >
                               Se încarcă mesajele...
                             </div>
-                          ) : messages.length === 0 ? (
+                          ) : messages.length ===
+                            0 ? (
                             <div
                               style={{
-                                color: "#94A3B8",
-                                fontSize: "13px",
+                                color:
+                                  "#94A3B8",
+                                fontSize:
+                                  "12px",
+                                textAlign:
+                                  "center",
+                                marginTop:
+                                  "20px",
                               }}
                             >
-                              Nu există încă mesaje.
+                              Nu există mesaje încă.
                             </div>
                           ) : (
-                            <div
-                              style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "10px",
-                              }}
-                            >
-                              {messages.map((message) => {
+                            messages.map(
+                              (
+                                message
+                              ) => {
                                 const mine =
-                                  message.sender_id === user?.id;
+                                  message.sender_id ===
+                                  user.id;
 
                                 return (
                                   <div
-                                    key={message.id}
+                                    key={
+                                      message.id
+                                    }
                                     style={{
-                                      display: "flex",
-                                      justifyContent: mine
-                                        ? "flex-end"
-                                        : "flex-start",
+                                      display:
+                                        "flex",
+                                      justifyContent:
+                                        mine
+                                          ? "flex-end"
+                                          : "flex-start",
                                     }}
                                   >
                                     <div
                                       style={{
-                                        maxWidth: "72%",
-                                        background: mine
-                                          ? "#172554"
-                                          : "#FFFFFF",
-                                        color: mine
-                                          ? "#FFFFFF"
-                                          : "#172554",
-                                        border: mine
-                                          ? "none"
-                                          : "1px solid #E2E8F0",
-                                        borderRadius: mine
-                                          ? "14px 14px 3px 14px"
-                                          : "14px 14px 14px 3px",
-                                        padding: "10px 13px",
-                                        fontSize: "13px",
-                                        lineHeight: "1.5",
-                                        whiteSpace: "pre-wrap",
-                                        overflowWrap: "break-word",
-                                        boxShadow: mine
-                                          ? "none"
-                                          : "0 2px 7px rgba(15, 23, 42, 0.04)",
+                                        maxWidth:
+                                          "72%",
+                                        background:
+                                          mine
+                                            ? "#172554"
+                                            : "#FFFFFF",
+                                        color:
+                                          mine
+                                            ? "#FFFFFF"
+                                            : "#172554",
+                                        border:
+                                          mine
+                                            ? "1px solid #172554"
+                                            : "1px solid #E2E8F0",
+                                        borderRadius:
+                                          mine
+                                            ? "14px 14px 4px 14px"
+                                            : "14px 14px 14px 4px",
+                                        padding:
+                                          "10px 12px",
+                                        fontSize:
+                                          "12px",
+                                        lineHeight:
+                                          "1.5",
+                                        wordBreak:
+                                          "break-word",
+                                        boxShadow:
+                                          "0 3px 10px rgba(15, 23, 42, 0.04)",
                                       }}
                                     >
-                                      {message.content}
+                                      {
+                                        message.content
+                                      }
                                     </div>
                                   </div>
                                 );
-                              })}
-                            </div>
+                              }
+                            )
                           )}
                         </div>
 
                         <div
                           style={{
-                            borderTop: "1px solid #E2E8F0",
-                            padding: "14px",
-                            display: "flex",
-                            gap: "10px",
-                            background: "#FFFFFF",
+                            padding:
+                              "14px",
+                            background:
+                              "#FFFFFF",
+                            borderTop:
+                              "1px solid #E2E8F0",
+                            display:
+                              "flex",
+                            gap:
+                              "9px",
                           }}
                         >
                           <textarea
-                            value={messageText}
-                            onChange={(event) =>
-                              setMessageText(event.target.value)
+                            value={
+                              messageText
                             }
-                            onKeyDown={handleMessageKeyDown}
+                            onChange={(
+                              event
+                            ) =>
+                              setMessageText(
+                                event
+                                  .target
+                                  .value
+                              )
+                            }
+                            onKeyDown={
+                              handleMessageKeyDown
+                            }
                             placeholder="Scrie un mesaj..."
-                            rows={2}
+                            rows={1}
                             style={{
                               flex: 1,
-                              minWidth: 0,
-                              resize: "none",
-                              border: "1px solid #CBD5E1",
-                              borderRadius: "10px",
-                              padding: "10px 12px",
-                              outline: "none",
-                              fontFamily: "inherit",
-                              fontSize: "13px",
-                              lineHeight: "1.45",
-                              boxSizing: "border-box",
+                              resize:
+                                "none",
+                              border:
+                                "1px solid #CBD5E1",
+                              borderRadius:
+                                "10px",
+                              padding:
+                                "11px 12px",
+                              outline:
+                                "none",
+                              fontFamily:
+                                "inherit",
+                              fontSize:
+                                "12px",
+                              color:
+                                "#0F172A",
+                              minHeight:
+                                "42px",
+                              maxHeight:
+                                "110px",
+                              boxSizing:
+                                "border-box",
                             }}
                           />
 
                           <button
                             type="button"
-                            onClick={sendMessage}
+                            onClick={
+                              sendMessage
+                            }
                             disabled={
-                              sendingMessage || !messageText.trim()
+                              sendingMessage ||
+                              !messageText.trim()
                             }
                             style={{
-                              alignSelf: "stretch",
-                              border: "none",
-                              borderRadius: "10px",
-                              padding: "0 18px",
+                              border:
+                                "none",
+                              borderRadius:
+                                "10px",
+                              padding:
+                                "0 17px",
                               background:
-                                sendingMessage || !messageText.trim()
+                                sendingMessage ||
+                                !messageText.trim()
                                   ? "#94A3B8"
                                   : "#172554",
-                              color: "#FFFFFF",
-                              fontFamily: "inherit",
-                              fontSize: "12px",
-                              fontWeight: "800",
+                              color:
+                                "#FFFFFF",
+                              fontFamily:
+                                "inherit",
+                              fontSize:
+                                "11px",
+                              fontWeight:
+                                "800",
                               cursor:
-                                sendingMessage || !messageText.trim()
+                                sendingMessage ||
+                                !messageText.trim()
                                   ? "not-allowed"
                                   : "pointer",
                             }}
                           >
-                            {sendingMessage ? "Se trimite..." : "Trimite"}
+                            {sendingMessage
+                              ? "Se trimite..."
+                              : "Trimite"}
                           </button>
                         </div>
                       </>
+                    ) : (
+                      <div
+                        style={{
+                          flex: 1,
+                          display:
+                            "flex",
+                          alignItems:
+                            "center",
+                          justifyContent:
+                            "center",
+                          color:
+                            "#94A3B8",
+                          fontSize:
+                            "13px",
+                        }}
+                      >
+                        Selectează o conversație.
+                      </div>
                     )}
                   </div>
                 </div>
               )}
             </>
           )}
-
           {activeSection === "favorites" && (
             <>
               <div
@@ -3076,6 +3237,7 @@ function ListingsList({
   listings,
   router,
   toggleListing,
+  deleteListing,
   profilePhone,
   setPhoneRequired,
   setActiveSection,
@@ -3380,6 +3542,25 @@ function ListingsList({
               }}
             >
               {listing.active ? "Dezactivează" : "Activează"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => deleteListing(listing)}
+              style={{
+                border: "1px solid #FECACA",
+                background: "#FEF2F2",
+                borderRadius: "9px",
+                padding: "9px 12px",
+                color: "#DC2626",
+                fontFamily: "inherit",
+                fontSize: "11px",
+                fontWeight: "800",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              ✕ Șterge anunțul
             </button>
           </div>
         </div>
