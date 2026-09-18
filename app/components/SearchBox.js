@@ -504,7 +504,6 @@ export default function SearchBox({
 
   const [propertyType, setPropertyType] = useState("");
   const [furnished, setFurnished] = useState("");
-  const [listingType, setListingType] = useState("");
 
   const [availableFrom, setAvailableFrom] = useState("");
   const [sort, setSort] = useState("newest");
@@ -515,7 +514,7 @@ export default function SearchBox({
 
   /* =========================
      CLICK OUTSIDE
-     ORAȘ + UNIVERSITATE + CARTIER
+     ORAȘ + UNIVERSITATE + CARTIER + CALENDAR
   ========================= */
 
   const cityWrapperRef = useRef(null);
@@ -543,6 +542,13 @@ export default function SearchBox({
         !neighborhoodWrapperRef.current.contains(event.target)
       ) {
         setShowNeighborhoodSuggestions(false);
+      }
+
+      if (
+        calendarWrapperRef.current &&
+        !calendarWrapperRef.current.contains(event.target)
+      ) {
+        setCalendarOpen(false);
       }
     }
 
@@ -768,7 +774,6 @@ export default function SearchBox({
     setMaxSurface("");
     setPropertyType("");
     setFurnished("");
-    setListingType("");
     setAvailableFrom("");
     setSort("newest");
     setCalendarOpen(false);
@@ -855,13 +860,6 @@ export default function SearchBox({
       searchParams.set(
         "furnished",
         furnished
-      );
-    }
-
-    if (listingType) {
-      searchParams.set(
-        "listingType",
-        listingType
       );
     }
 
@@ -977,7 +975,8 @@ export default function SearchBox({
     cursor: "pointer",
     boxSizing: "border-box",
   };
-     return (
+
+  return (
     <div
       style={{
         width: "100%",
@@ -1023,11 +1022,13 @@ export default function SearchBox({
               setShowCitySuggestions(true);
               setShowNeighborhoodSuggestions(false);
               setShowUniversitySuggestions(false);
+              setCalendarOpen(false);
             }}
             onClick={() => {
               setShowCitySuggestions(true);
               setShowNeighborhoodSuggestions(false);
               setShowUniversitySuggestions(false);
+              setCalendarOpen(false);
             }}
             onChange={(event) => {
               const value = event.target.value;
@@ -1044,6 +1045,7 @@ export default function SearchBox({
               setShowCitySuggestions(true);
               setShowNeighborhoodSuggestions(false);
               setShowUniversitySuggestions(false);
+              setCalendarOpen(false);
             }}
             style={inputStyle}
           />
@@ -1119,6 +1121,7 @@ export default function SearchBox({
                 setShowUniversitySuggestions(true);
                 setShowCitySuggestions(false);
                 setShowNeighborhoodSuggestions(false);
+                setCalendarOpen(false);
               }
             }}
             onClick={() => {
@@ -1126,6 +1129,7 @@ export default function SearchBox({
                 setShowUniversitySuggestions(true);
                 setShowCitySuggestions(false);
                 setShowNeighborhoodSuggestions(false);
+                setCalendarOpen(false);
               }
             }}
             onChange={(event) => {
@@ -1137,6 +1141,7 @@ export default function SearchBox({
               setShowUniversitySuggestions(true);
               setShowCitySuggestions(false);
               setShowNeighborhoodSuggestions(false);
+              setCalendarOpen(false);
             }}
             style={{
               ...inputStyle,
@@ -1250,6 +1255,7 @@ export default function SearchBox({
             setShowCitySuggestions(false);
             setShowUniversitySuggestions(false);
             setShowNeighborhoodSuggestions(false);
+            setCalendarOpen(false);
           }}
           style={{
             ...inputStyle,
@@ -1309,7 +1315,6 @@ export default function SearchBox({
           Vezi chirii
         </button>
       </div>
-
       {/* =========================
           FILTRE EXTINSE
       ========================= */}
@@ -1353,6 +1358,7 @@ export default function SearchBox({
                     setShowNeighborhoodSuggestions(true);
                     setShowCitySuggestions(false);
                     setShowUniversitySuggestions(false);
+                    setCalendarOpen(false);
                   }
                 }}
                 onClick={() => {
@@ -1360,6 +1366,7 @@ export default function SearchBox({
                     setShowNeighborhoodSuggestions(true);
                     setShowCitySuggestions(false);
                     setShowUniversitySuggestions(false);
+                    setCalendarOpen(false);
                   }
                 }}
                 onChange={(event) => {
@@ -1368,6 +1375,7 @@ export default function SearchBox({
                   setNeighborhoodQuery(event.target.value);
                   setSelectedNeighborhood(null);
                   setShowNeighborhoodSuggestions(true);
+                  setCalendarOpen(false);
                 }}
                 style={{
                   ...inputStyle,
@@ -1642,27 +1650,6 @@ export default function SearchBox({
               </select>
             </div>
 
-            {/* TIP ANUNȚ */}
-
-            <div>
-              <label style={labelStyle}>Tip anunț</label>
-
-              <select
-                value={listingType}
-                onChange={(event) =>
-                  setListingType(event.target.value)
-                }
-                style={{
-                  ...inputStyle,
-                  cursor: "pointer",
-                }}
-              >
-                <option value="">Oricare</option>
-                <option value="rent">Închiriere</option>
-                <option value="room">Cameră</option>
-              </select>
-            </div>
-
             {/* DISPONIBIL DE LA */}
 
             <div
@@ -1675,9 +1662,12 @@ export default function SearchBox({
 
               <button
                 type="button"
-                onClick={() =>
-                  setCalendarOpen((current) => !current)
-                }
+                onClick={() => {
+                  setShowCitySuggestions(false);
+                  setShowUniversitySuggestions(false);
+                  setShowNeighborhoodSuggestions(false);
+                  setCalendarOpen((current) => !current);
+                }}
                 style={{
                   ...inputStyle,
                   cursor: "pointer",
