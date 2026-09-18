@@ -722,6 +722,42 @@ export default function CityListingsPage() {
     useState("");
 
   /* =========================
+     MOD AFIȘARE LISTĂ / GRID
+  ========================= */
+
+  const [viewMode, setViewMode] =
+    useState("grid");
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const savedViewMode =
+      localStorage.getItem(
+        "studenthousing-view-mode"
+      );
+
+    if (
+      savedViewMode === "list" ||
+      savedViewMode === "grid"
+    ) {
+      setViewMode(savedViewMode);
+    }
+  }, []);
+
+  function changeViewMode(mode) {
+    setViewMode(mode);
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        "studenthousing-view-mode",
+        mode
+      );
+    }
+  }
+
+  /* =========================
      RESTAURARE POZIȚIE CĂUTARE
   ========================= */
 
@@ -1624,8 +1660,7 @@ export default function CityListingsPage() {
       };
     });
   }
-
-  /* =========================
+    /* =========================
      FILTRARE + SORTARE
   ========================= */
 
@@ -1642,7 +1677,7 @@ export default function CityListingsPage() {
           Number(listing.rooms);
 
         const listingBedrooms =
-                    Number(listing.bedrooms);
+          Number(listing.bedrooms);
 
         const listingBathrooms =
           Number(listing.bathrooms);
@@ -2460,20 +2495,137 @@ export default function CityListingsPage() {
           {!loading && (
             <div
               style={{
-                color: "#94A3B8",
-                fontSize: "9px",
-                fontWeight: "700",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
               }}
             >
-              {sort === "price_asc"
-                ? "Preț crescător"
-                : sort ===
-                  "price_desc"
-                ? "Preț descrescător"
-                : sort ===
-                  "surface_desc"
-                ? "Suprafață descrescător"
-                : "Cele mai noi"}
+              <div
+                style={{
+                  color: "#94A3B8",
+                  fontSize: "9px",
+                  fontWeight: "700",
+                  marginRight: "2px",
+                }}
+              >
+                {sort === "price_asc"
+                  ? "Preț crescător"
+                  : sort ===
+                    "price_desc"
+                  ? "Preț descrescător"
+                  : sort ===
+                    "surface_desc"
+                  ? "Suprafață descrescător"
+                  : "Cele mai noi"}
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  changeViewMode("list")
+                }
+                aria-label="Afișare listă"
+                title="Listă"
+                style={{
+                  width: "30px",
+                  height: "30px",
+                  border:
+                    viewMode === "list"
+                      ? "1px solid #172554"
+                      : "1px solid #CBD5E1",
+                  borderRadius: "7px",
+                  background:
+                    viewMode === "list"
+                      ? "#172554"
+                      : "#FFFFFF",
+                  color:
+                    viewMode === "list"
+                      ? "#FFFFFF"
+                      : "#64748B",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent:
+                    "center",
+                  padding: 0,
+                  fontFamily: "inherit",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "16px",
+                    lineHeight: 1,
+                    transform:
+                      "translateY(-1px)",
+                  }}
+                >
+                  ☰
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  changeViewMode("grid")
+                }
+                aria-label="Afișare grilă"
+                title="Grid"
+                style={{
+                  width: "30px",
+                  height: "30px",
+                  border:
+                    viewMode === "grid"
+                      ? "1px solid #172554"
+                      : "1px solid #CBD5E1",
+                  borderRadius: "7px",
+                  background:
+                    viewMode === "grid"
+                      ? "#172554"
+                      : "#FFFFFF",
+                  color:
+                    viewMode === "grid"
+                      ? "#FFFFFF"
+                      : "#64748B",
+                  cursor: "pointer",
+                  display: "grid",
+                  gridTemplateColumns:
+                    "repeat(2, 5px)",
+                  gridTemplateRows:
+                    "repeat(2, 5px)",
+                  gap: "2px",
+                  placeContent: "center",
+                  padding: 0,
+                }}
+              >
+                <span
+                  style={{
+                    background:
+                      "currentColor",
+                    borderRadius: "1px",
+                  }}
+                />
+                <span
+                  style={{
+                    background:
+                      "currentColor",
+                    borderRadius: "1px",
+                  }}
+                />
+                <span
+                  style={{
+                    background:
+                      "currentColor",
+                    borderRadius: "1px",
+                  }}
+                />
+                <span
+                  style={{
+                    background:
+                      "currentColor",
+                    borderRadius: "1px",
+                  }}
+                />
+              </button>
             </div>
           )}
         </div>
@@ -2540,11 +2692,17 @@ export default function CityListingsPage() {
           filteredListings.length >
             0 && (
             <div
-              className="listings-grid"
+              className={
+                viewMode === "list"
+                  ? "listings-list"
+                  : "listings-grid"
+              }
               style={{
                 display: "grid",
                 gridTemplateColumns:
-                  "repeat(3, minmax(0, 1fr))",
+                  viewMode === "list"
+                    ? "1fr"
+                    : "repeat(3, minmax(0, 1fr))",
                 gap: "14px",
               }}
             >
@@ -2582,6 +2740,11 @@ export default function CityListingsPage() {
                   return (
                     <article
                       key={listing.id}
+                      className={
+                        viewMode === "list"
+                          ? "listing-card listing-card-list"
+                          : "listing-card"
+                      }
                       style={{
                         background:
                           "#FFFFFF",
@@ -2593,16 +2756,26 @@ export default function CityListingsPage() {
                           "hidden",
                         boxShadow:
                           "0 3px 12px rgba(15,23,42,0.05)",
+                        display:
+                          viewMode === "list"
+                            ? "flex"
+                            : "block",
                       }}
                     >
                       {/* IMAGINE */}
 
                       <div
+                        className="listing-image-wrap"
                         style={{
                           position:
                             "relative",
                           height:
                             "220px",
+                          width:
+                            viewMode === "list"
+                              ? "340px"
+                              : "100%",
+                          flexShrink: 0,
                           background:
                             "#E2E8F0",
                           overflow:
@@ -2698,7 +2871,7 @@ export default function CityListingsPage() {
                               justifyContent:
                                 "center",
                               color:
-                                "#94A3B8",
+                                "#64748B",
                               textDecoration:
                                 "none",
                               fontSize:
@@ -2888,9 +3061,12 @@ export default function CityListingsPage() {
                       {/* CONȚINUT */}
 
                       <div
+                        className="listing-card-content"
                         style={{
                           padding:
                             "13px",
+                          flex: 1,
+                          minWidth: 0,
                         }}
                       >
                         <div
@@ -3205,6 +3381,15 @@ export default function CityListingsPage() {
 
           .listings-grid {
             grid-template-columns: 1fr !important;
+          }
+
+          .listing-card-list {
+            display: block !important;
+          }
+
+          .listing-card-list .listing-image-wrap {
+            width: 100% !important;
+            height: 220px !important;
           }
 
           .filter-calendar {
