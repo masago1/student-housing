@@ -33,6 +33,7 @@ export default function DashboardPage() {
 
   // SINGURA ADĂUGARE: confirmare ieșire din cont
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [listingToDelete, setListingToDelete] = useState(null);
 
   /*
     ÎNCĂRCARE DASHBOARD
@@ -1214,13 +1215,16 @@ export default function DashboardPage() {
         return;
       }
 
-      const confirmed = window.confirm(
-        `Sigur vrei să ștergi definitiv anunțul „${listing.title || "Anunț"}”? Această acțiune nu poate fi anulată.`
-      );
+      setListingToDelete(listing);
+    };
 
-      if (!confirmed) {
+  const confirmDeleteListing =
+    async () => {
+      if (!user?.id || !listingToDelete?.id) {
         return;
       }
+
+      const listing = listingToDelete;
 
       setError("");
 
@@ -1255,6 +1259,8 @@ export default function DashboardPage() {
           (item) => item.id !== listing.id
         )
       );
+
+      setListingToDelete(null);
     };
 
   /*
@@ -1303,7 +1309,8 @@ export default function DashboardPage() {
           )
       );
     };
-    const activeListings =
+
+  const activeListings =
     listings.filter(
       (listing) =>
         listing.active
@@ -1324,8 +1331,7 @@ export default function DashboardPage() {
         section
           ? "800"
           : "600",
-
-      cursor: "pointer",
+            cursor: "pointer",
 
       background:
         activeSection ===
@@ -2193,10 +2199,8 @@ export default function DashboardPage() {
                           "1.5",
                       }}
                     >
-                      Acesta este numele tău
-                      public pe shaus. Va fi
-                      vizibil celorlalți
-                      utilizatori.
+                      Acesta este numele tău public pe shaus. Va fi
+                      vizibil celorlalți utilizatori.
                     </div>
                   </div>
 
@@ -2644,20 +2648,20 @@ export default function DashboardPage() {
                                   style={{
                                     minWidth:
                                       0,
-                                    color:
-                                      "#172554",
-                                    fontSize:
-                                      "12px",
-                                    fontWeight:
-                                      hasUnread
-                                        ? "900"
-                                        : "800",
                                     overflow:
                                       "hidden",
                                     textOverflow:
                                       "ellipsis",
                                     whiteSpace:
                                       "nowrap",
+                                    color:
+                                      "#172554",
+                                    fontSize:
+                                      "13px",
+                                    fontWeight:
+                                      hasUnread
+                                        ? "900"
+                                        : "800",
                                   }}
                                 >
                                   {otherUserName}
@@ -2901,11 +2905,12 @@ export default function DashboardPage() {
                                   "12px",
                                 textAlign:
                                   "center",
-                                marginTop:
-                                  "20px",
+                                padding:
+                                  "30px 0",
                               }}
                             >
-                              Se încarcă mesajele...
+                              Se încarcă
+                              mesajele...
                             </div>
                           ) : messages.length ===
                             0 ? (
@@ -2917,18 +2922,22 @@ export default function DashboardPage() {
                                   "12px",
                                 textAlign:
                                   "center",
-                                marginTop:
-                                  "20px",
+                                padding:
+                                  "30px 0",
                               }}
                             >
-                              Nu există mesaje încă.
+                              Nu există încă
+                              mesaje în această
+                              conversație.
                             </div>
                           ) : (
                             messages.map(
-                              (message) => {
-                                const mine =
+                              (
+                                message
+                              ) => {
+                                const isMine =
                                   message.sender_id ===
-                                  user.id;
+                                  user?.id;
 
                                 return (
                                   <div
@@ -2939,7 +2948,7 @@ export default function DashboardPage() {
                                       display:
                                         "flex",
                                       justifyContent:
-                                        mine
+                                        isMine
                                           ? "flex-end"
                                           : "flex-start",
                                     }}
@@ -2948,32 +2957,36 @@ export default function DashboardPage() {
                                       style={{
                                         maxWidth:
                                           "72%",
+                                        padding:
+                                          "10px 13px",
+                                        borderRadius:
+                                          isMine
+                                            ? "13px 13px 3px 13px"
+                                            : "13px 13px 13px 3px",
                                         background:
-                                          mine
+                                          isMine
                                             ? "#172554"
                                             : "#FFFFFF",
                                         color:
-                                          mine
+                                          isMine
                                             ? "#FFFFFF"
-                                            : "#172554",
+                                            : "#334155",
                                         border:
-                                          mine
-                                            ? "1px solid #172554"
+                                          isMine
+                                            ? "none"
                                             : "1px solid #E2E8F0",
-                                        borderRadius:
-                                          mine
-                                            ? "14px 14px 4px 14px"
-                                            : "14px 14px 14px 4px",
-                                        padding:
-                                          "10px 12px",
                                         fontSize:
                                           "12px",
                                         lineHeight:
-                                          "1.5",
+                                          "1.55",
+                                        whiteSpace:
+                                          "pre-wrap",
                                         wordBreak:
                                           "break-word",
                                         boxShadow:
-                                          "0 3px 10px rgba(15, 23, 42, 0.04)",
+                                          isMine
+                                            ? "none"
+                                            : "0 2px 6px rgba(15, 23, 42, 0.03)",
                                       }}
                                     >
                                       {
@@ -2991,101 +3004,112 @@ export default function DashboardPage() {
                           style={{
                             padding:
                               "14px",
-                            background:
-                              "#FFFFFF",
                             borderTop:
                               "1px solid #E2E8F0",
-                            display:
-                              "flex",
-                            gap:
-                              "9px",
+                            background:
+                              "#FFFFFF",
                           }}
                         >
-                          <textarea
-                            value={
-                              messageText
-                            }
-                            onChange={(
-                              event
-                            ) =>
-                              setMessageText(
-                                event
-                                  .target
-                                  .value
-                              )
-                            }
-                            onKeyDown={
-                              handleMessageKeyDown
-                            }
-                            placeholder="Scrie un mesaj..."
-                            rows={1}
+                          <div
                             style={{
-                              flex: 1,
-                              resize:
-                                "none",
-                              border:
-                                "1px solid #CBD5E1",
-                              borderRadius:
-                                "10px",
-                              padding:
-                                "10px 12px",
-                              fontFamily:
-                                "inherit",
-                              fontSize:
-                                "12px",
-                              outline:
-                                "none",
-                              color:
-                                "#172554",
-                              minHeight:
-                                "40px",
-                              maxHeight:
-                                "100px",
-                              boxSizing:
-                                "border-box",
-                            }}
-                          />
-
-                          <button
-                            type="button"
-                            onClick={
-                              sendMessage
-                            }
-                            disabled={
-                              sendingMessage ||
-                              !messageText.trim()
-                            }
-                            style={{
-                              border:
-                                "none",
-                              borderRadius:
+                              display:
+                                "flex",
+                              gap:
                                 "9px",
-                              padding:
-                                "0 16px",
-                              background:
-                                sendingMessage ||
-                                !messageText.trim()
-                                  ? "#94A3B8"
-                                  : "#172554",
-                              color:
-                                "#FFFFFF",
-                              fontFamily:
-                                "inherit",
-                              fontSize:
-                                "11px",
-                              fontWeight:
-                                "800",
-                              cursor:
-                                sendingMessage ||
-                                !messageText.trim()
-                                  ? "default"
-                                  : "pointer",
+                              alignItems:
+                                "flex-end",
                             }}
                           >
-                            {sendingMessage
-                              ? "..."
-                              : "Trimite"}
-                          </button>
+                            <textarea
+                              value={
+                                messageText
+                              }
+                              onChange={(
+                                event
+                              ) =>
+                                setMessageText(
+                                  event
+                                    .target
+                                    .value
+                                )
+                              }
+                              onKeyDown={
+                                handleMessageKeyDown
+                              }
+                              placeholder="Scrie un mesaj..."
+                              rows={1}
+                              style={{
+                                flex: 1,
+                                minHeight:
+                                  "42px",
+                                maxHeight:
+                                  "120px",
+                                resize:
+                                  "vertical",
+                                boxSizing:
+                                  "border-box",
+                                border:
+                                  "1px solid #CBD5E1",
+                                borderRadius:
+                                  "10px",
+                                padding:
+                                  "11px 12px",
+                                outline:
+                                  "none",
+                                fontFamily:
+                                  "inherit",
+                                fontSize:
+                                  "12px",
+                                color:
+                                  "#172554",
+                                lineHeight:
+                                  "1.5",
+                              }}
+                            />
+
+                            <button
+                              type="button"
+                              onClick={
+                                sendMessage
+                              }
+                              disabled={
+                                sendingMessage ||
+                                !messageText.trim()
+                              }
+                              style={{
+                                height:
+                                  "42px",
+                                border:
+                                  "none",
+                                borderRadius:
+                                  "9px",
+                                padding:
+                                  "0 16px",
+                                background:
+                                  sendingMessage ||
+                                  !messageText.trim()
+                                    ? "#94A3B8"
+                                    : "#172554",
+                                color:
+                                  "#FFFFFF",
+                                fontFamily:
+                                  "inherit",
+                                fontSize:
+                                  "11px",
+                                fontWeight:
+                                  "800",
+                                cursor:
+                                  sendingMessage ||
+                                  !messageText.trim()
+                                    ? "default"
+                                    : "pointer",
+                              }}
+                            >
+                              {sendingMessage
+                                ? "Se trimite..."
+                                : "Trimite"}
+                            </button>
+                          </div>
                         </div>
                       </>
                     ) : (
@@ -3101,11 +3125,7 @@ export default function DashboardPage() {
                           color:
                             "#94A3B8",
                           fontSize:
-                            "13px",
-                          padding:
-                            "30px",
-                          textAlign:
-                            "center",
+                            "12px",
                         }}
                       >
                         Selectează o
@@ -3153,15 +3173,15 @@ export default function DashboardPage() {
                       "15px",
                   }}
                 >
-                  Proprietățile salvate
-                  de tine.
+                  Anunțurile pe care
+                  le-ai salvat.
                 </p>
               </div>
 
               {favorites.length ===
               0 ? (
                 <EmptyCard
-                  title="Nu ai favorite"
+                  title="Nu ai anunțuri favorite"
                   text="Anunțurile salvate vor apărea aici."
                 />
               ) : (
@@ -3169,9 +3189,10 @@ export default function DashboardPage() {
                   style={{
                     display:
                       "grid",
-                    gap: "14px",
+                    gap:
+                      "12px",
                     maxWidth:
-                      "900px",
+                      "1000px",
                   }}
                 >
                   {favorites.map(
@@ -3186,29 +3207,29 @@ export default function DashboardPage() {
                           border:
                             "1px solid #E2E8F0",
                           borderRadius:
-                            "14px",
+                            "12px",
                           padding:
-                            "16px",
+                            "14px",
                           display:
                             "grid",
                           gridTemplateColumns:
-                            "110px minmax(0, 1fr) auto",
+                            "90px minmax(0, 1fr) auto",
                           gap:
-                            "16px",
+                            "14px",
                           alignItems:
                             "center",
                           boxShadow:
-                            "0 5px 16px rgba(15, 23, 42, 0.04)",
+                            "0 4px 12px rgba(15, 23, 42, 0.03)",
                         }}
                       >
                         <div
                           style={{
                             width:
-                              "110px",
+                              "90px",
                             height:
-                              "78px",
+                              "72px",
                             borderRadius:
-                              "10px",
+                              "9px",
                             overflow:
                               "hidden",
                             background:
@@ -3270,9 +3291,9 @@ export default function DashboardPage() {
                               color:
                                 "#172554",
                               fontSize:
-                                "15px",
+                                "14px",
                               fontWeight:
-                                "800",
+                                "900",
                               overflow:
                                 "hidden",
                               textOverflow:
@@ -3289,38 +3310,40 @@ export default function DashboardPage() {
                           <div
                             style={{
                               marginTop:
-                                "6px",
+                                "5px",
                               color:
                                 "#64748B",
                               fontSize:
-                                "12px",
+                                "11px",
+                              fontWeight:
+                                "600",
                             }}
                           >
-                            {
-                              listing.city
-                            }
-
-                            {listing.address
-                              ? ` · ${listing.address}`
+                            {listing.city ||
+                              ""}
+                            {listing.city &&
+                            listing.address
+                              ? " • "
                               : ""}
+                            {listing.address ||
+                              ""}
                           </div>
 
                           <div
                             style={{
                               marginTop:
-                                "7px",
+                                "6px",
                               color:
                                 "#172554",
                               fontSize:
-                                "14px",
+                                "13px",
                               fontWeight:
                                 "900",
                             }}
                           >
-                            {
-                              listing.price_monthly
-                            }{" "}
-                            € / lună
+                            {listing.price_monthly
+                              ? `${listing.price_monthly} € / lună`
+                              : "Preț nespecificat"}
                           </div>
                         </div>
 
@@ -3328,10 +3351,12 @@ export default function DashboardPage() {
                           style={{
                             display:
                               "flex",
-                            flexDirection:
-                              "column",
                             gap:
-                              "8px",
+                              "7px",
+                            flexWrap:
+                              "wrap",
+                            justifyContent:
+                              "flex-end",
                           }}
                         >
                           <button
@@ -3347,15 +3372,15 @@ export default function DashboardPage() {
                               background:
                                 "#FFFFFF",
                               borderRadius:
-                                "9px",
+                                "8px",
                               padding:
-                                "9px 12px",
+                                "8px 10px",
                               color:
                                 "#172554",
                               fontFamily:
                                 "inherit",
                               fontSize:
-                                "11px",
+                                "10px",
                               fontWeight:
                                 "800",
                               cursor:
@@ -3376,17 +3401,17 @@ export default function DashboardPage() {
                               border:
                                 "1px solid #FECACA",
                               background:
-                                "#FEF2F2",
+                                "#FFFFFF",
                               borderRadius:
-                                "9px",
+                                "8px",
                               padding:
-                                "9px 12px",
+                                "8px 10px",
                               color:
                                 "#DC2626",
                               fontFamily:
                                 "inherit",
                               fontSize:
-                                "11px",
+                                "10px",
                               fontWeight:
                                 "800",
                               cursor:
@@ -3407,24 +3432,16 @@ export default function DashboardPage() {
           {error && (
             <div
               style={{
-                marginTop:
-                  "20px",
-                maxWidth:
-                  "900px",
-                background:
-                  "#FEF2F2",
+                marginTop: "20px",
+                maxWidth: "800px",
+                background: "#FEF2F2",
                 border:
                   "1px solid #FECACA",
-                color:
-                  "#B91C1C",
-                borderRadius:
-                  "10px",
-                padding:
-                  "12px 14px",
-                fontSize:
-                  "12px",
-                fontWeight:
-                  "700",
+                borderRadius: "10px",
+                padding: "12px 14px",
+                color: "#B91C1C",
+                fontSize: "12px",
+                fontWeight: "700",
               }}
             >
               {error}
@@ -3433,11 +3450,10 @@ export default function DashboardPage() {
         </section>
       </div>
 
-      {/* SINGURA ADĂUGARE: modal confirmare ieșire din cont */}
-      {logoutConfirmOpen && (
+      {listingToDelete && (
         <div
           onClick={() =>
-            setLogoutConfirmOpen(false)
+            setListingToDelete(null)
           }
           style={{
             position: "fixed",
@@ -3457,12 +3473,14 @@ export default function DashboardPage() {
             }
             style={{
               width: "100%",
-              maxWidth: "420px",
+              maxWidth: "440px",
               background: "#FFFFFF",
-              border: "1px solid #E2E8F0",
+              border:
+                "1px solid #E2E8F0",
               borderRadius: "16px",
               padding: "24px",
-              boxSizing: "border-box",
+              boxSizing:
+                "border-box",
               boxShadow:
                 "0 24px 60px rgba(15, 23, 42, 0.22)",
             }}
@@ -3472,10 +3490,11 @@ export default function DashboardPage() {
                 color: "#172554",
                 fontSize: "20px",
                 fontWeight: "900",
-                letterSpacing: "-0.4px",
+                letterSpacing:
+                  "-0.4px",
               }}
             >
-              Ieșire din cont
+              Șterge anunțul
             </div>
 
             <div
@@ -3486,32 +3505,49 @@ export default function DashboardPage() {
                 lineHeight: "1.6",
               }}
             >
-              Ești sigur că dorești să ieși din cont?
+              Ești sigur că dorești să
+              ștergi definitiv anunțul „
+              {listingToDelete.title ||
+                "Anunț"}
+              ”? Această acțiune nu
+              poate fi anulată.
             </div>
 
             <div
               style={{
                 marginTop: "22px",
                 display: "flex",
-                justifyContent: "flex-end",
+                justifyContent:
+                  "flex-end",
                 gap: "10px",
               }}
             >
               <button
                 type="button"
                 onClick={() =>
-                  setLogoutConfirmOpen(false)
+                  setListingToDelete(
+                    null
+                  )
                 }
                 style={{
-                  border: "1px solid #CBD5E1",
-                  background: "#FFFFFF",
-                  borderRadius: "9px",
-                  padding: "10px 15px",
-                  color: "#172554",
-                  fontFamily: "inherit",
-                  fontSize: "12px",
-                  fontWeight: "800",
-                  cursor: "pointer",
+                  border:
+                    "1px solid #CBD5E1",
+                  background:
+                    "#FFFFFF",
+                  borderRadius:
+                    "9px",
+                  padding:
+                    "10px 15px",
+                  color:
+                    "#172554",
+                  fontFamily:
+                    "inherit",
+                  fontSize:
+                    "12px",
+                  fontWeight:
+                    "800",
+                  cursor:
+                    "pointer",
                 }}
               >
                 Anulează
@@ -3519,27 +3555,185 @@ export default function DashboardPage() {
 
               <button
                 type="button"
-                onClick={handleLogout}
+                onClick={
+                  confirmDeleteListing
+                }
                 style={{
                   border: "none",
-                  background: "#172554",
-                  borderRadius: "9px",
-                  padding: "10px 15px",
-                  color: "#FFFFFF",
-                  fontFamily: "inherit",
-                  fontSize: "12px",
-                  fontWeight: "800",
-                  cursor: "pointer",
+                  background:
+                    "#DC2626",
+                  borderRadius:
+                    "9px",
+                  padding:
+                    "10px 15px",
+                  color:
+                    "#FFFFFF",
+                  fontFamily:
+                    "inherit",
+                  fontSize:
+                    "12px",
+                  fontWeight:
+                    "800",
+                  cursor:
+                    "pointer",
                 }}
               >
-                Ieșire
+                Șterge definitiv
               </button>
             </div>
           </div>
         </div>
       )}
 
-      <style>{`
+      {/* SINGURA ADĂUGARE: modal confirmare ieșire din cont */}
+      {logoutConfirmOpen && (
+        <div
+          onClick={() =>
+            setLogoutConfirmOpen(
+              false
+            )
+          }
+          style={{
+            position: "fixed",
+            inset: 0,
+            background:
+              "rgba(15, 23, 42, 0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent:
+              "center",
+            padding: "20px",
+            zIndex: 9999,
+          }}
+        >
+          <div
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+            style={{
+              width: "100%",
+              maxWidth: "420px",
+              background:
+                "#FFFFFF",
+              border:
+                "1px solid #E2E8F0",
+              borderRadius:
+                "16px",
+              padding: "24px",
+              boxSizing:
+                "border-box",
+              boxShadow:
+                "0 24px 60px rgba(15, 23, 42, 0.22)",
+            }}
+          >
+            <div
+              style={{
+                color:
+                  "#172554",
+                fontSize:
+                  "20px",
+                fontWeight:
+                  "900",
+                letterSpacing:
+                  "-0.4px",
+              }}
+            >
+              Ieșire din cont
+            </div>
+
+            <div
+              style={{
+                marginTop:
+                  "10px",
+                color:
+                  "#64748B",
+                fontSize:
+                  "14px",
+                lineHeight:
+                  "1.6",
+              }}
+            >
+              Ești sigur că
+              dorești să ieși
+              din cont?
+            </div>
+
+            <div
+              style={{
+                marginTop:
+                  "22px",
+                display:
+                  "flex",
+                justifyContent:
+                  "flex-end",
+                gap: "10px",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  setLogoutConfirmOpen(
+                    false
+                  )
+                }
+                style={{
+                  border:
+                    "1px solid #CBD5E1",
+                  background:
+                    "#FFFFFF",
+                  borderRadius:
+                    "9px",
+                  padding:
+                    "10px 15px",
+                  color:
+                    "#172554",
+                  fontFamily:
+                    "inherit",
+                  fontSize:
+                    "12px",
+                  fontWeight:
+                    "800",
+                  cursor:
+                    "pointer",
+                }}
+              >
+                Anulează
+              </button>
+
+              <button
+                type="button"
+                onClick={
+                  handleLogout
+                }
+                style={{
+                  border:
+                    "none",
+                  background:
+                    "#172554",
+                  borderRadius:
+                    "9px",
+                  padding:
+                    "10px 15px",
+                  color:
+                    "#FFFFFF",
+                  fontFamily:
+                    "inherit",
+                  fontSize:
+                    "12px",
+                  fontWeight:
+                    "800",
+                  cursor:
+                    "pointer",
+                }}
+              >
+                Ieși din cont
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style jsx global>{`
         @media (max-width: 900px) {
           .dashboard-layout {
             grid-template-columns: 1fr !important;
@@ -3547,19 +3741,9 @@ export default function DashboardPage() {
 
           .dashboard-sidebar {
             border-right: none !important;
-            border-bottom: 1px solid #E2E8F0;
+            border-bottom: 1px solid #e2e8f0 !important;
           }
 
-          .stats-grid {
-            grid-template-columns: repeat(3, 1fr) !important;
-          }
-
-          .messages-layout {
-            grid-template-columns: 260px minmax(0, 1fr) !important;
-          }
-        }
-
-        @media (max-width: 650px) {
           .stats-grid {
             grid-template-columns: 1fr !important;
           }
@@ -3570,13 +3754,20 @@ export default function DashboardPage() {
           }
 
           .conversation-list {
-            border-right: none !important;
-            border-bottom: 1px solid #E2E8F0;
             max-height: 280px;
+            border-right: none !important;
+            border-bottom: 1px solid #e2e8f0;
           }
 
           .chat-panel {
-            min-height: 520px;
+            min-height: 500px;
+          }
+        }
+
+        @media (max-width: 650px) {
+          .dashboard-content {
+            padding-left: 16px !important;
+            padding-right: 16px !important;
           }
         }
       `}</style>
@@ -3598,16 +3789,16 @@ function StatCard({
         background: "#FFFFFF",
         border:
           "1px solid #E2E8F0",
-        borderRadius: "14px",
-        padding: "22px",
+        borderRadius: "12px",
+        padding: "20px",
         boxShadow:
-          "0 5px 16px rgba(15, 23, 42, 0.04)",
+          "0 5px 14px rgba(15, 23, 42, 0.04)",
       }}
     >
       <div
         style={{
           color: "#172554",
-          fontSize: "29px",
+          fontSize: "28px",
           fontWeight: "900",
           lineHeight: 1,
         }}
@@ -3617,13 +3808,58 @@ function StatCard({
 
       <div
         style={{
-          marginTop: "9px",
+          marginTop: "8px",
           color: "#64748B",
           fontSize: "12px",
           fontWeight: "700",
         }}
       >
         {title}
+      </div>
+    </div>
+  );
+}
+
+/*
+  EMPTY CARD
+*/
+
+function EmptyCard({
+  title,
+  text,
+}) {
+  return (
+    <div
+      style={{
+        maxWidth: "800px",
+        background: "#FFFFFF",
+        border:
+          "1px solid #E2E8F0",
+        borderRadius: "12px",
+        padding: "28px",
+        boxShadow:
+          "0 5px 14px rgba(15, 23, 42, 0.04)",
+      }}
+    >
+      <div
+        style={{
+          color: "#172554",
+          fontSize: "15px",
+          fontWeight: "900",
+        }}
+      >
+        {title}
+      </div>
+
+      <div
+        style={{
+          marginTop: "7px",
+          color: "#64748B",
+          fontSize: "12px",
+          lineHeight: "1.6",
+        }}
+      >
+        {text}
       </div>
     </div>
   );
@@ -3642,11 +3878,14 @@ function ListingsList({
   setPhoneRequired,
   setActiveSection,
 }) {
-  if (listings.length === 0) {
+  if (
+    !listings ||
+    listings.length === 0
+  ) {
     return (
       <EmptyCard
         title="Nu ai anunțuri"
-        text="Anunțurile publicate de tine vor apărea aici."
+        text="Anunțurile tale vor apărea aici după ce publici prima proprietate."
       />
     );
   }
@@ -3655,8 +3894,8 @@ function ListingsList({
     <div
       style={{
         display: "grid",
-        gap: "14px",
-        maxWidth: "900px",
+        gap: "12px",
+        maxWidth: "1050px",
       }}
     >
       {listings.map(
@@ -3669,24 +3908,24 @@ function ListingsList({
               border:
                 "1px solid #E2E8F0",
               borderRadius:
-                "14px",
-              padding: "16px",
+                "12px",
+              padding: "14px",
               display: "grid",
               gridTemplateColumns:
-                "120px minmax(0, 1fr) auto",
-              gap: "17px",
+                "100px minmax(0, 1fr) auto",
+              gap: "15px",
               alignItems:
                 "center",
               boxShadow:
-                "0 5px 16px rgba(15, 23, 42, 0.04)",
+                "0 4px 12px rgba(15, 23, 42, 0.03)",
             }}
           >
             <div
               style={{
-                width: "120px",
-                height: "84px",
+                width: "100px",
+                height: "78px",
                 borderRadius:
-                  "10px",
+                  "9px",
                 overflow:
                   "hidden",
                 background:
@@ -3758,50 +3997,68 @@ function ListingsList({
                     color:
                       "#172554",
                     fontSize:
-                      "15px",
+                      "14px",
                     fontWeight:
-                      "800",
+                      "900",
+                    overflow:
+                      "hidden",
+                    textOverflow:
+                      "ellipsis",
+                    whiteSpace:
+                      "nowrap",
                   }}
                 >
-                  {listing.title}
+                  {
+                    listing.title
+                  }
                 </div>
 
                 <span
                   style={{
-                    display:
-                      "inline-flex",
-                    alignItems:
-                      "center",
                     borderRadius:
                       "999px",
                     padding:
                       "4px 8px",
                     background:
                       listing.active
-                        ? "#F0FDF4"
-                        : "#F8FAFC",
+                        ? "#DCFCE7"
+                        : "#F1F5F9",
                     color:
                       listing.active
                         ? "#15803D"
                         : "#64748B",
-                    border:
-                      listing.active
-                        ? "1px solid #BBF7D0"
-                        : "1px solid #E2E8F0",
                     fontSize:
                       "9px",
                     fontWeight:
                       "900",
-                    textTransform:
-                      "uppercase",
-                    letterSpacing:
-                      "0.3px",
                   }}
                 >
                   {listing.active
-                    ? "Activ"
-                    : "Inactiv"}
+                    ? "ACTIV"
+                    : "INACTIV"}
                 </span>
+              </div>
+
+              <div
+                style={{
+                  marginTop:
+                    "5px",
+                  color:
+                    "#64748B",
+                  fontSize:
+                    "11px",
+                  fontWeight:
+                    "600",
+                }}
+              >
+                {listing.city ||
+                  ""}
+                {listing.city &&
+                listing.address
+                  ? " • "
+                  : ""}
+                {listing.address ||
+                  ""}
               </div>
 
               <div
@@ -3809,86 +4066,27 @@ function ListingsList({
                   marginTop:
                     "6px",
                   color:
-                    "#64748B",
+                    "#172554",
                   fontSize:
-                    "12px",
-                  lineHeight:
-                    "1.4",
+                    "13px",
+                  fontWeight:
+                    "900",
                 }}
               >
-                {listing.city}
-
-                {listing.address
-                  ? ` · ${listing.address}`
-                  : ""}
-              </div>
-
-              <div
-                style={{
-                  marginTop:
-                    "7px",
-                  display:
-                    "flex",
-                  alignItems:
-                    "center",
-                  gap: "12px",
-                  flexWrap:
-                    "wrap",
-                  color:
-                    "#64748B",
-                  fontSize:
-                    "11px",
-                }}
-              >
-                <strong
-                  style={{
-                    color:
-                      "#172554",
-                    fontSize:
-                      "14px",
-                  }}
-                >
-                  {
-                    listing.price_monthly
-                  }{" "}
-                  € / lună
-                </strong>
-
-                {listing.rooms !=
-                  null && (
-                  <span>
-                    {listing.rooms}{" "}
-                    {Number(
-                      listing.rooms
-                    ) === 1
-                      ? "cameră"
-                      : "camere"}
-                  </span>
-                )}
-
-                {listing.surface_m2 !=
-                  null && (
-                  <span>
-                    {
-                      listing.surface_m2
-                    }{" "}
-                    m²
-                  </span>
-                )}
+                {listing.price_monthly
+                  ? `${listing.price_monthly} € / lună`
+                  : "Preț nespecificat"}
               </div>
             </div>
 
             <div
               style={{
-                display:
-                  "flex",
-                flexDirection:
-                  "column",
-                alignItems:
-                  "stretch",
+                display: "flex",
                 gap: "7px",
-                minWidth:
-                  "135px",
+                flexWrap:
+                  "wrap",
+                justifyContent:
+                  "flex-end",
               }}
             >
               <button
@@ -3904,21 +4102,19 @@ function ListingsList({
                   background:
                     "#FFFFFF",
                   borderRadius:
-                    "9px",
+                    "8px",
                   padding:
-                    "9px 12px",
+                    "8px 10px",
                   color:
                     "#172554",
                   fontFamily:
                     "inherit",
                   fontSize:
-                    "11px",
+                    "10px",
                   fontWeight:
                     "800",
                   cursor:
                     "pointer",
-                  whiteSpace:
-                    "nowrap",
                 }}
               >
                 Vezi
@@ -3926,32 +4122,48 @@ function ListingsList({
 
               <button
                 type="button"
-                onClick={() =>
+                onClick={() => {
+                  if (
+                    !profilePhone?.trim()
+                  ) {
+                    setPhoneRequired(
+                      true
+                    );
+
+                    setActiveSection(
+                      "profile"
+                    );
+
+                    router.push(
+                      "/dashboard?section=profile&required=phone"
+                    );
+
+                    return;
+                  }
+
                   router.push(
                     `/editeaza-proprietate/${listing.id}`
-                  )
-                }
+                  );
+                }}
                 style={{
                   border:
-                    "1px solid #CBD5E1",
+                    "1px solid #BFDBFE",
                   background:
-                    "#FFFFFF",
+                    "#EFF6FF",
                   borderRadius:
-                    "9px",
+                    "8px",
                   padding:
-                    "9px 12px",
+                    "8px 10px",
                   color:
-                    "#172554",
+                    "#1D4ED8",
                   fontFamily:
                     "inherit",
                   fontSize:
-                    "11px",
+                    "10px",
                   fontWeight:
                     "800",
                   cursor:
                     "pointer",
-                  whiteSpace:
-                    "nowrap",
                 }}
               >
                 Editează
@@ -3966,29 +4178,23 @@ function ListingsList({
                 }
                 style={{
                   border:
-                    "1px solid #E2E8F0",
+                    "1px solid #CBD5E1",
                   background:
-                    listing.active
-                      ? "#FFF7ED"
-                      : "#F0FDF4",
+                    "#FFFFFF",
                   borderRadius:
-                    "9px",
+                    "8px",
                   padding:
-                    "9px 12px",
+                    "8px 10px",
                   color:
-                    listing.active
-                      ? "#C2410C"
-                      : "#15803D",
+                    "#475569",
                   fontFamily:
                     "inherit",
                   fontSize:
-                    "11px",
+                    "10px",
                   fontWeight:
                     "800",
                   cursor:
                     "pointer",
-                  whiteSpace:
-                    "nowrap",
                 }}
               >
                 {listing.active
@@ -4007,23 +4213,21 @@ function ListingsList({
                   border:
                     "1px solid #FECACA",
                   background:
-                    "#FEF2F2",
+                    "#FFFFFF",
                   borderRadius:
-                    "9px",
+                    "8px",
                   padding:
-                    "9px 12px",
+                    "8px 10px",
                   color:
                     "#DC2626",
                   fontFamily:
                     "inherit",
                   fontSize:
-                    "11px",
+                    "10px",
                   fontWeight:
                     "800",
                   cursor:
                     "pointer",
-                  whiteSpace:
-                    "nowrap",
                 }}
               >
                 Șterge
@@ -4032,52 +4236,6 @@ function ListingsList({
           </div>
         )
       )}
-    </div>
-  );
-}
-
-/*
-  CARD GOL
-*/
-
-function EmptyCard({
-  title,
-  text,
-}) {
-  return (
-    <div
-      style={{
-        maxWidth: "900px",
-        background: "#FFFFFF",
-        border:
-          "1px solid #E2E8F0",
-        borderRadius: "14px",
-        padding: "34px",
-        textAlign: "center",
-        boxShadow:
-          "0 5px 16px rgba(15, 23, 42, 0.04)",
-      }}
-    >
-      <div
-        style={{
-          color: "#172554",
-          fontSize: "17px",
-          fontWeight: "800",
-        }}
-      >
-        {title}
-      </div>
-
-      <div
-        style={{
-          marginTop: "8px",
-          color: "#64748B",
-          fontSize: "13px",
-          lineHeight: "1.5",
-        }}
-      >
-        {text}
-      </div>
     </div>
   );
 }
