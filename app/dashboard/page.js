@@ -1190,9 +1190,12 @@ export default function DashboardPage() {
         );
 
         setPasswordError(
-          passwordUpdateError.message ||
-            "Parola nu a putut fi schimbată."
-        );
+  passwordUpdateError.message
+    ?.toLowerCase()
+    .includes("different from the old password")
+    ? "Parola nouă trebuie să fie diferită de parola veche."
+    : "Parola nu a putut fi schimbată."
+);
 
         setPasswordSaving(false);
 
