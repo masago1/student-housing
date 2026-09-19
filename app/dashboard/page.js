@@ -30,6 +30,9 @@ export default function DashboardPage() {
   const [profileSuccess, setProfileSuccess] = useState("");
   const [phoneRequired, setPhoneRequired] = useState(false);
 
+  // SINGURA ADĂUGARE: confirmare ieșire din cont
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+
   /*
     ÎNCĂRCARE DASHBOARD
   */
@@ -1046,6 +1049,11 @@ export default function DashboardPage() {
       router.refresh();
     };
 
+  // SINGURA ADĂUGARE: deschide confirmarea înainte de logout
+  const requestLogout = () => {
+    setLogoutConfirmOpen(true);
+  };
+
   /*
     ACTIVEAZĂ / DEZACTIVEAZĂ ANUNȚ
   */
@@ -1330,7 +1338,7 @@ export default function DashboardPage() {
 
           <button
             type="button"
-            onClick={handleLogout}
+            onClick={requestLogout}
             style={{
               border:
                 "1px solid #E2E8F0",
@@ -1807,20 +1815,12 @@ export default function DashboardPage() {
                     anunțurile publicate.
                   </p>
                 </div>
-
                 <button
                   type="button"
                   onClick={() => {
-                    if (
-                      !profilePhone.trim()
-                    ) {
-                      setPhoneRequired(
-                        true
-                      );
-
-                      setActiveSection(
-                        "profile"
-                      );
+                    if (!profilePhone.trim()) {
+                      setPhoneRequired(true);
+                      setActiveSection("profile");
 
                       router.push(
                         "/dashboard?section=profile&required=phone"
@@ -1835,23 +1835,17 @@ export default function DashboardPage() {
                   }}
                   style={{
                     border: "none",
-                    borderRadius:
-                      "10px",
-                    padding:
-                      "12px 17px",
-                    background:
-                      "#172554",
+                    borderRadius: "10px",
+                    padding: "11px 15px",
+                    background: "#172554",
                     color: "#FFFFFF",
-                    fontFamily:
-                      "inherit",
-                    fontSize:
-                      "13px",
-                    fontWeight:
-                      "800",
-                    cursor:
-                      "pointer",
+                    fontFamily: "inherit",
+                    fontSize: "12px",
+                    fontWeight: "800",
+                    cursor: "pointer",
                     boxShadow:
-                      "0 6px 16px rgba(23, 37, 84, 0.16)",
+                      "0 6px 16px rgba(23, 37, 84, 0.14)",
+                    whiteSpace: "nowrap",
                   }}
                 >
                   + Adaugă anunț
@@ -1892,11 +1886,14 @@ export default function DashboardPage() {
                 <h1
                   style={{
                     margin: 0,
-                    fontSize: "34px",
-                    fontWeight: "800",
+                    fontSize:
+                      "34px",
+                    fontWeight:
+                      "800",
                     letterSpacing:
                       "-1px",
-                    color: "#172554",
+                    color:
+                      "#172554",
                   }}
                 >
                   Profilul meu
@@ -1906,322 +1903,344 @@ export default function DashboardPage() {
                   style={{
                     margin:
                       "9px 0 0",
-                    color: "#64748B",
-                    fontSize: "15px",
+                    color:
+                      "#64748B",
+                    fontSize:
+                      "15px",
                   }}
                 >
-                  Administrează datele
-                  contului tău
-                  shaus.
+                  Actualizează
+                  informațiile
+                  contului tău.
                 </p>
               </div>
 
               {phoneRequired && (
                 <div
                   style={{
-                    maxWidth: "620px",
-                    marginBottom: "18px",
-                    background: "#FFF7ED",
+                    maxWidth:
+                      "620px",
+                    marginBottom:
+                      "18px",
+                    background:
+                      "#EFF6FF",
                     border:
-                      "1px solid #FED7AA",
-                    color: "#9A3412",
-                    borderRadius: "12px",
-                    padding: "15px 17px",
-                    boxSizing: "border-box",
+                      "1px solid #BFDBFE",
+                    color:
+                      "#1E3A8A",
+                    borderRadius:
+                      "12px",
+                    padding:
+                      "14px 16px",
+                    fontSize:
+                      "13px",
+                    fontWeight:
+                      "700",
+                    lineHeight:
+                      "1.5",
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      fontWeight: "800",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    Număr de telefon necesar
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: "12px",
-                      lineHeight: "1.55",
-                      fontWeight: "600",
-                    }}
-                  >
-                    Actualizează-ți profilul cu un număr de telefon pentru a putea publica un anunț.
-                  </div>
+                  Pentru a publica
+                  un anunț,
+                  actualizează
+                  profilul cu
+                  numărul tău de
+                  telefon.
                 </div>
               )}
 
               <div
                 style={{
-                  maxWidth: "620px",
+                  maxWidth:
+                    "620px",
                   background:
                     "#FFFFFF",
                   border:
                     "1px solid #E2E8F0",
                   borderRadius:
-                    "16px",
-                  padding: "28px",
+                    "14px",
+                  padding:
+                    "24px",
                   boxShadow:
-                    "0 8px 24px rgba(15, 23, 42, 0.05)",
+                    "0 5px 16px rgba(15, 23, 42, 0.04)",
                 }}
               >
-                <label
+                <div
                   style={{
-                    display: "block",
-                    marginBottom:
-                      "20px",
+                    display:
+                      "grid",
+                    gap: "18px",
                   }}
                 >
-                  <span
-                    style={{
-                      display:
-                        "block",
-                      marginBottom:
-                        "7px",
-                      fontSize:
-                        "12px",
-                      fontWeight:
-                        "800",
-                      color:
-                        "#334155",
-                    }}
-                  >
-                    Nume
-                  </span>
+                  <div>
+                    <label
+                      style={{
+                        display:
+                          "block",
+                        marginBottom:
+                          "7px",
+                        color:
+                          "#172554",
+                        fontSize:
+                          "12px",
+                        fontWeight:
+                          "800",
+                      }}
+                    >
+                      Nume
+                    </label>
 
-                  <input
-                    type="text"
-                    value={
-                      profileName
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      setProfileName(
-                        event.target
-                          .value
-                      )
-                    }
-                    placeholder="Numele tău"
-                    style={{
-                      width: "100%",
-                      height: "46px",
-                      border:
-                        "1px solid #CBD5E1",
-                      borderRadius:
-                        "10px",
-                      padding:
-                        "0 13px",
-                      boxSizing:
-                        "border-box",
-                      outline: "none",
-                      fontFamily:
-                        "inherit",
-                      fontSize:
-                        "14px",
-                      color:
-                        "#0F172A",
-                    }}
-                  />
-                </label>
+                    <input
+                      type="text"
+                      value={
+                        profileName
+                      }
+                      onChange={(
+                        event
+                      ) => {
+                        setProfileName(
+                          event
+                            .target
+                            .value
+                        );
 
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom:
-                      "20px",
-                  }}
-                >
-                  <span
-                    style={{
-                      display:
-                        "block",
-                      marginBottom:
-                        "7px",
-                      fontSize:
-                        "12px",
-                      fontWeight:
-                        "800",
-                      color:
-                        "#334155",
-                    }}
-                  >
-                    Email
-                  </span>
-
-                  <input
-                    type="email"
-                    value={
-                      user?.email || ""
-                    }
-                    readOnly
-                    style={{
-                      width: "100%",
-                      height: "46px",
-                      border:
-                        "1px solid #E2E8F0",
-                      borderRadius:
-                        "10px",
-                      padding:
-                        "0 13px",
-                      boxSizing:
-                        "border-box",
-                      outline: "none",
-                      fontFamily:
-                        "inherit",
-                      fontSize:
-                        "14px",
-                      color:
-                        "#64748B",
-                      background:
-                        "#F8FAFC",
-                    }}
-                  />
-                </label>
-
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom:
-                      "22px",
-                  }}
-                >
-                  <span
-                    style={{
-                      display:
-                        "block",
-                      marginBottom:
-                        "7px",
-                      fontSize:
-                        "12px",
-                      fontWeight:
-                        "800",
-                      color:
-                        "#334155",
-                    }}
-                  >
-                    Număr de telefon
-                  </span>
-
-                  <input
-                    type="tel"
-                    value={
-                      profilePhone
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      setProfilePhone(
-                        event.target
-                          .value
-                      )
-                    }
-                    placeholder="Ex: 07xx xxx xxx"
-                    style={{
-                      width: "100%",
-                      height: "46px",
-                      border:
-                        "1px solid #CBD5E1",
-                      borderRadius:
-                        "10px",
-                      padding:
-                        "0 13px",
-                      boxSizing:
-                        "border-box",
-                      outline: "none",
-                      fontFamily:
-                        "inherit",
-                      fontSize:
-                        "14px",
-                      color:
-                        "#0F172A",
-                    }}
-                  />
-
-                  <span
-                    style={{
-                      display:
-                        "block",
-                      marginTop:
-                        "7px",
-                      color:
-                        "#94A3B8",
-                      fontSize:
-                        "11px",
-                    }}
-                  >
-                    Telefonul va fi
-                    folosit ulterior
-                    pentru contactul
-                    direct între
-                    proprietar și
-                    persoanele
-                    interesate.
-                  </span>
-                </label>
-
-                {profileSuccess && (
-                  <div
-                    style={{
-                      marginBottom:
-                        "16px",
-                      background:
-                        "#F0FDF4",
-                      border:
-                        "1px solid #BBF7D0",
-                      color:
-                        "#15803D",
-                      borderRadius:
-                        "10px",
-                      padding:
-                        "11px 13px",
-                      fontSize:
-                        "12px",
-                      fontWeight:
-                        "700",
-                    }}
-                  >
-                    {profileSuccess}
+                        setProfileSuccess(
+                          ""
+                        );
+                      }}
+                      placeholder="Numele tău"
+                      style={{
+                        width:
+                          "100%",
+                        height:
+                          "44px",
+                        boxSizing:
+                          "border-box",
+                        border:
+                          "1px solid #CBD5E1",
+                        borderRadius:
+                          "9px",
+                        padding:
+                          "0 12px",
+                        color:
+                          "#172554",
+                        fontFamily:
+                          "inherit",
+                        fontSize:
+                          "13px",
+                        outline:
+                          "none",
+                      }}
+                    />
                   </div>
-                )}
 
-                <button
-                  type="button"
-                  onClick={
-                    saveProfile
-                  }
-                  disabled={
-                    profileSaving
-                  }
-                  style={{
-                    border: "none",
-                    borderRadius:
-                      "10px",
-                    padding:
-                      "12px 18px",
-                    background:
-                      profileSaving
-                        ? "#94A3B8"
-                        : "#172554",
-                    color:
-                      "#FFFFFF",
-                    fontFamily:
-                      "inherit",
-                    fontSize:
-                      "13px",
-                    fontWeight:
-                      "800",
-                    cursor:
-                      profileSaving
-                        ? "not-allowed"
-                        : "pointer",
-                  }}
-                >
-                  {profileSaving
-                    ? "Se salvează..."
-                    : "Salvează modificările"}
-                </button>
+                  <div>
+                    <label
+                      style={{
+                        display:
+                          "block",
+                        marginBottom:
+                          "7px",
+                        color:
+                          "#172554",
+                        fontSize:
+                          "12px",
+                        fontWeight:
+                          "800",
+                      }}
+                    >
+                      Email
+                    </label>
+
+                    <input
+                      type="email"
+                      value={
+                        user?.email ||
+                        ""
+                      }
+                      disabled
+                      style={{
+                        width:
+                          "100%",
+                        height:
+                          "44px",
+                        boxSizing:
+                          "border-box",
+                        border:
+                          "1px solid #E2E8F0",
+                        borderRadius:
+                          "9px",
+                        padding:
+                          "0 12px",
+                        color:
+                          "#64748B",
+                        background:
+                          "#F8FAFC",
+                        fontFamily:
+                          "inherit",
+                        fontSize:
+                          "13px",
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      style={{
+                        display:
+                          "block",
+                        marginBottom:
+                          "7px",
+                        color:
+                          "#172554",
+                        fontSize:
+                          "12px",
+                        fontWeight:
+                          "800",
+                      }}
+                    >
+                      Număr de
+                      telefon
+                    </label>
+
+                    <input
+                      type="tel"
+                      value={
+                        profilePhone
+                      }
+                      onChange={(
+                        event
+                      ) => {
+                        setProfilePhone(
+                          event
+                            .target
+                            .value
+                        );
+
+                        setProfileSuccess(
+                          ""
+                        );
+                      }}
+                      placeholder="Ex: 07xxxxxxxx"
+                      style={{
+                        width:
+                          "100%",
+                        height:
+                          "44px",
+                        boxSizing:
+                          "border-box",
+                        border:
+                          phoneRequired
+                            ? "1px solid #60A5FA"
+                            : "1px solid #CBD5E1",
+                        borderRadius:
+                          "9px",
+                        padding:
+                          "0 12px",
+                        color:
+                          "#172554",
+                        fontFamily:
+                          "inherit",
+                        fontSize:
+                          "13px",
+                        outline:
+                          "none",
+                        boxShadow:
+                          phoneRequired
+                            ? "0 0 0 3px rgba(59, 130, 246, 0.08)"
+                            : "none",
+                      }}
+                    />
+
+                    <div
+                      style={{
+                        marginTop:
+                          "7px",
+                        color:
+                          "#94A3B8",
+                        fontSize:
+                          "11px",
+                        lineHeight:
+                          "1.5",
+                      }}
+                    >
+                      Numărul de
+                      telefon este
+                      necesar pentru
+                      publicarea unui
+                      anunț și poate fi
+                      folosit de
+                      persoanele
+                      interesate pentru
+                      a te contacta.
+                    </div>
+                  </div>
+
+                  {profileSuccess && (
+                    <div
+                      style={{
+                        background:
+                          "#F0FDF4",
+                        border:
+                          "1px solid #BBF7D0",
+                        color:
+                          "#15803D",
+                        borderRadius:
+                          "9px",
+                        padding:
+                          "10px 12px",
+                        fontSize:
+                          "12px",
+                        fontWeight:
+                          "700",
+                      }}
+                    >
+                      {
+                        profileSuccess
+                      }
+                    </div>
+                  )}
+
+                  <div>
+                    <button
+                      type="button"
+                      onClick={
+                        saveProfile
+                      }
+                      disabled={
+                        profileSaving
+                      }
+                      style={{
+                        border:
+                          "none",
+                        borderRadius:
+                          "9px",
+                        padding:
+                          "11px 16px",
+                        background:
+                          profileSaving
+                            ? "#94A3B8"
+                            : "#172554",
+                        color:
+                          "#FFFFFF",
+                        fontFamily:
+                          "inherit",
+                        fontSize:
+                          "12px",
+                        fontWeight:
+                          "800",
+                        cursor:
+                          profileSaving
+                            ? "default"
+                            : "pointer",
+                      }}
+                    >
+                      {profileSaving
+                        ? "Se salvează..."
+                        : "Salvează modificările"}
+                    </button>
+                  </div>
+                </div>
               </div>
             </>
           )}
@@ -2232,17 +2251,20 @@ export default function DashboardPage() {
               <div
                 style={{
                   marginBottom:
-                    "28px",
+                    "24px",
                 }}
               >
                 <h1
                   style={{
                     margin: 0,
-                    fontSize: "34px",
-                    fontWeight: "800",
+                    fontSize:
+                      "34px",
+                    fontWeight:
+                      "800",
                     letterSpacing:
                       "-1px",
-                    color: "#172554",
+                    color:
+                      "#172554",
                   }}
                 >
                   Mesaje
@@ -2252,8 +2274,10 @@ export default function DashboardPage() {
                   style={{
                     margin:
                       "9px 0 0",
-                    color: "#64748B",
-                    fontSize: "15px",
+                    color:
+                      "#64748B",
+                    fontSize:
+                      "15px",
                   }}
                 >
                   Discută direct cu
@@ -2267,29 +2291,30 @@ export default function DashboardPage() {
               0 ? (
                 <EmptyCard
                   title="Nu ai conversații"
-                  text="Când contactezi un proprietar sau cineva te contactează pentru un anunț, conversația va apărea aici."
+                  text="Conversațiile tale vor apărea aici."
                 />
               ) : (
                 <div
                   className="messages-layout"
                   style={{
-                    width: "100%",
-                    maxWidth:
-                      "1050px",
-                    height: "650px",
-                    display: "grid",
+                    display:
+                      "grid",
                     gridTemplateColumns:
-                      "320px minmax(0, 1fr)",
+                      "310px minmax(0, 1fr)",
+                    height:
+                      "650px",
+                    maxWidth:
+                      "1100px",
                     background:
                       "#FFFFFF",
                     border:
                       "1px solid #E2E8F0",
                     borderRadius:
-                      "16px",
+                      "14px",
                     overflow:
                       "hidden",
                     boxShadow:
-                      "0 8px 24px rgba(15, 23, 42, 0.05)",
+                      "0 5px 16px rgba(15, 23, 42, 0.04)",
                   }}
                 >
                   <div
@@ -2299,26 +2324,10 @@ export default function DashboardPage() {
                         "1px solid #E2E8F0",
                       overflowY:
                         "auto",
-                      minWidth: 0,
+                      background:
+                        "#FFFFFF",
                     }}
                   >
-                    <div
-                      style={{
-                        padding:
-                          "18px 18px 14px",
-                        borderBottom:
-                          "1px solid #E2E8F0",
-                        fontSize:
-                          "13px",
-                        fontWeight:
-                          "800",
-                        color:
-                          "#172554",
-                      }}
-                    >
-                      Conversații
-                    </div>
-
                     {conversations.map(
                       (
                         conversation
@@ -2326,15 +2335,15 @@ export default function DashboardPage() {
                         const listing =
                           conversation.listings;
 
-                        const selected =
-                          conversation.id ===
-                          selectedConversationId;
-
                         const details =
                           conversationDetails[
                             conversation
                               .id
                           ] || {};
+
+                        const otherUserName =
+                          details.otherUserName ||
+                          "Utilizator";
 
                         const lastMessage =
                           details.lastMessage;
@@ -2344,11 +2353,12 @@ export default function DashboardPage() {
                           0;
 
                         const hasUnread =
-                          unreadCount > 0;
+                          unreadCount >
+                          0;
 
-                        const otherUserName =
-                          details.otherUserName ||
-                          "Utilizator";
+                        const selected =
+                          selectedConversationId ===
+                          conversation.id;
 
                         return (
                           <button
@@ -2371,11 +2381,9 @@ export default function DashboardPage() {
                               background:
                                 selected
                                   ? "#EFF6FF"
-                                  : hasUnread
-                                  ? "#F8FBFF"
                                   : "#FFFFFF",
                               padding:
-                                "15px",
+                                "14px",
                               cursor:
                                 "pointer",
                               display:
@@ -2392,8 +2400,10 @@ export default function DashboardPage() {
                           >
                             <div
                               style={{
-                                width: "58px",
-                                height: "58px",
+                                width:
+                                  "58px",
+                                height:
+                                  "58px",
                                 borderRadius:
                                   "10px",
                                 overflow:
@@ -2448,7 +2458,8 @@ export default function DashboardPage() {
 
                             <div
                               style={{
-                                minWidth: 0,
+                                minWidth:
+                                  0,
                               }}
                             >
                               <div
@@ -2850,19 +2861,19 @@ export default function DashboardPage() {
                               borderRadius:
                                 "10px",
                               padding:
-                                "11px 12px",
-                              outline:
-                                "none",
+                                "10px 12px",
                               fontFamily:
                                 "inherit",
                               fontSize:
                                 "12px",
+                              outline:
+                                "none",
                               color:
-                                "#0F172A",
+                                "#172554",
                               minHeight:
-                                "42px",
+                                "40px",
                               maxHeight:
-                                "110px",
+                                "100px",
                               boxSizing:
                                 "border-box",
                             }}
@@ -2881,9 +2892,9 @@ export default function DashboardPage() {
                               border:
                                 "none",
                               borderRadius:
-                                "10px",
+                                "9px",
                               padding:
-                                "0 17px",
+                                "0 16px",
                               background:
                                 sendingMessage ||
                                 !messageText.trim()
@@ -2900,12 +2911,12 @@ export default function DashboardPage() {
                               cursor:
                                 sendingMessage ||
                                 !messageText.trim()
-                                  ? "not-allowed"
+                                  ? "default"
                                   : "pointer",
                             }}
                           >
                             {sendingMessage
-                              ? "Se trimite..."
+                              ? "..."
                               : "Trimite"}
                           </button>
                         </div>
@@ -2924,9 +2935,14 @@ export default function DashboardPage() {
                             "#94A3B8",
                           fontSize:
                             "13px",
+                          padding:
+                            "30px",
+                          textAlign:
+                            "center",
                         }}
                       >
-                        Selectează o conversație.
+                        Selectează o
+                        conversație.
                       </div>
                     )}
                   </div>
@@ -2934,6 +2950,7 @@ export default function DashboardPage() {
               )}
             </>
           )}
+
           {activeSection === "favorites" && (
             <>
               <div
@@ -2998,7 +3015,7 @@ export default function DashboardPage() {
                           width: "110px",
                           height: "78px",
                           borderRadius: "10px",
-                          overflow: "hidden",
+                                                    overflow: "hidden",
                           background: "#F1F5F9",
                         }}
                       >
@@ -3143,6 +3160,105 @@ export default function DashboardPage() {
           )}
         </section>
       </div>
+
+      {/* CONFIRMARE IEȘIRE DIN CONT */}
+      {logoutConfirmOpen && (
+        <div
+          onClick={() => setLogoutConfirmOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: "20px",
+            boxSizing: "border-box",
+          }}
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: "420px",
+              background: "#FFFFFF",
+              border: "1px solid #E2E8F0",
+              borderRadius: "16px",
+              padding: "26px",
+              boxSizing: "border-box",
+              boxShadow:
+                "0 20px 50px rgba(15, 23, 42, 0.20)",
+            }}
+          >
+            <h2
+              style={{
+                margin: 0,
+                color: "#172554",
+                fontSize: "21px",
+                fontWeight: "800",
+              }}
+            >
+              Ieșire din cont
+            </h2>
+
+            <p
+              style={{
+                margin: "10px 0 24px",
+                color: "#64748B",
+                fontSize: "14px",
+                lineHeight: "1.6",
+              }}
+            >
+              Ești sigur că dorești să ieși din cont?
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "10px",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setLogoutConfirmOpen(false)}
+                style={{
+                  border: "1px solid #CBD5E1",
+                  background: "#FFFFFF",
+                  borderRadius: "9px",
+                  padding: "10px 16px",
+                  color: "#172554",
+                  fontFamily: "inherit",
+                  fontSize: "13px",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                }}
+              >
+                Anulează
+              </button>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                style={{
+                  border: "none",
+                  background: "#172554",
+                  borderRadius: "9px",
+                  padding: "10px 16px",
+                  color: "#FFFFFF",
+                  fontFamily: "inherit",
+                  fontSize: "13px",
+                  fontWeight: "800",
+                  cursor: "pointer",
+                }}
+              >
+                Ieșire
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @media (max-width: 900px) {
@@ -3458,7 +3574,9 @@ function ListingsList({
               {listing.rooms != null && (
                 <span>
                   {listing.rooms}{" "}
-                  {Number(listing.rooms) === 1 ? "cameră" : "camere"}
+                  {Number(listing.rooms) === 1
+                    ? "cameră"
+                    : "camere"}
                 </span>
               )}
 
