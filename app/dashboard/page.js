@@ -1041,13 +1041,19 @@ export default function DashboardPage() {
     LOGOUT
   */
 
-  const handleLogout =
-    async () => {
-      await supabase.auth.signOut();
+  const handleLogout = async () => {
+  const { error } = await supabase.auth.signOut();
 
-      router.push("/");
-      router.refresh();
-    };
+  if (error) {
+    console.error("Eroare la deconectare:", error);
+    return;
+  }
+
+  setUser(null);
+  setLogoutConfirmOpen(false);
+
+  window.location.replace("/");
+};
 
   // SINGURA ADĂUGARE: deschide confirmarea înainte de logout
   const requestLogout = () => {
