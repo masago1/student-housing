@@ -15,23 +15,44 @@ export async function generateMetadata({ params }) {
 
   const cityName = formatCityName(citySlug);
 
-  return {
-    title: `Chirii pentru studenți în ${cityName}`,
+  const title = `Chirii în ${cityName} – Apartamente și Garsoniere de Închiriat | shaus`;
 
-    description: `Găsește apartamente, garsoniere și camere de închiriat pentru studenți în ${cityName}. Descoperă chirii disponibile pe shaus.`,
+  const description = `Găsește chirii în ${cityName}: apartamente, garsoniere și camere de închiriat pentru studenți și nu numai. Descoperă proprietăți disponibile pe shaus.`;
+
+  return {
+    title,
+
+    description,
+
+    alternates: {
+      canonical: `/chirii/${citySlug}`,
+    },
+
+    keywords: [
+      `chirii ${cityName}`,
+      `apartamente de închiriat ${cityName}`,
+      `garsoniere de închiriat ${cityName}`,
+      `camere de închiriat ${cityName}`,
+      `chirie ${cityName}`,
+      `cazare studenți ${cityName}`,
+      `apartamente ${cityName}`,
+      "chirii studenți",
+      "shaus",
+    ],
 
     openGraph: {
-      title: `Chirii pentru studenți în ${cityName} | shaus`,
-      description: `Descoperă apartamente, garsoniere și camere de închiriat pentru studenți în ${cityName}.`,
+      title,
+      description,
       type: "website",
       locale: "ro_RO",
       siteName: "shaus",
+      url: `https://shaus.ro/chirii/${citySlug}`,
     },
 
     twitter: {
       card: "summary_large_image",
-      title: `Chirii pentru studenți în ${cityName} | shaus`,
-      description: `Descoperă apartamente, garsoniere și camere de închiriat pentru studenți în ${cityName}.`,
+      title,
+      description,
     },
 
     robots: {
