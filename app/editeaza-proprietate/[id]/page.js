@@ -787,23 +787,21 @@ export default function EditeazaProprietatePage() {
                                 (
                                     image
                                 ) => ({
-                                    id:
-                                        image.id,
+                                    id: image.id,
 
-                                    existing:
-    true,
+existing: true,
 
 image_url:
-    image.image_url,
+  image.image_url,
 
-                                    sort_order:
-                                        image.sort_order,
+storage_path:
+  image.storage_path,
 
-                                    file:
-                                        null,
+file:
+  null,
 
-                                    preview:
-                                        image.image_url,
+preview:
+  image.image_url,
                                 })
                             )
                         );
