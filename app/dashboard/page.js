@@ -379,7 +379,7 @@ export default function DashboardPage() {
         otherUserIds.length
           ? supabase
               .from("profiles")
-              .select("id, name")
+              .select("id, nickname, name")
               .in(
                 "id",
                 otherUserIds
@@ -430,8 +430,11 @@ export default function DashboardPage() {
       (profileRows || []).forEach(
         (profile) => {
           profilesById[
-            profile.id
-          ] = profile.name;
+  profile.id
+] =
+  profile.nickname?.trim() ||
+  profile.name ||
+  "Utilizator";
         }
       );
 
