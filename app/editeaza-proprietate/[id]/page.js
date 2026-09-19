@@ -760,19 +760,12 @@ export default function EditeazaProprietatePage() {
                                 "listing_images"
                             )
                             .select(
-                                "id, image_url, sort_order"
-                            )
-                            .eq(
-                                "listing_id",
-                                listingId
-                            )
-                            .order(
-                                "sort_order",
-                                {
-                                    ascending:
-                                        true,
-                                }
-                            );
+  "id, image_url, storage_path"
+)
+.eq(
+  "listing_id",
+  listingId
+);
 
                     if (
                         imageError
