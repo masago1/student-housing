@@ -25,6 +25,7 @@ export default function DashboardPage() {
   const [conversationDetails, setConversationDetails] = useState({});
 
   const [profileName, setProfileName] = useState("");
+  const [profileNickname, setProfileNickname] = useState("");
   const [profilePhone, setProfilePhone] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState("");
@@ -57,7 +58,7 @@ export default function DashboardPage() {
       const { data: profileData, error: profileError } =
         await supabase
           .from("profiles")
-          .select("name, phone")
+          .select("name, nickname, phone")
           .eq("id", user.id)
           .maybeSingle();
 
@@ -67,6 +68,11 @@ export default function DashboardPage() {
         setProfileName(
           profileData?.name ||
             user.user_metadata?.name ||
+            ""
+        );
+        setProfileNickname(
+          profileData?.nickname ||
+            user.user_metadata?.nickname ||
             ""
         );
         setProfilePhone(profileData?.phone || "");
@@ -906,6 +912,9 @@ export default function DashboardPage() {
       const cleanName =
         profileName.trim();
 
+      const cleanNickname =
+        profileNickname.trim();
+
       const cleanPhone =
         profilePhone.trim();
 
@@ -915,6 +924,64 @@ export default function DashboardPage() {
       if (!cleanName) {
         setError(
           "Introdu numele."
+        );
+
+        return;
+      }
+
+      if (!cleanNickname) {
+        setError(
+          "Introdu un nickname."
+        );
+
+        return;
+      }
+
+      if (
+        cleanNickname.length < 3 ||
+        cleanNickname.length > 30
+      ) {
+        setError(
+          "Nickname-ul trebuie să aibă între 3 și 30 de caractere."
+        );
+
+        return;
+      }
+
+      if (!/^[a-zA-Z0-9._-]+$/.test(cleanNickname)) {
+        setError(
+          "Nickname-ul poate conține doar litere, cifre, punct, _ și -."
+        );
+
+        return;
+      }
+
+      const {
+        data: nicknameOwner,
+        error: nicknameCheckError,
+      } = await supabase
+        .from("profiles")
+        .select("id")
+        .ilike("nickname", cleanNickname)
+        .neq("id", user.id)
+        .maybeSingle();
+
+      if (nicknameCheckError) {
+        console.error(
+          "Eroare verificare nickname:",
+          nicknameCheckError
+        );
+
+        setError(
+          "Nickname-ul nu a putut fi verificat."
+        );
+
+        return;
+      }
+
+      if (nicknameOwner) {
+        setError(
+          "Acest nickname este deja folosit. Alege altul."
         );
 
         return;
@@ -941,6 +1008,7 @@ export default function DashboardPage() {
           {
             id: user.id,
             name: cleanName,
+            nickname: cleanNickname,
             phone:
               cleanPhone || null,
           },
@@ -956,7 +1024,9 @@ export default function DashboardPage() {
         );
 
         setError(
-          "Profilul nu a putut fi salvat."
+          profileError.code === "23505"
+            ? "Acest nickname este deja folosit. Alege altul."
+            : "Profilul nu a putut fi salvat."
         );
 
         setProfileSaving(
@@ -973,6 +1043,7 @@ export default function DashboardPage() {
         await supabase.auth.updateUser({
           data: {
             name: cleanName,
+            nickname: cleanNickname,
           },
         });
 
@@ -995,6 +1066,8 @@ export default function DashboardPage() {
 
                   name:
                     cleanName,
+                  nickname:
+                    cleanNickname,
                 },
               }
             : current
@@ -1002,6 +1075,10 @@ export default function DashboardPage() {
 
       setProfileName(
         cleanName
+      );
+
+      setProfileNickname(
+        cleanNickname
       );
 
       setProfilePhone(
@@ -1226,8 +1303,7 @@ export default function DashboardPage() {
           )
       );
     };
-
-  const activeListings =
+    const activeListings =
     listings.filter(
       (listing) =>
         listing.active
@@ -1642,7 +1718,9 @@ export default function DashboardPage() {
                   }}
                 >
                   Bun venit
-                  {profileName?.trim()
+                  {profileNickname?.trim()
+                    ? `, ${profileNickname.trim()}!`
+                    : profileName?.trim()
                     ? `, ${profileName.trim()}!`
                     : "!"}
                 </h1>
@@ -1821,6 +1899,7 @@ export default function DashboardPage() {
                     anunțurile publicate.
                   </p>
                 </div>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -2038,6 +2117,87 @@ export default function DashboardPage() {
                           "none",
                       }}
                     />
+                  </div>
+
+                  <div>
+                    <label
+                      style={{
+                        display:
+                          "block",
+                        marginBottom:
+                          "7px",
+                        color:
+                          "#172554",
+                        fontSize:
+                          "12px",
+                        fontWeight:
+                          "800",
+                      }}
+                    >
+                      Nickname
+                    </label>
+
+                    <input
+                      type="text"
+                      value={
+                        profileNickname
+                      }
+                      onChange={(
+                        event
+                      ) => {
+                        setProfileNickname(
+                          event
+                            .target
+                            .value
+                        );
+
+                        setProfileSuccess(
+                          ""
+                        );
+                      }}
+                      placeholder="Ex: user123"
+                      maxLength={30}
+                      style={{
+                        width:
+                          "100%",
+                        height:
+                          "44px",
+                        boxSizing:
+                          "border-box",
+                        border:
+                          "1px solid #CBD5E1",
+                        borderRadius:
+                          "9px",
+                        padding:
+                          "0 12px",
+                        color:
+                          "#172554",
+                        fontFamily:
+                          "inherit",
+                        fontSize:
+                          "13px",
+                        outline:
+                          "none",
+                      }}
+                    />
+
+                    <div
+                      style={{
+                        marginTop:
+                          "7px",
+                        color:
+                          "#94A3B8",
+                        fontSize:
+                          "11px",
+                        lineHeight:
+                          "1.5",
+                      }}
+                    >
+                      Acesta este numele tău
+                      public pe shaus. Va fi
+                      vizibil celorlalți
+                      utilizatori.
+                    </div>
                   </div>
 
                   <div>
@@ -2484,25 +2644,23 @@ export default function DashboardPage() {
                                   style={{
                                     minWidth:
                                       0,
+                                    color:
+                                      "#172554",
+                                    fontSize:
+                                      "12px",
+                                    fontWeight:
+                                      hasUnread
+                                        ? "900"
+                                        : "800",
                                     overflow:
                                       "hidden",
                                     textOverflow:
                                       "ellipsis",
                                     whiteSpace:
                                       "nowrap",
-                                    color:
-                                      "#172554",
-                                    fontSize:
-                                      "13px",
-                                    fontWeight:
-                                      hasUnread
-                                        ? "900"
-                                        : "800",
                                   }}
                                 >
-                                  {
-                                    otherUserName
-                                  }
+                                  {otherUserName}
                                 </div>
 
                                 {hasUnread && (
@@ -2632,7 +2790,8 @@ export default function DashboardPage() {
                         >
                           <div
                             style={{
-                              minWidth: 0,
+                              minWidth:
+                                0,
                             }}
                           >
                             <div
@@ -2646,7 +2805,8 @@ export default function DashboardPage() {
                               }}
                             >
                               {conversationDetails[
-                                selectedConversation.id
+                                selectedConversation
+                                  .id
                               ]?.otherUserName ||
                                 "Utilizator"}
                             </div>
@@ -2676,44 +2836,47 @@ export default function DashboardPage() {
                             </div>
                           </div>
 
-                          {selectedConversation
-                            .listings
-                            ?.id && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                router.push(
-                                  `/proprietate/${selectedConversation.listings.id}`
-                                )
-                              }
-                              style={{
-                                border:
-                                  "1px solid #CBD5E1",
-                                background:
-                                  "#FFFFFF",
-                                borderRadius:
-                                  "9px",
-                                padding:
-                                  "8px 11px",
-                                color:
-                                  "#172554",
-                                fontFamily:
-                                  "inherit",
-                                fontSize:
-                                  "10px",
-                                fontWeight:
-                                  "800",
-                                cursor:
-                                  "pointer",
-                                whiteSpace:
-                                  "nowrap",
-                              }}
-                            >
-                              Vezi anunțul
-                            </button>
-                          )}
-                        </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const listingId =
+                                selectedConversation
+                                  .listing_id;
 
+                              if (
+                                listingId
+                              ) {
+                                router.push(
+                                  `/proprietate/${listingId}`
+                                );
+                              }
+                            }}
+                            style={{
+                              border:
+                                "1px solid #CBD5E1",
+                              background:
+                                "#FFFFFF",
+                              borderRadius:
+                                "9px",
+                              padding:
+                                "8px 11px",
+                              color:
+                                "#172554",
+                              fontFamily:
+                                "inherit",
+                              fontSize:
+                                "10px",
+                              fontWeight:
+                                "800",
+                              cursor:
+                                "pointer",
+                              whiteSpace:
+                                "nowrap",
+                            }}
+                          >
+                            Vezi anunțul
+                          </button>
+                        </div>
                         <div
                           style={{
                             flex: 1,
@@ -2762,9 +2925,7 @@ export default function DashboardPage() {
                             </div>
                           ) : (
                             messages.map(
-                              (
-                                message
-                              ) => {
+                              (message) => {
                                 const mine =
                                   message.sender_id ===
                                   user.id;
@@ -2957,20 +3118,26 @@ export default function DashboardPage() {
             </>
           )}
 
-          {activeSection === "favorites" && (
+          {activeSection ===
+            "favorites" && (
             <>
               <div
                 style={{
-                  marginBottom: "28px",
+                  marginBottom:
+                    "28px",
                 }}
               >
                 <h1
                   style={{
                     margin: 0,
-                    fontSize: "34px",
-                    fontWeight: "800",
-                    letterSpacing: "-1px",
-                    color: "#172554",
+                    fontSize:
+                      "34px",
+                    fontWeight:
+                      "800",
+                    letterSpacing:
+                      "-1px",
+                    color:
+                      "#172554",
                   }}
                 >
                   Favorite
@@ -2978,170 +3145,260 @@ export default function DashboardPage() {
 
                 <p
                   style={{
-                    margin: "9px 0 0",
-                    color: "#64748B",
-                    fontSize: "15px",
+                    margin:
+                      "9px 0 0",
+                    color:
+                      "#64748B",
+                    fontSize:
+                      "15px",
                   }}
                 >
-                  Anunțurile pe care le-ai salvat pentru mai târziu.
+                  Proprietățile salvate
+                  de tine.
                 </p>
               </div>
 
-              {favorites.length === 0 ? (
+              {favorites.length ===
+              0 ? (
                 <EmptyCard
-                  title="Nu ai anunțuri favorite"
-                  text="Salvează proprietățile care îți plac și le vei găsi aici."
+                  title="Nu ai favorite"
+                  text="Anunțurile salvate vor apărea aici."
                 />
               ) : (
                 <div
                   style={{
-                    display: "grid",
+                    display:
+                      "grid",
                     gap: "14px",
-                    maxWidth: "900px",
+                    maxWidth:
+                      "900px",
                   }}
                 >
-                  {favorites.map((listing) => (
-                    <div
-                      key={listing.id}
-                      style={{
-                        background: "#FFFFFF",
-                        border: "1px solid #E2E8F0",
-                        borderRadius: "14px",
-                        padding: "16px",
-                        display: "grid",
-                        gridTemplateColumns: "110px minmax(0, 1fr) auto",
-                        gap: "16px",
-                        alignItems: "center",
-                        boxShadow:
-                          "0 5px 16px rgba(15, 23, 42, 0.04)",
-                      }}
-                    >
+                  {favorites.map(
+                    (listing) => (
                       <div
+                        key={
+                          listing.id
+                        }
                         style={{
-                          width: "110px",
-                          height: "78px",
-                          borderRadius: "10px",
-                                                    overflow: "hidden",
-                          background: "#F1F5F9",
+                          background:
+                            "#FFFFFF",
+                          border:
+                            "1px solid #E2E8F0",
+                          borderRadius:
+                            "14px",
+                          padding:
+                            "16px",
+                          display:
+                            "grid",
+                          gridTemplateColumns:
+                            "110px minmax(0, 1fr) auto",
+                          gap:
+                            "16px",
+                          alignItems:
+                            "center",
+                          boxShadow:
+                            "0 5px 16px rgba(15, 23, 42, 0.04)",
                         }}
                       >
-                        {listing.image_url ? (
-                          <img
-                            src={listing.image_url}
-                            alt={listing.title || "Anunț"}
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                              display: "block",
-                            }}
-                          />
-                        ) : (
+                        <div
+                          style={{
+                            width:
+                              "110px",
+                            height:
+                              "78px",
+                            borderRadius:
+                              "10px",
+                            overflow:
+                              "hidden",
+                            background:
+                              "#F1F5F9",
+                          }}
+                        >
+                          {listing.image_url ? (
+                            <img
+                              src={
+                                listing.image_url
+                              }
+                              alt={
+                                listing.title ||
+                                "Anunț"
+                              }
+                              style={{
+                                width:
+                                  "100%",
+                                height:
+                                  "100%",
+                                objectFit:
+                                  "cover",
+                                display:
+                                  "block",
+                              }}
+                            />
+                          ) : (
+                            <div
+                              style={{
+                                width:
+                                  "100%",
+                                height:
+                                  "100%",
+                                display:
+                                  "flex",
+                                alignItems:
+                                  "center",
+                                justifyContent:
+                                  "center",
+                                color:
+                                  "#94A3B8",
+                                fontSize:
+                                  "10px",
+                              }}
+                            >
+                              Fără poză
+                            </div>
+                          )}
+                        </div>
+
+                        <div
+                          style={{
+                            minWidth:
+                              0,
+                          }}
+                        >
                           <div
                             style={{
-                              width: "100%",
-                              height: "100%",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              color: "#94A3B8",
-                              fontSize: "10px",
+                              color:
+                                "#172554",
+                              fontSize:
+                                "15px",
+                              fontWeight:
+                                "800",
+                              overflow:
+                                "hidden",
+                              textOverflow:
+                                "ellipsis",
+                              whiteSpace:
+                                "nowrap",
                             }}
                           >
-                            Fără poză
+                            {
+                              listing.title
+                            }
                           </div>
-                        )}
-                      </div>
 
-                      <div
-                        style={{
-                          minWidth: 0,
-                        }}
-                      >
-                        <div
-                          style={{
-                            color: "#172554",
-                            fontSize: "15px",
-                            fontWeight: "800",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {listing.title}
+                          <div
+                            style={{
+                              marginTop:
+                                "6px",
+                              color:
+                                "#64748B",
+                              fontSize:
+                                "12px",
+                            }}
+                          >
+                            {
+                              listing.city
+                            }
+
+                            {listing.address
+                              ? ` · ${listing.address}`
+                              : ""}
+                          </div>
+
+                          <div
+                            style={{
+                              marginTop:
+                                "7px",
+                              color:
+                                "#172554",
+                              fontSize:
+                                "14px",
+                              fontWeight:
+                                "900",
+                            }}
+                          >
+                            {
+                              listing.price_monthly
+                            }{" "}
+                            € / lună
+                          </div>
                         </div>
 
                         <div
                           style={{
-                            marginTop: "6px",
-                            color: "#64748B",
-                            fontSize: "12px",
+                            display:
+                              "flex",
+                            flexDirection:
+                              "column",
+                            gap:
+                              "8px",
                           }}
                         >
-                          {listing.city}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              router.push(
+                                `/proprietate/${listing.id}`
+                              )
+                            }
+                            style={{
+                              border:
+                                "1px solid #CBD5E1",
+                              background:
+                                "#FFFFFF",
+                              borderRadius:
+                                "9px",
+                              padding:
+                                "9px 12px",
+                              color:
+                                "#172554",
+                              fontFamily:
+                                "inherit",
+                              fontSize:
+                                "11px",
+                              fontWeight:
+                                "800",
+                              cursor:
+                                "pointer",
+                            }}
+                          >
+                            Vezi
+                          </button>
 
-                          {listing.address
-                            ? ` · ${listing.address}`
-                            : ""}
-                        </div>
-
-                        <div
-                          style={{
-                            marginTop: "7px",
-                            color: "#172554",
-                            fontSize: "14px",
-                            fontWeight: "900",
-                          }}
-                        >
-                          {listing.price_monthly} € / lună
+                          <button
+                            type="button"
+                            onClick={() =>
+                              removeFavorite(
+                                listing
+                              )
+                            }
+                            style={{
+                              border:
+                                "1px solid #FECACA",
+                              background:
+                                "#FEF2F2",
+                              borderRadius:
+                                "9px",
+                              padding:
+                                "9px 12px",
+                              color:
+                                "#DC2626",
+                              fontFamily:
+                                "inherit",
+                              fontSize:
+                                "11px",
+                              fontWeight:
+                                "800",
+                              cursor:
+                                "pointer",
+                            }}
+                          >
+                            Elimină
+                          </button>
                         </div>
                       </div>
-
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "8px",
-                        }}
-                      >
-                        <button
-                          type="button"
-                          onClick={() =>
-                            router.push(`/proprietate/${listing.id}`)
-                          }
-                          style={{
-                            border: "1px solid #CBD5E1",
-                            background: "#FFFFFF",
-                            borderRadius: "9px",
-                            padding: "9px 12px",
-                            color: "#172554",
-                            fontFamily: "inherit",
-                            fontSize: "11px",
-                            fontWeight: "800",
-                            cursor: "pointer",
-                          }}
-                        >
-                          Vezi anunțul
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => removeFavorite(listing)}
-                          style={{
-                            border: "none",
-                            background: "transparent",
-                            color: "#DC2626",
-                            fontFamily: "inherit",
-                            fontSize: "11px",
-                            fontWeight: "800",
-                            cursor: "pointer",
-                          }}
-                        >
-                          Elimină
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  )}
                 </div>
               )}
             </>
@@ -3150,15 +3407,24 @@ export default function DashboardPage() {
           {error && (
             <div
               style={{
-                maxWidth: "900px",
-                marginTop: "22px",
-                background: "#FEF2F2",
-                border: "1px solid #FECACA",
-                color: "#B91C1C",
-                borderRadius: "10px",
-                padding: "12px 14px",
-                fontSize: "12px",
-                fontWeight: "700",
+                marginTop:
+                  "20px",
+                maxWidth:
+                  "900px",
+                background:
+                  "#FEF2F2",
+                border:
+                  "1px solid #FECACA",
+                color:
+                  "#B91C1C",
+                borderRadius:
+                  "10px",
+                padding:
+                  "12px 14px",
+                fontSize:
+                  "12px",
+                fontWeight:
+                  "700",
               }}
             >
               {error}
@@ -3167,60 +3433,65 @@ export default function DashboardPage() {
         </section>
       </div>
 
-      {/* CONFIRMARE IEȘIRE DIN CONT */}
+      {/* SINGURA ADĂUGARE: modal confirmare ieșire din cont */}
       {logoutConfirmOpen && (
         <div
-          onClick={() => setLogoutConfirmOpen(false)}
+          onClick={() =>
+            setLogoutConfirmOpen(false)
+          }
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(15, 23, 42, 0.45)",
+            background:
+              "rgba(15, 23, 42, 0.45)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            zIndex: 9999,
             padding: "20px",
-            boxSizing: "border-box",
+            zIndex: 9999,
           }}
         >
           <div
-            onClick={(event) => event.stopPropagation()}
+            onClick={(event) =>
+              event.stopPropagation()
+            }
             style={{
               width: "100%",
               maxWidth: "420px",
               background: "#FFFFFF",
               border: "1px solid #E2E8F0",
               borderRadius: "16px",
-              padding: "26px",
+              padding: "24px",
               boxSizing: "border-box",
               boxShadow:
-                "0 20px 50px rgba(15, 23, 42, 0.20)",
+                "0 24px 60px rgba(15, 23, 42, 0.22)",
             }}
           >
-            <h2
+            <div
               style={{
-                margin: 0,
                 color: "#172554",
-                fontSize: "21px",
-                fontWeight: "800",
+                fontSize: "20px",
+                fontWeight: "900",
+                letterSpacing: "-0.4px",
               }}
             >
               Ieșire din cont
-            </h2>
+            </div>
 
-            <p
+            <div
               style={{
-                margin: "10px 0 24px",
+                marginTop: "10px",
                 color: "#64748B",
                 fontSize: "14px",
                 lineHeight: "1.6",
               }}
             >
               Ești sigur că dorești să ieși din cont?
-            </p>
+            </div>
 
             <div
               style={{
+                marginTop: "22px",
                 display: "flex",
                 justifyContent: "flex-end",
                 gap: "10px",
@@ -3228,16 +3499,18 @@ export default function DashboardPage() {
             >
               <button
                 type="button"
-                onClick={() => setLogoutConfirmOpen(false)}
+                onClick={() =>
+                  setLogoutConfirmOpen(false)
+                }
                 style={{
                   border: "1px solid #CBD5E1",
                   background: "#FFFFFF",
                   borderRadius: "9px",
-                  padding: "10px 16px",
+                  padding: "10px 15px",
                   color: "#172554",
                   fontFamily: "inherit",
-                  fontSize: "13px",
-                  fontWeight: "700",
+                  fontSize: "12px",
+                  fontWeight: "800",
                   cursor: "pointer",
                 }}
               >
@@ -3251,10 +3524,10 @@ export default function DashboardPage() {
                   border: "none",
                   background: "#172554",
                   borderRadius: "9px",
-                  padding: "10px 16px",
+                  padding: "10px 15px",
                   color: "#FFFFFF",
                   fontFamily: "inherit",
-                  fontSize: "13px",
+                  fontSize: "12px",
                   fontWeight: "800",
                   cursor: "pointer",
                 }}
@@ -3315,23 +3588,28 @@ export default function DashboardPage() {
   CARD STATISTICĂ
 */
 
-function StatCard({ number, title }) {
+function StatCard({
+  number,
+  title,
+}) {
   return (
     <div
       style={{
         background: "#FFFFFF",
-        border: "1px solid #E2E8F0",
+        border:
+          "1px solid #E2E8F0",
         borderRadius: "14px",
-        padding: "20px",
-        boxShadow: "0 5px 16px rgba(15, 23, 42, 0.04)",
+        padding: "22px",
+        boxShadow:
+          "0 5px 16px rgba(15, 23, 42, 0.04)",
       }}
     >
       <div
         style={{
           color: "#172554",
-          fontSize: "27px",
-          lineHeight: 1,
+          fontSize: "29px",
           fontWeight: "900",
+          lineHeight: 1,
         }}
       >
         {number}
@@ -3339,7 +3617,7 @@ function StatCard({ number, title }) {
 
       <div
         style={{
-          marginTop: "8px",
+          marginTop: "9px",
           color: "#64748B",
           fontSize: "12px",
           fontWeight: "700",
@@ -3352,7 +3630,7 @@ function StatCard({ number, title }) {
 }
 
 /*
-  LISTA ANUNȚURI
+  LISTĂ ANUNȚURI
 */
 
 function ListingsList({
@@ -3366,70 +3644,10 @@ function ListingsList({
 }) {
   if (listings.length === 0) {
     return (
-      <div
-        style={{
-          maxWidth: "900px",
-          background: "#FFFFFF",
-          border: "1px solid #E2E8F0",
-          borderRadius: "14px",
-          padding: "35px",
-          textAlign: "center",
-          boxShadow: "0 5px 16px rgba(15, 23, 42, 0.04)",
-        }}
-      >
-        <div
-          style={{
-            color: "#172554",
-            fontSize: "17px",
-            fontWeight: "800",
-          }}
-        >
-          Nu ai publicat încă niciun anunț
-        </div>
-
-        <div
-          style={{
-            marginTop: "7px",
-            color: "#64748B",
-            fontSize: "13px",
-            lineHeight: "1.5",
-          }}
-        >
-          Adaugă prima proprietate pentru a începe.
-        </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            if (!profilePhone.trim()) {
-              setPhoneRequired(true);
-              setActiveSection("profile");
-
-              router.push(
-                "/dashboard?section=profile&required=phone"
-              );
-
-              return;
-            }
-
-            router.push("/adaugaproprietate");
-          }}
-          style={{
-            marginTop: "18px",
-            border: "none",
-            borderRadius: "9px",
-            padding: "11px 15px",
-            background: "#172554",
-            color: "#FFFFFF",
-            fontFamily: "inherit",
-            fontSize: "12px",
-            fontWeight: "800",
-            cursor: "pointer",
-          }}
-        >
-          + Adaugă anunț
-        </button>
-      </div>
+      <EmptyCard
+        title="Nu ai anunțuri"
+        text="Anunțurile publicate de tine vor apărea aici."
+      />
     );
   }
 
@@ -3441,254 +3659,379 @@ function ListingsList({
         maxWidth: "900px",
       }}
     >
-      {listings.map((listing) => (
-        <div
-          key={listing.id}
-          style={{
-            background: "#FFFFFF",
-            border: "1px solid #E2E8F0",
-            borderRadius: "14px",
-            padding: "16px",
-            display: "grid",
-            gridTemplateColumns: "120px minmax(0, 1fr) auto",
-            gap: "17px",
-            alignItems: "center",
-            boxShadow: "0 5px 16px rgba(15, 23, 42, 0.04)",
-          }}
-        >
+      {listings.map(
+        (listing) => (
           <div
+            key={listing.id}
             style={{
-              width: "120px",
-              height: "84px",
-              borderRadius: "10px",
-              overflow: "hidden",
-              background: "#F1F5F9",
-            }}
-          >
-            {listing.image_url ? (
-              <img
-                src={listing.image_url}
-                alt={listing.title || "Anunț"}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  display: "block",
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#94A3B8",
-                  fontSize: "10px",
-                }}
-              >
-                Fără poză
-              </div>
-            )}
-          </div>
-
-          <div
-            style={{
-              minWidth: 0,
+              background:
+                "#FFFFFF",
+              border:
+                "1px solid #E2E8F0",
+              borderRadius:
+                "14px",
+              padding: "16px",
+              display: "grid",
+              gridTemplateColumns:
+                "120px minmax(0, 1fr) auto",
+              gap: "17px",
+              alignItems:
+                "center",
+              boxShadow:
+                "0 5px 16px rgba(15, 23, 42, 0.04)",
             }}
           >
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "9px",
-                flexWrap: "wrap",
+                width: "120px",
+                height: "84px",
+                borderRadius:
+                  "10px",
+                overflow:
+                  "hidden",
+                background:
+                  "#F1F5F9",
+              }}
+            >
+              {listing.image_url ? (
+                <img
+                  src={
+                    listing.image_url
+                  }
+                  alt={
+                    listing.title ||
+                    "Anunț"
+                  }
+                  style={{
+                    width:
+                      "100%",
+                    height:
+                      "100%",
+                    objectFit:
+                      "cover",
+                    display:
+                      "block",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width:
+                      "100%",
+                    height:
+                      "100%",
+                    display:
+                      "flex",
+                    alignItems:
+                      "center",
+                    justifyContent:
+                      "center",
+                    color:
+                      "#94A3B8",
+                    fontSize:
+                      "10px",
+                  }}
+                >
+                  Fără poză
+                </div>
+              )}
+            </div>
+
+            <div
+              style={{
+                minWidth: 0,
               }}
             >
               <div
                 style={{
-                  color: "#172554",
-                  fontSize: "15px",
-                  fontWeight: "800",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
+                  display:
+                    "flex",
+                  alignItems:
+                    "center",
+                  gap: "8px",
+                  flexWrap:
+                    "wrap",
                 }}
               >
-                {listing.title}
-              </div>
+                <div
+                  style={{
+                    color:
+                      "#172554",
+                    fontSize:
+                      "15px",
+                    fontWeight:
+                      "800",
+                  }}
+                >
+                  {listing.title}
+                </div>
 
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  borderRadius: "999px",
-                  padding: "4px 8px",
-                  background: listing.active
-                    ? "#F0FDF4"
-                    : "#F8FAFC",
-                  color: listing.active
-                    ? "#15803D"
-                    : "#64748B",
-                  border: listing.active
-                    ? "1px solid #BBF7D0"
-                    : "1px solid #E2E8F0",
-                  fontSize: "9px",
-                  fontWeight: "900",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.3px",
-                }}
-              >
-                {listing.active ? "Activ" : "Inactiv"}
-              </span>
-            </div>
-
-            <div
-              style={{
-                marginTop: "6px",
-                color: "#64748B",
-                fontSize: "12px",
-                lineHeight: "1.4",
-              }}
-            >
-              {listing.city}
-
-              {listing.address ? ` · ${listing.address}` : ""}
-            </div>
-
-            <div
-              style={{
-                marginTop: "7px",
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                flexWrap: "wrap",
-                color: "#64748B",
-                fontSize: "11px",
-              }}
-            >
-              <strong
-                style={{
-                  color: "#172554",
-                  fontSize: "14px",
-                }}
-              >
-                {listing.price_monthly} € / lună
-              </strong>
-
-              {listing.rooms != null && (
-                <span>
-                  {listing.rooms}{" "}
-                  {Number(listing.rooms) === 1
-                    ? "cameră"
-                    : "camere"}
+                <span
+                  style={{
+                    display:
+                      "inline-flex",
+                    alignItems:
+                      "center",
+                    borderRadius:
+                      "999px",
+                    padding:
+                      "4px 8px",
+                    background:
+                      listing.active
+                        ? "#F0FDF4"
+                        : "#F8FAFC",
+                    color:
+                      listing.active
+                        ? "#15803D"
+                        : "#64748B",
+                    border:
+                      listing.active
+                        ? "1px solid #BBF7D0"
+                        : "1px solid #E2E8F0",
+                    fontSize:
+                      "9px",
+                    fontWeight:
+                      "900",
+                    textTransform:
+                      "uppercase",
+                    letterSpacing:
+                      "0.3px",
+                  }}
+                >
+                  {listing.active
+                    ? "Activ"
+                    : "Inactiv"}
                 </span>
-              )}
+              </div>
 
-              {listing.surface_m2 != null && (
-                <span>{listing.surface_m2} m²</span>
-              )}
+              <div
+                style={{
+                  marginTop:
+                    "6px",
+                  color:
+                    "#64748B",
+                  fontSize:
+                    "12px",
+                  lineHeight:
+                    "1.4",
+                }}
+              >
+                {listing.city}
+
+                {listing.address
+                  ? ` · ${listing.address}`
+                  : ""}
+              </div>
+
+              <div
+                style={{
+                  marginTop:
+                    "7px",
+                  display:
+                    "flex",
+                  alignItems:
+                    "center",
+                  gap: "12px",
+                  flexWrap:
+                    "wrap",
+                  color:
+                    "#64748B",
+                  fontSize:
+                    "11px",
+                }}
+              >
+                <strong
+                  style={{
+                    color:
+                      "#172554",
+                    fontSize:
+                      "14px",
+                  }}
+                >
+                  {
+                    listing.price_monthly
+                  }{" "}
+                  € / lună
+                </strong>
+
+                {listing.rooms !=
+                  null && (
+                  <span>
+                    {listing.rooms}{" "}
+                    {Number(
+                      listing.rooms
+                    ) === 1
+                      ? "cameră"
+                      : "camere"}
+                  </span>
+                )}
+
+                {listing.surface_m2 !=
+                  null && (
+                  <span>
+                    {
+                      listing.surface_m2
+                    }{" "}
+                    m²
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div
+              style={{
+                display:
+                  "flex",
+                flexDirection:
+                  "column",
+                alignItems:
+                  "stretch",
+                gap: "7px",
+                minWidth:
+                  "135px",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(
+                    `/proprietate/${listing.id}`
+                  )
+                }
+                style={{
+                  border:
+                    "1px solid #CBD5E1",
+                  background:
+                    "#FFFFFF",
+                  borderRadius:
+                    "9px",
+                  padding:
+                    "9px 12px",
+                  color:
+                    "#172554",
+                  fontFamily:
+                    "inherit",
+                  fontSize:
+                    "11px",
+                  fontWeight:
+                    "800",
+                  cursor:
+                    "pointer",
+                  whiteSpace:
+                    "nowrap",
+                }}
+              >
+                Vezi
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(
+                    `/editeaza-proprietate/${listing.id}`
+                  )
+                }
+                style={{
+                  border:
+                    "1px solid #CBD5E1",
+                  background:
+                    "#FFFFFF",
+                  borderRadius:
+                    "9px",
+                  padding:
+                    "9px 12px",
+                  color:
+                    "#172554",
+                  fontFamily:
+                    "inherit",
+                  fontSize:
+                    "11px",
+                  fontWeight:
+                    "800",
+                  cursor:
+                    "pointer",
+                  whiteSpace:
+                    "nowrap",
+                }}
+              >
+                Editează
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  toggleListing(
+                    listing
+                  )
+                }
+                style={{
+                  border:
+                    "1px solid #E2E8F0",
+                  background:
+                    listing.active
+                      ? "#FFF7ED"
+                      : "#F0FDF4",
+                  borderRadius:
+                    "9px",
+                  padding:
+                    "9px 12px",
+                  color:
+                    listing.active
+                      ? "#C2410C"
+                      : "#15803D",
+                  fontFamily:
+                    "inherit",
+                  fontSize:
+                    "11px",
+                  fontWeight:
+                    "800",
+                  cursor:
+                    "pointer",
+                  whiteSpace:
+                    "nowrap",
+                }}
+              >
+                {listing.active
+                  ? "Dezactivează"
+                  : "Activează"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  deleteListing(
+                    listing
+                  )
+                }
+                style={{
+                  border:
+                    "1px solid #FECACA",
+                  background:
+                    "#FEF2F2",
+                  borderRadius:
+                    "9px",
+                  padding:
+                    "9px 12px",
+                  color:
+                    "#DC2626",
+                  fontFamily:
+                    "inherit",
+                  fontSize:
+                    "11px",
+                  fontWeight:
+                    "800",
+                  cursor:
+                    "pointer",
+                  whiteSpace:
+                    "nowrap",
+                }}
+              >
+                Șterge
+              </button>
             </div>
           </div>
-
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "stretch",
-              gap: "7px",
-              minWidth: "135px",
-            }}
-          >
-            <button
-              type="button"
-              onClick={() =>
-                router.push(`/proprietate/${listing.id}`)
-              }
-              style={{
-                border: "1px solid #CBD5E1",
-                background: "#FFFFFF",
-                borderRadius: "9px",
-                padding: "9px 12px",
-                color: "#172554",
-                fontFamily: "inherit",
-                fontSize: "11px",
-                fontWeight: "800",
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-              }}
-            >
-              Vezi anunțul
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                router.push(
-                  `/editeaza-proprietate/${listing.id}`
-                )
-              }
-              style={{
-                border: "1px solid #BFDBFE",
-                background: "#EFF6FF",
-                borderRadius: "9px",
-                padding: "9px 12px",
-                color: "#1D4ED8",
-                fontFamily: "inherit",
-                fontSize: "11px",
-                fontWeight: "800",
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-              }}
-            >
-              Editează anunțul
-            </button>
-
-            <button
-              type="button"
-              onClick={() => toggleListing(listing)}
-              style={{
-                border: "none",
-                background: listing.active
-                  ? "#FFF7ED"
-                  : "#F0FDF4",
-                borderRadius: "9px",
-                padding: "9px 12px",
-                color: listing.active
-                  ? "#C2410C"
-                  : "#15803D",
-                fontFamily: "inherit",
-                fontSize: "11px",
-                fontWeight: "800",
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {listing.active ? "Dezactivează" : "Activează"}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => deleteListing(listing)}
-              style={{
-                border: "1px solid #FECACA",
-                background: "#FEF2F2",
-                borderRadius: "9px",
-                padding: "9px 12px",
-                color: "#DC2626",
-                fontFamily: "inherit",
-                fontSize: "11px",
-                fontWeight: "800",
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-              }}
-            >
-              ✕ Șterge anunțul
-            </button>
-          </div>
-        </div>
-      ))}
+        )
+      )}
     </div>
   );
 }
@@ -3697,17 +4040,22 @@ function ListingsList({
   CARD GOL
 */
 
-function EmptyCard({ title, text }) {
+function EmptyCard({
+  title,
+  text,
+}) {
   return (
     <div
       style={{
-        maxWidth: "850px",
+        maxWidth: "900px",
         background: "#FFFFFF",
-        border: "1px solid #E2E8F0",
+        border:
+          "1px solid #E2E8F0",
         borderRadius: "14px",
-        padding: "35px",
+        padding: "34px",
         textAlign: "center",
-        boxShadow: "0 5px 16px rgba(15, 23, 42, 0.04)",
+        boxShadow:
+          "0 5px 16px rgba(15, 23, 42, 0.04)",
       }}
     >
       <div
@@ -3722,10 +4070,10 @@ function EmptyCard({ title, text }) {
 
       <div
         style={{
-          marginTop: "7px",
+          marginTop: "8px",
           color: "#64748B",
           fontSize: "13px",
-          lineHeight: "1.55",
+          lineHeight: "1.5",
         }}
       >
         {text}
