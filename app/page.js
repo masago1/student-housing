@@ -87,7 +87,7 @@ export default async function Home() {
               padding: "12px 18px",
             }}
           >
-            Adaugă proprietatea
+            Adaugă anunț
           </a>
         </div>
       </header>
@@ -113,7 +113,7 @@ export default async function Home() {
             marginBottom: "22px",
           }}
         >
-          Locuințe pentru viața de student
+          
         </div>
 
         <h1
