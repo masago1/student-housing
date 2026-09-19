@@ -31,6 +31,12 @@ export default function DashboardPage() {
   const [profileSuccess, setProfileSuccess] = useState("");
   const [phoneRequired, setPhoneRequired] = useState(false);
 
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
   // SINGURA ADĂUGARE: confirmare ieșire din cont
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [listingToDelete, setListingToDelete] = useState(null);
@@ -430,11 +436,11 @@ export default function DashboardPage() {
       (profileRows || []).forEach(
         (profile) => {
           profilesById[
-  profile.id
-] =
-  profile.nickname?.trim() ||
-  profile.name ||
-  "Utilizator";
+            profile.id
+          ] =
+            profile.nickname?.trim() ||
+            profile.name ||
+            "Utilizator";
         }
       );
 
@@ -1029,7 +1035,13 @@ export default function DashboardPage() {
 
         setError(
           profileError.code === "23505"
-            ? "Acest nickname este deja folosit. Alege altul."
+            ? (
+                profileError.message
+                  ?.toLowerCase()
+                  .includes("phone")
+                ? "Acest număr de telefon este deja asociat altui cont."
+                : "Acest nickname este deja folosit. Alege altul."
+              )
             : "Profilul nu a putut fi salvat."
         );
 
@@ -1116,6 +1128,85 @@ export default function DashboardPage() {
       await loadConversationDetails(
         conversations
       );
+    };
+
+  /*
+    SCHIMBĂ PAROLA
+  */
+
+  const changePassword =
+    async () => {
+      setPasswordSuccess("");
+      setPasswordError("");
+
+      if (!newPassword) {
+        setPasswordError(
+          "Introdu parola nouă."
+        );
+
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        setPasswordError(
+          "Parola trebuie să aibă cel puțin 6 caractere."
+        );
+
+        return;
+      }
+
+      if (!confirmNewPassword) {
+        setPasswordError(
+          "Confirmă parola nouă."
+        );
+
+        return;
+      }
+
+      if (
+        newPassword !==
+        confirmNewPassword
+      ) {
+        setPasswordError(
+          "Parolele nu coincid."
+        );
+
+        return;
+      }
+
+      setPasswordSaving(true);
+
+      const {
+        error: passwordUpdateError,
+      } =
+        await supabase.auth.updateUser({
+          password: newPassword,
+        });
+
+      if (passwordUpdateError) {
+        console.error(
+          "Eroare schimbare parolă:",
+          passwordUpdateError
+        );
+
+        setPasswordError(
+          passwordUpdateError.message ||
+            "Parola nu a putut fi schimbată."
+        );
+
+        setPasswordSaving(false);
+
+        return;
+      }
+
+      setNewPassword("");
+      setConfirmNewPassword("");
+
+      setPasswordSuccess(
+        "Parola a fost schimbată cu succes."
+      );
+
+      setPasswordSaving(false);
     };
 
   /*
@@ -1268,7 +1359,7 @@ export default function DashboardPage() {
 
   /*
     ELIMINĂ FAVORIT
-    */
+  */
 
   const removeFavorite =
     async (listing) => {
@@ -1334,7 +1425,7 @@ export default function DashboardPage() {
         section
           ? "800"
           : "600",
-            cursor: "pointer",
+      cursor: "pointer",
 
       background:
         activeSection ===
@@ -1367,7 +1458,6 @@ export default function DashboardPage() {
       </main>
     );
   }
-
   return (
     <main
       style={{
@@ -2413,6 +2503,285 @@ export default function DashboardPage() {
                         : "Salvează modificările"}
                     </button>
                   </div>
+
+                  {/* SCHIMBĂ PAROLA */}
+
+                  <div
+                    style={{
+                      marginTop:
+                        "8px",
+                      paddingTop:
+                        "24px",
+                      borderTop:
+                        "1px solid #E2E8F0",
+                    }}
+                  >
+                    <div
+                      style={{
+                        color:
+                          "#172554",
+                        fontSize:
+                          "16px",
+                        fontWeight:
+                          "900",
+                        marginBottom:
+                          "6px",
+                      }}
+                    >
+                      Schimbă parola
+                    </div>
+
+                    <div
+                      style={{
+                        color:
+                          "#64748B",
+                        fontSize:
+                          "12px",
+                        lineHeight:
+                          "1.5",
+                        marginBottom:
+                          "18px",
+                      }}
+                    >
+                      Introdu parola nouă
+                      pe care vrei să o
+                      folosești pentru
+                      contul tău.
+                    </div>
+
+                    <div
+                      style={{
+                        display:
+                          "grid",
+                        gap: "18px",
+                      }}
+                    >
+                      <div>
+                        <label
+                          style={{
+                            display:
+                              "block",
+                            marginBottom:
+                              "7px",
+                            color:
+                              "#172554",
+                            fontSize:
+                              "12px",
+                            fontWeight:
+                              "800",
+                          }}
+                        >
+                          Parolă nouă
+                        </label>
+
+                        <input
+                          type="password"
+                          value={
+                            newPassword
+                          }
+                          onChange={(
+                            event
+                          ) => {
+                            setNewPassword(
+                              event
+                                .target
+                                .value
+                            );
+
+                            setPasswordError(
+                              ""
+                            );
+
+                            setPasswordSuccess(
+                              ""
+                            );
+                          }}
+                          autoComplete="new-password"
+                          placeholder="Introdu parola nouă"
+                          style={{
+                            width:
+                              "100%",
+                            height:
+                              "44px",
+                            boxSizing:
+                              "border-box",
+                            border:
+                              "1px solid #CBD5E1",
+                            borderRadius:
+                              "9px",
+                            padding:
+                              "0 12px",
+                            color:
+                              "#172554",
+                            fontFamily:
+                              "inherit",
+                            fontSize:
+                              "13px",
+                            outline:
+                              "none",
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label
+                          style={{
+                            display:
+                              "block",
+                            marginBottom:
+                              "7px",
+                            color:
+                              "#172554",
+                            fontSize:
+                              "12px",
+                            fontWeight:
+                              "800",
+                          }}
+                        >
+                          Confirmă parola
+                          nouă
+                        </label>
+
+                        <input
+                          type="password"
+                          value={
+                            confirmNewPassword
+                          }
+                          onChange={(
+                            event
+                          ) => {
+                            setConfirmNewPassword(
+                              event
+                                .target
+                                .value
+                            );
+
+                            setPasswordError(
+                              ""
+                            );
+
+                            setPasswordSuccess(
+                              ""
+                            );
+                          }}
+                          autoComplete="new-password"
+                          placeholder="Reintrodu parola nouă"
+                          style={{
+                            width:
+                              "100%",
+                            height:
+                              "44px",
+                            boxSizing:
+                              "border-box",
+                            border:
+                              "1px solid #CBD5E1",
+                            borderRadius:
+                              "9px",
+                            padding:
+                              "0 12px",
+                            color:
+                              "#172554",
+                            fontFamily:
+                              "inherit",
+                            fontSize:
+                              "13px",
+                            outline:
+                              "none",
+                          }}
+                        />
+                      </div>
+
+                      {passwordError && (
+                        <div
+                          style={{
+                            background:
+                              "#FEF2F2",
+                            border:
+                              "1px solid #FECACA",
+                            color:
+                              "#B91C1C",
+                            borderRadius:
+                              "9px",
+                            padding:
+                              "10px 12px",
+                            fontSize:
+                              "12px",
+                            fontWeight:
+                              "700",
+                          }}
+                        >
+                          {
+                            passwordError
+                          }
+                        </div>
+                      )}
+
+                      {passwordSuccess && (
+                        <div
+                          style={{
+                            background:
+                              "#F0FDF4",
+                            border:
+                              "1px solid #BBF7D0",
+                            color:
+                              "#15803D",
+                            borderRadius:
+                              "9px",
+                            padding:
+                              "10px 12px",
+                            fontSize:
+                              "12px",
+                            fontWeight:
+                              "700",
+                          }}
+                        >
+                          {
+                            passwordSuccess
+                          }
+                        </div>
+                      )}
+
+                      <div>
+                        <button
+                          type="button"
+                          onClick={
+                            changePassword
+                          }
+                          disabled={
+                            passwordSaving
+                          }
+                          style={{
+                            border:
+                              "none",
+                            borderRadius:
+                              "9px",
+                            padding:
+                              "11px 16px",
+                            background:
+                              passwordSaving
+                                ? "#94A3B8"
+                                : "#172554",
+                            color:
+                              "#FFFFFF",
+                            fontFamily:
+                              "inherit",
+                            fontSize:
+                              "12px",
+                            fontWeight:
+                              "800",
+                            cursor:
+                              passwordSaving
+                                ? "default"
+                                : "pointer",
+                          }}
+                        >
+                          {passwordSaving
+                            ? "Se schimbă..."
+                            : "Schimbă parola"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </>
@@ -2884,6 +3253,7 @@ export default function DashboardPage() {
                             Vezi anunțul
                           </button>
                         </div>
+
                         <div
                           style={{
                             flex: 1,
@@ -2999,6 +3369,8 @@ export default function DashboardPage() {
                                   </div>
                                 );
                               }
+                            )
+                          )}
                             )
                           )}
                         </div>
