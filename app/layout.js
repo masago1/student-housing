@@ -7,6 +7,8 @@ const inter = Inter({
 });
 
 export const metadata = {
+  metadataBase: new URL("https://shaus.ro"),
+
   title: {
     default: "shaus | Chirii pentru studenți",
     template: "%s | shaus",
@@ -25,6 +27,8 @@ export const metadata = {
     "camere de închiriat",
     "chirie universitate",
     "cazare studenți",
+    "chirii în România",
+    "apartamente de închiriat România",
     "shaus",
   ],
 
@@ -36,6 +40,10 @@ export const metadata = {
 
   creator: "shaus",
   publisher: "shaus",
+
+  alternates: {
+    canonical: "/",
+  },
 
   robots: {
     index: true,
@@ -49,6 +57,7 @@ export const metadata = {
   openGraph: {
     type: "website",
     locale: "ro_RO",
+    url: "https://shaus.ro",
     siteName: "shaus",
     title: "shaus | Chirii pentru studenți",
     description:
