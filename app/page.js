@@ -41,8 +41,88 @@ export default async function Home() {
         color: "#111827",
       }}
     >
+      <style>{`
+        @media (max-width: 768px) {
+          .home-header {
+            height: auto !important;
+            min-height: 64px !important;
+            padding: 12px 18px !important;
+            gap: 12px !important;
+          }
+
+          .home-header-actions {
+            gap: 7px !important;
+            font-size: 13px !important;
+          }
+
+          .home-header-add {
+            padding: 10px 12px !important;
+            border-radius: 9px !important;
+            white-space: nowrap !important;
+          }
+
+          .home-hero {
+            padding: 65px 18px 60px !important;
+          }
+
+          .home-title {
+            font-size: 40px !important;
+            line-height: 1.08 !important;
+            letter-spacing: -1.7px !important;
+            max-width: 100% !important;
+          }
+
+          .home-description {
+            max-width: 100% !important;
+            margin: 20px auto 30px !important;
+            font-size: 16px !important;
+            line-height: 1.55 !important;
+          }
+
+          .home-search {
+            width: 100% !important;
+            box-sizing: border-box !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .home-header {
+            padding: 11px 14px !important;
+          }
+
+          .home-logo {
+            font-size: 22px !important;
+          }
+
+          .home-header-actions {
+            gap: 5px !important;
+          }
+
+          .home-header-add {
+            padding: 9px 10px !important;
+            font-size: 12px !important;
+          }
+
+          .home-hero {
+            padding: 55px 14px 50px !important;
+          }
+
+          .home-title {
+            font-size: 36px !important;
+            letter-spacing: -1.5px !important;
+          }
+
+          .home-description {
+            font-size: 15px !important;
+            margin-top: 18px !important;
+            margin-bottom: 26px !important;
+          }
+        }
+      `}</style>
+
       {/* HEADER */}
       <header
+        className="home-header"
         style={{
           height: "72px",
           background: "#ffffff",
@@ -55,6 +135,7 @@ export default async function Home() {
       >
         <a
           href="/"
+          className="home-logo"
           style={{
             color: "#111827",
             textDecoration: "none",
@@ -67,6 +148,7 @@ export default async function Home() {
         </a>
 
         <div
+          className="home-header-actions"
           style={{
             display: "flex",
             gap: "12px",
@@ -79,6 +161,7 @@ export default async function Home() {
 
           <a
             href="/adaugaproprietate"
+            className="home-header-add"
             style={{
               background: "#111827",
               color: "#ffffff",
@@ -94,6 +177,7 @@ export default async function Home() {
 
       {/* HERO */}
       <section
+        className="home-hero"
         style={{
           maxWidth: "1180px",
           margin: "0 auto",
@@ -112,11 +196,10 @@ export default async function Home() {
             fontWeight: "700",
             marginBottom: "22px",
           }}
-        >
-          
-        </div>
+        ></div>
 
         <h1
+          className="home-title"
           style={{
             fontSize: "58px",
             lineHeight: "1.05",
@@ -139,6 +222,7 @@ export default async function Home() {
         </h1>
 
         <p
+          className="home-description"
           style={{
             maxWidth: "650px",
             margin: "25px auto 40px",
@@ -152,11 +236,13 @@ export default async function Home() {
         </p>
 
         {/* SEARCH */}
-        <SearchBox
-          universities={universities || []}
-          cities={cities || []}
-          neighborhoods={neighborhoods || []}
-        />
+        <div className="home-search">
+          <SearchBox
+            universities={universities || []}
+            cities={cities || []}
+            neighborhoods={neighborhoods || []}
+          />
+        </div>
 
         {error && (
           <p
