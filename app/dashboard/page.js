@@ -25,6 +25,7 @@ export default function DashboardPage() {
   const [conversationDetails, setConversationDetails] = useState({});
 
   const [profileName, setProfileName] = useState("");
+  const [profileNickname, setProfileNickname] = useState("");
   const [profilePhone, setProfilePhone] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState("");
@@ -57,7 +58,7 @@ export default function DashboardPage() {
       const { data: profileData, error: profileError } =
         await supabase
           .from("profiles")
-          .select("name, phone")
+          .select("name, nickname, phone")
           .eq("id", user.id)
           .maybeSingle();
 
@@ -69,6 +70,13 @@ export default function DashboardPage() {
             user.user_metadata?.name ||
             ""
         );
+
+        setProfileNickname(
+          profileData?.nickname ||
+            user.user_metadata?.nickname ||
+            ""
+        );
+
         setProfilePhone(profileData?.phone || "");
       }
 
@@ -372,7 +380,7 @@ export default function DashboardPage() {
         otherUserIds.length
           ? supabase
               .from("profiles")
-              .select("id, name")
+              .select("id, nickname, name")
               .in(
                 "id",
                 otherUserIds
@@ -424,7 +432,10 @@ export default function DashboardPage() {
         (profile) => {
           profilesById[
             profile.id
-          ] = profile.name;
+          ] =
+            profile.nickname ||
+            profile.name ||
+            "Utilizator";
         }
       );
 
@@ -906,6 +917,9 @@ export default function DashboardPage() {
       const cleanName =
         profileName.trim();
 
+      const cleanNickname =
+        profileNickname.trim();
+
       const cleanPhone =
         profilePhone.trim();
 
@@ -915,6 +929,64 @@ export default function DashboardPage() {
       if (!cleanName) {
         setError(
           "Introdu numele."
+        );
+
+        return;
+      }
+
+      if (!cleanNickname) {
+        setError(
+          "Introdu un nickname."
+        );
+
+        return;
+      }
+
+      if (
+        cleanNickname.length < 3 ||
+        cleanNickname.length > 30
+      ) {
+        setError(
+          "Nickname-ul trebuie să aibă între 3 și 30 de caractere."
+        );
+
+        return;
+      }
+
+      if (!/^[a-zA-Z0-9._-]+$/.test(cleanNickname)) {
+        setError(
+          "Nickname-ul poate conține doar litere, cifre, punct, _ și -."
+        );
+
+        return;
+      }
+
+      const {
+        data: nicknameOwner,
+        error: nicknameCheckError,
+      } = await supabase
+        .from("profiles")
+        .select("id")
+        .ilike("nickname", cleanNickname)
+        .neq("id", user.id)
+        .maybeSingle();
+
+      if (nicknameCheckError) {
+        console.error(
+          "Eroare verificare nickname:",
+          nicknameCheckError
+        );
+
+        setError(
+          "Nickname-ul nu a putut fi verificat. Încearcă din nou."
+        );
+
+        return;
+      }
+
+      if (nicknameOwner) {
+        setError(
+          "Acest nickname este deja folosit. Alege altul."
         );
 
         return;
@@ -941,6 +1013,7 @@ export default function DashboardPage() {
           {
             id: user.id,
             name: cleanName,
+            nickname: cleanNickname,
             phone:
               cleanPhone || null,
           },
@@ -956,7 +1029,9 @@ export default function DashboardPage() {
         );
 
         setError(
-          "Profilul nu a putut fi salvat."
+          profileError.code === "23505"
+            ? "Acest nickname este deja folosit. Alege altul."
+            : "Profilul nu a putut fi salvat."
         );
 
         setProfileSaving(
@@ -973,6 +1048,7 @@ export default function DashboardPage() {
         await supabase.auth.updateUser({
           data: {
             name: cleanName,
+            nickname: cleanNickname,
           },
         });
 
@@ -995,6 +1071,8 @@ export default function DashboardPage() {
 
                   name:
                     cleanName,
+                  nickname:
+                    cleanNickname,
                 },
               }
             : current
@@ -1002,6 +1080,10 @@ export default function DashboardPage() {
 
       setProfileName(
         cleanName
+      );
+
+      setProfileNickname(
+        cleanNickname
       );
 
       setProfilePhone(
@@ -1042,18 +1124,18 @@ export default function DashboardPage() {
   */
 
   const handleLogout = async () => {
-  const { error } = await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
 
-  if (error) {
-    console.error("Eroare la deconectare:", error);
-    return;
-  }
+    if (error) {
+      console.error("Eroare la deconectare:", error);
+      return;
+    }
 
-  setUser(null);
-  setLogoutConfirmOpen(false);
+    setUser(null);
+    setLogoutConfirmOpen(false);
 
-  window.location.replace("/");
-};
+    window.location.replace("/");
+  };
 
   // SINGURA ADĂUGARE: deschide confirmarea înainte de logout
   const requestLogout = () => {
@@ -1182,7 +1264,7 @@ export default function DashboardPage() {
 
   /*
     ELIMINĂ FAVORIT
-    */
+  */
 
   const removeFavorite =
     async (listing) => {
@@ -1362,7 +1444,6 @@ export default function DashboardPage() {
           </button>
         </div>
       </header>
-
       <div
         className="dashboard-layout"
         style={{
@@ -1470,12 +1551,10 @@ export default function DashboardPage() {
 
                 if (
                   !selectedConversationId &&
-                  conversations.length >
-                    0
+                  conversations.length > 0
                 ) {
                   openConversation(
-                    conversations[0]
-                      .id
+                    conversations[0].id
                   );
                 } else if (
                   selectedConversationId
@@ -1494,8 +1573,7 @@ export default function DashboardPage() {
               )}
             >
               Mesaje
-              {unreadMessagesCount >
-              0
+              {unreadMessagesCount > 0
                 ? ` (${unreadMessagesCount})`
                 : ""}
             </button>
@@ -1627,8 +1705,7 @@ export default function DashboardPage() {
             <>
               <div
                 style={{
-                  marginBottom:
-                    "32px",
+                  marginBottom: "32px",
                 }}
               >
                 <h1
@@ -1636,27 +1713,26 @@ export default function DashboardPage() {
                     margin: 0,
                     fontSize: "34px",
                     fontWeight: "800",
-                    letterSpacing:
-                      "-1px",
+                    letterSpacing: "-1px",
                     color: "#172554",
                   }}
                 >
                   Bun venit
-                  {profileName?.trim()
+                  {profileNickname?.trim()
+                    ? `, ${profileNickname.trim()}!`
+                    : profileName?.trim()
                     ? `, ${profileName.trim()}!`
                     : "!"}
                 </h1>
 
                 <p
                   style={{
-                    margin:
-                      "9px 0 0",
+                    margin: "9px 0 0",
                     color: "#64748B",
                     fontSize: "15px",
                   }}
                 >
-                  Administrează
-                  anunțurile și
+                  Administrează anunțurile și
                   mesajele tale.
                 </p>
               </div>
@@ -1668,28 +1744,21 @@ export default function DashboardPage() {
                   gridTemplateColumns:
                     "repeat(3, minmax(160px, 230px))",
                   gap: "16px",
-                  marginBottom:
-                    "42px",
+                  marginBottom: "42px",
                 }}
               >
                 <StatCard
-                  number={
-                    listings.length
-                  }
+                  number={listings.length}
                   title="Anunțuri"
                 />
 
                 <StatCard
-                  number={
-                    unreadMessagesCount
-                  }
+                  number={unreadMessagesCount}
                   title="Mesaje"
                 />
 
                 <StatCard
-                  number={
-                    activeListings
-                  }
+                  number={activeListings}
                   title="Active"
                 />
               </div>
@@ -1699,10 +1768,8 @@ export default function DashboardPage() {
                   display: "flex",
                   justifyContent:
                     "space-between",
-                  alignItems:
-                    "center",
-                  marginBottom:
-                    "16px",
+                  alignItems: "center",
+                  marginBottom: "16px",
                 }}
               >
                 <h2
@@ -1716,8 +1783,7 @@ export default function DashboardPage() {
                   Anunțurile tale
                 </h2>
 
-                {listings.length >
-                  3 && (
+                {listings.length > 3 && (
                   <button
                     type="button"
                     onClick={() => {
@@ -1734,14 +1800,10 @@ export default function DashboardPage() {
                       background:
                         "transparent",
                       color: "#3B82F6",
-                      fontFamily:
-                        "inherit",
-                      fontSize:
-                        "13px",
-                      fontWeight:
-                        "700",
-                      cursor:
-                        "pointer",
+                      fontFamily: "inherit",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      cursor: "pointer",
                     }}
                   >
                     Vezi toate
@@ -1782,10 +1844,8 @@ export default function DashboardPage() {
                   display: "flex",
                   justifyContent:
                     "space-between",
-                  alignItems:
-                    "flex-end",
-                  marginBottom:
-                    "30px",
+                  alignItems: "flex-end",
+                  marginBottom: "30px",
                   gap: "20px",
                 }}
               >
@@ -1793,14 +1853,10 @@ export default function DashboardPage() {
                   <h1
                     style={{
                       margin: 0,
-                      fontSize:
-                        "34px",
-                      fontWeight:
-                        "800",
-                      letterSpacing:
-                        "-1px",
-                      color:
-                        "#172554",
+                      fontSize: "34px",
+                      fontWeight: "800",
+                      letterSpacing: "-1px",
+                      color: "#172554",
                     }}
                   >
                     Anunțurile tale
@@ -1808,19 +1864,16 @@ export default function DashboardPage() {
 
                   <p
                     style={{
-                      margin:
-                        "9px 0 0",
-                      color:
-                        "#64748B",
-                      fontSize:
-                        "15px",
+                      margin: "9px 0 0",
+                      color: "#64748B",
+                      fontSize: "15px",
                     }}
                   >
-                    Vezi și
-                    administrează toate
+                    Vezi și administrează toate
                     anunțurile publicate.
                   </p>
                 </div>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -1885,21 +1938,16 @@ export default function DashboardPage() {
             <>
               <div
                 style={{
-                  marginBottom:
-                    "28px",
+                  marginBottom: "28px",
                 }}
               >
                 <h1
                   style={{
                     margin: 0,
-                    fontSize:
-                      "34px",
-                    fontWeight:
-                      "800",
-                    letterSpacing:
-                      "-1px",
-                    color:
-                      "#172554",
+                    fontSize: "34px",
+                    fontWeight: "800",
+                    letterSpacing: "-1px",
+                    color: "#172554",
                   }}
                 >
                   Profilul meu
@@ -1907,16 +1955,12 @@ export default function DashboardPage() {
 
                 <p
                   style={{
-                    margin:
-                      "9px 0 0",
-                    color:
-                      "#64748B",
-                    fontSize:
-                      "15px",
+                    margin: "9px 0 0",
+                    color: "#64748B",
+                    fontSize: "15px",
                   }}
                 >
-                  Actualizează
-                  informațiile
+                  Actualizează informațiile
                   contului tău.
                 </p>
               </div>
@@ -1924,73 +1968,53 @@ export default function DashboardPage() {
               {phoneRequired && (
                 <div
                   style={{
-                    maxWidth:
-                      "620px",
-                    marginBottom:
-                      "18px",
-                    background:
-                      "#EFF6FF",
+                    maxWidth: "620px",
+                    marginBottom: "18px",
+                    background: "#EFF6FF",
                     border:
                       "1px solid #BFDBFE",
-                    color:
-                      "#1E3A8A",
-                    borderRadius:
-                      "12px",
-                    padding:
-                      "14px 16px",
-                    fontSize:
-                      "13px",
-                    fontWeight:
-                      "700",
-                    lineHeight:
-                      "1.5",
+                    color: "#1E3A8A",
+                    borderRadius: "12px",
+                    padding: "14px 16px",
+                    fontSize: "13px",
+                    fontWeight: "700",
+                    lineHeight: "1.5",
                   }}
                 >
-                  Pentru a publica
-                  un anunț,
-                  actualizează
-                  profilul cu
-                  numărul tău de
-                  telefon.
+                  Pentru a publica un anunț,
+                  actualizează profilul cu
+                  numărul tău de telefon.
                 </div>
               )}
 
               <div
                 style={{
-                  maxWidth:
-                    "620px",
-                  background:
-                    "#FFFFFF",
+                  maxWidth: "620px",
+                  background: "#FFFFFF",
                   border:
                     "1px solid #E2E8F0",
-                  borderRadius:
-                    "14px",
-                  padding:
-                    "24px",
+                  borderRadius: "14px",
+                  padding: "24px",
                   boxShadow:
                     "0 5px 16px rgba(15, 23, 42, 0.04)",
                 }}
               >
                 <div
                   style={{
-                    display:
-                      "grid",
+                    display: "grid",
                     gap: "18px",
                   }}
                 >
+                  {/* NUME */}
+
                   <div>
                     <label
                       style={{
-                        display:
-                          "block",
-                        marginBottom:
-                          "7px",
-                        color:
-                          "#172554",
-                        fontSize:
-                          "12px",
-                        fontWeight:
-                          "800",
+                        display: "block",
+                        marginBottom: "7px",
+                        color: "#172554",
+                        fontSize: "12px",
+                        fontWeight: "800",
                       }}
                     >
                       Nume
@@ -1998,61 +2022,102 @@ export default function DashboardPage() {
 
                     <input
                       type="text"
-                      value={
-                        profileName
-                      }
-                      onChange={(
-                        event
-                      ) => {
+                      value={profileName}
+                      onChange={(event) => {
                         setProfileName(
-                          event
-                            .target
-                            .value
+                          event.target.value
                         );
 
-                        setProfileSuccess(
-                          ""
-                        );
+                        setProfileSuccess("");
                       }}
-                      placeholder="Numele tău"
+                      placeholder="Numele tău real"
                       style={{
-                        width:
-                          "100%",
-                        height:
-                          "44px",
+                        width: "100%",
+                        height: "44px",
                         boxSizing:
                           "border-box",
                         border:
                           "1px solid #CBD5E1",
-                        borderRadius:
-                          "9px",
-                        padding:
-                          "0 12px",
-                        color:
-                          "#172554",
-                        fontFamily:
-                          "inherit",
-                        fontSize:
-                          "13px",
-                        outline:
-                          "none",
+                        borderRadius: "9px",
+                        padding: "0 12px",
+                        color: "#172554",
+                        fontFamily: "inherit",
+                        fontSize: "13px",
+                        outline: "none",
                       }}
                     />
                   </div>
 
+                  {/* NICKNAME */}
+
                   <div>
                     <label
                       style={{
-                        display:
-                          "block",
-                        marginBottom:
-                          "7px",
-                        color:
-                          "#172554",
-                        fontSize:
-                          "12px",
-                        fontWeight:
-                          "800",
+                        display: "block",
+                        marginBottom: "7px",
+                        color: "#172554",
+                        fontSize: "12px",
+                        fontWeight: "800",
+                      }}
+                    >
+                      Nickname
+                    </label>
+
+                    <input
+                      type="text"
+                      value={profileNickname}
+                      onChange={(event) => {
+                        setProfileNickname(
+                          event.target.value
+                        );
+
+                        setProfileSuccess("");
+                      }}
+                      placeholder="Nickname-ul tău"
+                      maxLength={30}
+                      style={{
+                        width: "100%",
+                        height: "44px",
+                        boxSizing:
+                          "border-box",
+                        border:
+                          "1px solid #CBD5E1",
+                        borderRadius: "9px",
+                        padding: "0 12px",
+                        color: "#172554",
+                        fontFamily: "inherit",
+                        fontSize: "13px",
+                        outline: "none",
+                      }}
+                    />
+
+                    <div
+                      style={{
+                        marginTop: "7px",
+                        color: "#94A3B8",
+                        fontSize: "11px",
+                        lineHeight: "1.5",
+                      }}
+                    >
+                      Acesta este numele tău
+                      public pe shaus. Va fi
+                      vizibil celorlalți
+                      utilizatori în mesaje și
+                      în interacțiunile de pe
+                      site.
+                    </div>
+                  </div>
+
+                  {/* EMAIL */}
+
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "7px",
+                        color: "#172554",
+                        fontSize: "12px",
+                        fontWeight: "800",
                       }}
                     >
                       Email
@@ -2060,97 +2125,66 @@ export default function DashboardPage() {
 
                     <input
                       type="email"
-                      value={
-                        user?.email ||
-                        ""
-                      }
+                      value={user?.email || ""}
                       disabled
                       style={{
-                        width:
-                          "100%",
-                        height:
-                          "44px",
+                        width: "100%",
+                        height: "44px",
                         boxSizing:
                           "border-box",
                         border:
                           "1px solid #E2E8F0",
-                        borderRadius:
-                          "9px",
-                        padding:
-                          "0 12px",
-                        color:
-                          "#64748B",
-                        background:
-                          "#F8FAFC",
-                        fontFamily:
-                          "inherit",
-                        fontSize:
-                          "13px",
+                        borderRadius: "9px",
+                        padding: "0 12px",
+                        color: "#64748B",
+                        background: "#F8FAFC",
+                        fontFamily: "inherit",
+                        fontSize: "13px",
                       }}
                     />
                   </div>
 
+                  {/* TELEFON */}
+
                   <div>
                     <label
                       style={{
-                        display:
-                          "block",
-                        marginBottom:
-                          "7px",
-                        color:
-                          "#172554",
-                        fontSize:
-                          "12px",
-                        fontWeight:
-                          "800",
+                        display: "block",
+                        marginBottom: "7px",
+                        color: "#172554",
+                        fontSize: "12px",
+                        fontWeight: "800",
                       }}
                     >
-                      Număr de
-                      telefon
+                      Număr de telefon
                     </label>
 
                     <input
                       type="tel"
-                      value={
-                        profilePhone
-                      }
-                      onChange={(
-                        event
-                      ) => {
+                      value={profilePhone}
+                      onChange={(event) => {
                         setProfilePhone(
-                          event
-                            .target
-                            .value
+                          event.target.value
                         );
 
-                        setProfileSuccess(
-                          ""
-                        );
+                        setProfileSuccess("");
                       }}
                       placeholder="Ex: 07xxxxxxxx"
                       style={{
-                        width:
-                          "100%",
-                        height:
-                          "44px",
+                        width: "100%",
+                        height: "44px",
                         boxSizing:
                           "border-box",
                         border:
                           phoneRequired
                             ? "1px solid #60A5FA"
                             : "1px solid #CBD5E1",
-                        borderRadius:
-                          "9px",
-                        padding:
-                          "0 12px",
-                        color:
-                          "#172554",
-                        fontFamily:
-                          "inherit",
-                        fontSize:
-                          "13px",
-                        outline:
-                          "none",
+                        borderRadius: "9px",
+                        padding: "0 12px",
+                        color: "#172554",
+                        fontFamily: "inherit",
+                        fontSize: "13px",
+                        outline: "none",
                         boxShadow:
                           phoneRequired
                             ? "0 0 0 3px rgba(59, 130, 246, 0.08)"
@@ -2160,81 +2194,55 @@ export default function DashboardPage() {
 
                     <div
                       style={{
-                        marginTop:
-                          "7px",
-                        color:
-                          "#94A3B8",
-                        fontSize:
-                          "11px",
-                        lineHeight:
-                          "1.5",
+                        marginTop: "7px",
+                        color: "#94A3B8",
+                        fontSize: "11px",
+                        lineHeight: "1.5",
                       }}
                     >
-                      Numărul de
-                      telefon este
-                      necesar pentru
-                      publicarea unui
-                      anunț și poate fi
-                      folosit de
-                      persoanele
-                      interesate pentru
-                      a te contacta.
+                      Numărul de telefon este
+                      necesar pentru publicarea
+                      unui anunț și poate fi
+                      folosit de persoanele
+                      interesate pentru a te
+                      contacta.
                     </div>
                   </div>
 
                   {profileSuccess && (
                     <div
                       style={{
-                        background:
-                          "#F0FDF4",
+                        background: "#F0FDF4",
                         border:
                           "1px solid #BBF7D0",
-                        color:
-                          "#15803D",
-                        borderRadius:
-                          "9px",
-                        padding:
-                          "10px 12px",
-                        fontSize:
-                          "12px",
-                        fontWeight:
-                          "700",
+                        color: "#15803D",
+                        borderRadius: "9px",
+                        padding: "10px 12px",
+                        fontSize: "12px",
+                        fontWeight: "700",
                       }}
                     >
-                      {
-                        profileSuccess
-                      }
+                      {profileSuccess}
                     </div>
                   )}
 
                   <div>
                     <button
                       type="button"
-                      onClick={
-                        saveProfile
-                      }
-                      disabled={
-                        profileSaving
-                      }
+                      onClick={saveProfile}
+                      disabled={profileSaving}
                       style={{
-                        border:
-                          "none",
-                        borderRadius:
-                          "9px",
-                        padding:
-                          "11px 16px",
+                        border: "none",
+                        borderRadius: "9px",
+                        padding: "11px 16px",
                         background:
                           profileSaving
                             ? "#94A3B8"
                             : "#172554",
-                        color:
-                          "#FFFFFF",
-                        fontFamily:
-                          "inherit",
-                        fontSize:
-                          "12px",
-                        fontWeight:
-                          "800",
+                        color: "#FFFFFF",
+                        fontFamily: "inherit",
+                        fontSize: "12px",
+                        fontWeight: "800",
                         cursor:
                           profileSaving
                             ? "default"
@@ -2256,21 +2264,16 @@ export default function DashboardPage() {
             <>
               <div
                 style={{
-                  marginBottom:
-                    "24px",
+                  marginBottom: "24px",
                 }}
               >
                 <h1
                   style={{
                     margin: 0,
-                    fontSize:
-                      "34px",
-                    fontWeight:
-                      "800",
-                    letterSpacing:
-                      "-1px",
-                    color:
-                      "#172554",
+                    fontSize: "34px",
+                    fontWeight: "800",
+                    letterSpacing: "-1px",
+                    color: "#172554",
                   }}
                 >
                   Mesaje
@@ -2278,23 +2281,19 @@ export default function DashboardPage() {
 
                 <p
                   style={{
-                    margin:
-                      "9px 0 0",
-                    color:
-                      "#64748B",
-                    fontSize:
-                      "15px",
+                    margin: "9px 0 0",
+                    color: "#64748B",
+                    fontSize: "15px",
                   }}
                 >
                   Discută direct cu
                   proprietarii sau cu
-                  persoanele interesate
-                  de anunțurile tale.
+                  persoanele interesate de
+                  anunțurile tale.
                 </p>
               </div>
 
-              {conversations.length ===
-              0 ? (
+              {conversations.length === 0 ? (
                 <EmptyCard
                   title="Nu ai conversații"
                   text="Conversațiile tale vor apărea aici."
@@ -2303,22 +2302,16 @@ export default function DashboardPage() {
                 <div
                   className="messages-layout"
                   style={{
-                    display:
-                      "grid",
+                    display: "grid",
                     gridTemplateColumns:
                       "310px minmax(0, 1fr)",
-                    height:
-                      "650px",
-                    maxWidth:
-                      "1100px",
-                    background:
-                      "#FFFFFF",
+                    height: "650px",
+                    maxWidth: "1100px",
+                    background: "#FFFFFF",
                     border:
                       "1px solid #E2E8F0",
-                    borderRadius:
-                      "14px",
-                    overflow:
-                      "hidden",
+                    borderRadius: "14px",
+                    overflow: "hidden",
                     boxShadow:
                       "0 5px 16px rgba(15, 23, 42, 0.04)",
                   }}
@@ -2328,23 +2321,18 @@ export default function DashboardPage() {
                     style={{
                       borderRight:
                         "1px solid #E2E8F0",
-                      overflowY:
-                        "auto",
-                      background:
-                        "#FFFFFF",
+                      overflowY: "auto",
+                      background: "#FFFFFF",
                     }}
                   >
                     {conversations.map(
-                      (
-                        conversation
-                      ) => {
+                      (conversation) => {
                         const listing =
                           conversation.listings;
 
                         const details =
                           conversationDetails[
-                            conversation
-                              .id
+                            conversation.id
                           ] || {};
 
                         const otherUserName =
@@ -2355,12 +2343,10 @@ export default function DashboardPage() {
                           details.lastMessage;
 
                         const unreadCount =
-                          details.unreadCount ||
-                          0;
+                          details.unreadCount || 0;
 
                         const hasUnread =
-                          unreadCount >
-                          0;
+                          unreadCount > 0;
 
                         const selected =
                           selectedConversationId ===
@@ -2368,9 +2354,7 @@ export default function DashboardPage() {
 
                         return (
                           <button
-                            key={
-                              conversation.id
-                            }
+                            key={conversation.id}
                             type="button"
                             onClick={() =>
                               openConversation(
@@ -2378,44 +2362,30 @@ export default function DashboardPage() {
                               )
                             }
                             style={{
-                              width:
-                                "100%",
-                              border:
-                                "none",
+                              width: "100%",
+                              border: "none",
                               borderBottom:
                                 "1px solid #F1F5F9",
-                              background:
-                                selected
-                                  ? "#EFF6FF"
-                                  : "#FFFFFF",
-                              padding:
-                                "14px",
-                              cursor:
-                                "pointer",
-                              display:
-                                "grid",
+                              background: selected
+                                ? "#EFF6FF"
+                                : "#FFFFFF",
+                              padding: "14px",
+                              cursor: "pointer",
+                              display: "grid",
                               gridTemplateColumns:
                                 "58px minmax(0, 1fr)",
-                              gap:
-                                "12px",
-                              textAlign:
-                                "left",
-                              fontFamily:
-                                "inherit",
+                              gap: "12px",
+                              textAlign: "left",
+                              fontFamily: "inherit",
                             }}
                           >
                             <div
                               style={{
-                                width:
-                                  "58px",
-                                height:
-                                  "58px",
-                                borderRadius:
-                                  "10px",
-                                overflow:
-                                  "hidden",
-                                background:
-                                  "#F1F5F9",
+                                width: "58px",
+                                height: "58px",
+                                borderRadius: "10px",
+                                overflow: "hidden",
+                                background: "#F1F5F9",
                               }}
                             >
                               {listing?.image_url ? (
@@ -2428,33 +2398,24 @@ export default function DashboardPage() {
                                     "Anunț"
                                   }
                                   style={{
-                                    width:
-                                      "100%",
-                                    height:
-                                      "100%",
-                                    objectFit:
-                                      "cover",
-                                    display:
-                                      "block",
+                                    width: "100%",
+                                    height: "100%",
+                                    objectFit: "cover",
+                                    display: "block",
                                   }}
                                 />
                               ) : (
                                 <div
                                   style={{
-                                    width:
-                                      "100%",
-                                    height:
-                                      "100%",
-                                    display:
-                                      "flex",
+                                    width: "100%",
+                                    height: "100%",
+                                    display: "flex",
                                     alignItems:
                                       "center",
                                     justifyContent:
                                       "center",
-                                    color:
-                                      "#94A3B8",
-                                    fontSize:
-                                      "9px",
+                                    color: "#94A3B8",
+                                    fontSize: "9px",
                                   }}
                                 >
                                   Fără poză
@@ -2464,95 +2425,75 @@ export default function DashboardPage() {
 
                             <div
                               style={{
-                                minWidth:
-                                  0,
+                                minWidth: 0,
                               }}
                             >
                               <div
                                 style={{
-                                  display:
-                                    "flex",
+                                  display: "flex",
                                   alignItems:
                                     "center",
                                   justifyContent:
                                     "space-between",
-                                  gap:
-                                    "8px",
+                                  gap: "8px",
                                 }}
                               >
                                 <div
                                   style={{
-                                    minWidth:
-                                      0,
+                                    minWidth: 0,
                                     overflow:
                                       "hidden",
                                     textOverflow:
                                       "ellipsis",
                                     whiteSpace:
                                       "nowrap",
-                                    color:
-                                      "#172554",
-                                    fontSize:
-                                      "13px",
+                                    color: "#172554",
+                                    fontSize: "13px",
                                     fontWeight:
                                       hasUnread
                                         ? "900"
                                         : "800",
                                   }}
                                 >
-                                  {
-                                    otherUserName
-                                  }
+                                  {otherUserName}
                                 </div>
 
                                 {hasUnread && (
                                   <span
                                     style={{
-                                      minWidth:
-                                        "20px",
-                                      height:
-                                        "20px",
-                                      padding:
-                                        "0 6px",
+                                      minWidth: "20px",
+                                      height: "20px",
+                                      padding: "0 6px",
                                       borderRadius:
                                         "999px",
                                       background:
                                         "#2563EB",
-                                      color:
-                                        "#FFFFFF",
+                                      color: "#FFFFFF",
                                       display:
                                         "inline-flex",
                                       alignItems:
                                         "center",
                                       justifyContent:
                                         "center",
-                                      fontSize:
-                                        "9px",
+                                      fontSize: "9px",
                                       fontWeight:
                                         "900",
                                       boxSizing:
                                         "border-box",
-                                      flexShrink:
-                                        0,
+                                      flexShrink: 0,
                                     }}
                                   >
-                                    {
-                                      unreadCount
-                                    }
+                                    {unreadCount}
                                   </span>
                                 )}
                               </div>
 
                               <div
                                 style={{
-                                  marginTop:
-                                    "4px",
-                                  color:
-                                    "#64748B",
-                                  fontSize:
-                                    "10px",
-                                  fontWeight:
-                                    "700",
+                                  marginTop: "4px",
+                                  color: "#64748B",
+                                  fontSize: "10px",
+                                  fontWeight: "700",
                                   overflow:
                                     "hidden",
                                   textOverflow:
@@ -2567,14 +2508,11 @@ export default function DashboardPage() {
 
                               <div
                                 style={{
-                                  marginTop:
-                                    "5px",
-                                  color:
-                                    hasUnread
-                                      ? "#334155"
-                                      : "#94A3B8",
-                                  fontSize:
-                                    "10px",
+                                  marginTop: "5px",
+                                  color: hasUnread
+                                    ? "#334155"
+                                    : "#94A3B8",
+                                  fontSize: "10px",
                                   fontWeight:
                                     hasUnread
                                       ? "700"
@@ -2602,32 +2540,24 @@ export default function DashboardPage() {
                     className="chat-panel"
                     style={{
                       minWidth: 0,
-                      display:
-                        "flex",
-                      flexDirection:
-                        "column",
-                      background:
-                        "#F8FAFC",
+                      display: "flex",
+                      flexDirection: "column",
+                      background: "#F8FAFC",
                     }}
                   >
                     {selectedConversation ? (
                       <>
                         <div
                           style={{
-                            padding:
-                              "16px 20px",
-                            background:
-                              "#FFFFFF",
+                            padding: "16px 20px",
+                            background: "#FFFFFF",
                             borderBottom:
                               "1px solid #E2E8F0",
-                            display:
-                              "flex",
-                            alignItems:
-                              "center",
+                            display: "flex",
+                            alignItems: "center",
                             justifyContent:
                               "space-between",
-                            gap:
-                              "15px",
+                            gap: "15px",
                           }}
                         >
                           <div
@@ -2637,12 +2567,9 @@ export default function DashboardPage() {
                           >
                             <div
                               style={{
-                                color:
-                                  "#172554",
-                                fontSize:
-                                  "14px",
-                                fontWeight:
-                                  "900",
+                                color: "#172554",
+                                fontSize: "14px",
+                                fontWeight: "900",
                               }}
                             >
                               {conversationDetails[
@@ -2653,27 +2580,21 @@ export default function DashboardPage() {
 
                             <div
                               style={{
-                                marginTop:
-                                  "3px",
-                                color:
-                                  "#64748B",
-                                fontSize:
-                                  "11px",
-                                fontWeight:
-                                  "600",
-                                overflow:
-                                  "hidden",
+                                marginTop: "3px",
+                                color: "#64748B",
+                                fontSize: "11px",
+                                fontWeight: "600",
+                                overflow: "hidden",
                                 textOverflow:
                                   "ellipsis",
-                                whiteSpace:
-                                  "nowrap",
+                                whiteSpace: "nowrap",
                               }}
                             >
                               {selectedConversation
-                                .listings
-                                ?.title ||
+                                .listings?.title ||
                                 "Anunț"}
                             </div>
+                          </div>
                           </div>
 
                           {selectedConversation
@@ -2762,9 +2683,7 @@ export default function DashboardPage() {
                             </div>
                           ) : (
                             messages.map(
-                              (
-                                message
-                              ) => {
+                              (message) => {
                                 const mine =
                                   message.sender_id ===
                                   user.id;
@@ -3009,7 +2928,8 @@ export default function DashboardPage() {
                         borderRadius: "14px",
                         padding: "16px",
                         display: "grid",
-                        gridTemplateColumns: "110px minmax(0, 1fr) auto",
+                        gridTemplateColumns:
+                          "110px minmax(0, 1fr) auto",
                         gap: "16px",
                         alignItems: "center",
                         boxShadow:
@@ -3021,7 +2941,7 @@ export default function DashboardPage() {
                           width: "110px",
                           height: "78px",
                           borderRadius: "10px",
-                                                    overflow: "hidden",
+                          overflow: "hidden",
                           background: "#F1F5F9",
                         }}
                       >
@@ -3107,7 +3027,9 @@ export default function DashboardPage() {
                         <button
                           type="button"
                           onClick={() =>
-                            router.push(`/proprietate/${listing.id}`)
+                            router.push(
+                              `/proprietate/${listing.id}`
+                            )
                           }
                           style={{
                             border: "1px solid #CBD5E1",
@@ -3126,7 +3048,9 @@ export default function DashboardPage() {
 
                         <button
                           type="button"
-                          onClick={() => removeFavorite(listing)}
+                          onClick={() =>
+                            removeFavorite(listing)
+                          }
                           style={{
                             border: "none",
                             background: "transparent",
@@ -3168,13 +3092,17 @@ export default function DashboardPage() {
       </div>
 
       {/* CONFIRMARE IEȘIRE DIN CONT */}
+
       {logoutConfirmOpen && (
         <div
-          onClick={() => setLogoutConfirmOpen(false)}
+          onClick={() =>
+            setLogoutConfirmOpen(false)
+          }
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(15, 23, 42, 0.45)",
+            background:
+              "rgba(15, 23, 42, 0.45)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -3184,12 +3112,15 @@ export default function DashboardPage() {
           }}
         >
           <div
-            onClick={(event) => event.stopPropagation()}
+            onClick={(event) =>
+              event.stopPropagation()
+            }
             style={{
               width: "100%",
               maxWidth: "420px",
               background: "#FFFFFF",
-              border: "1px solid #E2E8F0",
+              border:
+                "1px solid #E2E8F0",
               borderRadius: "16px",
               padding: "26px",
               boxSizing: "border-box",
@@ -3228,9 +3159,12 @@ export default function DashboardPage() {
             >
               <button
                 type="button"
-                onClick={() => setLogoutConfirmOpen(false)}
+                onClick={() =>
+                  setLogoutConfirmOpen(false)
+                }
                 style={{
-                  border: "1px solid #CBD5E1",
+                  border:
+                    "1px solid #CBD5E1",
                   background: "#FFFFFF",
                   borderRadius: "9px",
                   padding: "10px 16px",
@@ -3323,7 +3257,8 @@ function StatCard({ number, title }) {
         border: "1px solid #E2E8F0",
         borderRadius: "14px",
         padding: "20px",
-        boxShadow: "0 5px 16px rgba(15, 23, 42, 0.04)",
+        boxShadow:
+          "0 5px 16px rgba(15, 23, 42, 0.04)",
       }}
     >
       <div
@@ -3374,7 +3309,8 @@ function ListingsList({
           borderRadius: "14px",
           padding: "35px",
           textAlign: "center",
-          boxShadow: "0 5px 16px rgba(15, 23, 42, 0.04)",
+          boxShadow:
+            "0 5px 16px rgba(15, 23, 42, 0.04)",
         }}
       >
         <div
@@ -3450,10 +3386,12 @@ function ListingsList({
             borderRadius: "14px",
             padding: "16px",
             display: "grid",
-            gridTemplateColumns: "120px minmax(0, 1fr) auto",
+            gridTemplateColumns:
+              "120px minmax(0, 1fr) auto",
             gap: "17px",
             alignItems: "center",
-            boxShadow: "0 5px 16px rgba(15, 23, 42, 0.04)",
+            boxShadow:
+              "0 5px 16px rgba(15, 23, 42, 0.04)",
           }}
         >
           <div
@@ -3468,7 +3406,10 @@ function ListingsList({
             {listing.image_url ? (
               <img
                 src={listing.image_url}
-                alt={listing.title || "Anunț"}
+                alt={
+                  listing.title ||
+                  "Anunț"
+                }
                 style={{
                   width: "100%",
                   height: "100%",
@@ -3483,7 +3424,8 @@ function ListingsList({
                   height: "100%",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
+                  justifyContent:
+                    "center",
                   color: "#94A3B8",
                   fontSize: "10px",
                 }}
@@ -3512,7 +3454,8 @@ function ListingsList({
                   fontSize: "15px",
                   fontWeight: "800",
                   overflow: "hidden",
-                  textOverflow: "ellipsis",
+                  textOverflow:
+                    "ellipsis",
                   whiteSpace: "nowrap",
                 }}
               >
@@ -3521,26 +3464,35 @@ function ListingsList({
 
               <span
                 style={{
-                  display: "inline-flex",
+                  display:
+                    "inline-flex",
                   alignItems: "center",
-                  borderRadius: "999px",
+                  borderRadius:
+                    "999px",
                   padding: "4px 8px",
-                  background: listing.active
-                    ? "#F0FDF4"
-                    : "#F8FAFC",
-                  color: listing.active
-                    ? "#15803D"
-                    : "#64748B",
-                  border: listing.active
-                    ? "1px solid #BBF7D0"
-                    : "1px solid #E2E8F0",
+                  background:
+                    listing.active
+                      ? "#F0FDF4"
+                      : "#F8FAFC",
+                  color:
+                    listing.active
+                      ? "#15803D"
+                      : "#64748B",
+                  border:
+                    listing.active
+                      ? "1px solid #BBF7D0"
+                      : "1px solid #E2E8F0",
                   fontSize: "9px",
                   fontWeight: "900",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.3px",
+                  textTransform:
+                    "uppercase",
+                  letterSpacing:
+                    "0.3px",
                 }}
               >
-                {listing.active ? "Activ" : "Inactiv"}
+                {listing.active
+                  ? "Activ"
+                  : "Inactiv"}
               </span>
             </div>
 
@@ -3554,7 +3506,9 @@ function ListingsList({
             >
               {listing.city}
 
-              {listing.address ? ` · ${listing.address}` : ""}
+              {listing.address
+                ? ` · ${listing.address}`
+                : ""}
             </div>
 
             <div
@@ -3587,7 +3541,9 @@ function ListingsList({
               )}
 
               {listing.surface_m2 != null && (
-                <span>{listing.surface_m2} m²</span>
+                <span>
+                  {listing.surface_m2} m²
+                </span>
               )}
             </div>
           </div>
@@ -3604,10 +3560,13 @@ function ListingsList({
             <button
               type="button"
               onClick={() =>
-                router.push(`/proprietate/${listing.id}`)
+                router.push(
+                  `/proprietate/${listing.id}`
+                )
               }
               style={{
-                border: "1px solid #CBD5E1",
+                border:
+                  "1px solid #CBD5E1",
                 background: "#FFFFFF",
                 borderRadius: "9px",
                 padding: "9px 12px",
@@ -3630,7 +3589,8 @@ function ListingsList({
                 )
               }
               style={{
-                border: "1px solid #BFDBFE",
+                border:
+                  "1px solid #BFDBFE",
                 background: "#EFF6FF",
                 borderRadius: "9px",
                 padding: "9px 12px",
@@ -3647,17 +3607,21 @@ function ListingsList({
 
             <button
               type="button"
-              onClick={() => toggleListing(listing)}
+              onClick={() =>
+                toggleListing(listing)
+              }
               style={{
                 border: "none",
-                background: listing.active
-                  ? "#FFF7ED"
-                  : "#F0FDF4",
+                background:
+                  listing.active
+                    ? "#FFF7ED"
+                    : "#F0FDF4",
                 borderRadius: "9px",
                 padding: "9px 12px",
-                color: listing.active
-                  ? "#C2410C"
-                  : "#15803D",
+                color:
+                  listing.active
+                    ? "#C2410C"
+                    : "#15803D",
                 fontFamily: "inherit",
                 fontSize: "11px",
                 fontWeight: "800",
@@ -3665,14 +3629,19 @@ function ListingsList({
                 whiteSpace: "nowrap",
               }}
             >
-              {listing.active ? "Dezactivează" : "Activează"}
+              {listing.active
+                ? "Dezactivează"
+                : "Activează"}
             </button>
 
             <button
               type="button"
-              onClick={() => deleteListing(listing)}
+              onClick={() =>
+                deleteListing(listing)
+              }
               style={{
-                border: "1px solid #FECACA",
+                border:
+                  "1px solid #FECACA",
                 background: "#FEF2F2",
                 borderRadius: "9px",
                 padding: "9px 12px",
@@ -3703,11 +3672,13 @@ function EmptyCard({ title, text }) {
       style={{
         maxWidth: "850px",
         background: "#FFFFFF",
-        border: "1px solid #E2E8F0",
+        border:
+          "1px solid #E2E8F0",
         borderRadius: "14px",
         padding: "35px",
         textAlign: "center",
-        boxShadow: "0 5px 16px rgba(15, 23, 42, 0.04)",
+        boxShadow:
+          "0 5px 16px rgba(15, 23, 42, 0.04)",
       }}
     >
       <div
