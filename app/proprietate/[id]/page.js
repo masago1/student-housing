@@ -7,6 +7,143 @@ import ApproximateLocationMap from "../../components/ApproximateLocationMap";
 
 export const dynamic = "force-dynamic";
 
+export async function generateMetadata({ params }) {
+    const { id } = await params;
+
+    const { data: listing } = await supabase
+        .from("listings")
+        .select(
+            "title, city, address, property_type, rooms, surface_m2, price_monthly, image_url"
+        )
+        .eq("id", id)
+        .maybeSingle();
+
+    if (!listing) {
+        return {
+            title: "Proprietate | shaus",
+            description:
+                "Vezi proprietăți de închiriat pe shaus.",
+            robots: {
+                index: false,
+                follow: true,
+            },
+        };
+    }
+
+    const propertyTypeLabels = {
+        apartment: "Apartament",
+        studio: "Garsonieră",
+        room: "Cameră",
+        house: "Casă",
+        apartament: "Apartament",
+        garsoniera: "Garsonieră",
+        camera: "Cameră",
+        casa: "Casă",
+    };
+
+    const propertyType =
+        propertyTypeLabels[listing.property_type] ||
+        listing.property_type ||
+        "Proprietate";
+
+    const city = listing.city?.trim() || "";
+
+    const titleParts = [
+        propertyType,
+        listing.rooms
+            ? `${listing.rooms} camere`
+            : null,
+        city
+            ? `de închiriat în ${city}`
+            : "de închiriat",
+    ].filter(Boolean);
+
+    const title = `${titleParts.join(" ")} | shaus`;
+
+    const descriptionParts = [
+        propertyType,
+        city
+            ? `de închiriat în ${city}`
+            : "de închiriat",
+        listing.surface_m2
+            ? `${listing.surface_m2} m²`
+            : null,
+        listing.price_monthly
+            ? `${Number(
+                  listing.price_monthly
+              ).toLocaleString("ro-RO")} € / lună`
+            : null,
+        "Vezi fotografii, detalii și informații despre proprietate pe shaus.",
+    ].filter(Boolean);
+
+    const description =
+        descriptionParts.join(". ") + ".";
+
+    return {
+        title,
+        description,
+
+        alternates: {
+            canonical: `/proprietate/${id}`,
+        },
+
+        keywords: [
+            propertyType,
+            city
+                ? `${propertyType.toLowerCase()} ${city}`
+                : null,
+            city
+                ? `chirie ${city}`
+                : null,
+            city
+                ? `apartamente de închiriat ${city}`
+                : null,
+            city
+                ? `garsoniere de închiriat ${city}`
+                : null,
+            "chirii studenți",
+            "chirii pentru studenți",
+            "cazare studenți",
+            "shaus",
+        ].filter(Boolean),
+
+        openGraph: {
+            type: "website",
+            locale: "ro_RO",
+            siteName: "shaus",
+            title,
+            description,
+            url: `https://shaus.ro/proprietate/${id}`,
+            images: listing.image_url
+                ? [
+                      {
+                          url: listing.image_url,
+                          width: 1200,
+                          height: 630,
+                          alt:
+                              listing.title ||
+                              `${propertyType} de închiriat`,
+                      },
+                  ]
+                : undefined,
+        },
+
+        twitter: {
+            card: "summary_large_image",
+            title,
+            description,
+            images: listing.image_url
+                ? [listing.image_url]
+                : undefined,
+        },
+
+        robots: {
+            index: true,
+            follow: true,
+        },
+    };
+}
+
 export default async function PropertyPage({ params }) {
     const { id } = await params;
 
@@ -150,7 +287,6 @@ export default async function PropertyPage({ params }) {
             ownerProfileError
         );
     }
-
     const ownerName =
         ownerProfile?.name?.trim() ||
         listing.owner_name?.trim() ||
@@ -535,7 +671,6 @@ export default async function PropertyPage({ params }) {
                                 </div>
                             </div>
                         )}
-
                         {/* CONDIȚII DE ÎNCHIRIERE */}
 
                         {hasRentalConditions && (
