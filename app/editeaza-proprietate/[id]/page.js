@@ -2654,9 +2654,7 @@ preview:
                                                         storage_path:
                                 storagePath,
 
-                            sort_order:
-                                existingImages.length +
-                                index,
+                            
                         }
                     );
                 }
@@ -2717,8 +2715,7 @@ preview:
                             )
                             .update(
                                 {
-                                    sort_order:
-                                        index,
+                                   
                                 }
                             )
                             .eq(
