@@ -9,6 +9,7 @@ export default function LoginPage() {
 
   const [mode, setMode] = useState("login");
   const [name, setName] = useState("");
+  const [nickname, setNickname] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -86,10 +87,37 @@ export default function LoginPage() {
     setMessage("");
 
     const cleanName = name.trim();
+    const cleanNickname = nickname.trim();
     const cleanEmail = email.trim();
 
     if (mode === "register" && !cleanName) {
       setError("Completează numele.");
+      return;
+    }
+
+    if (mode === "register" && !cleanNickname) {
+      setError("Alege un nickname.");
+      return;
+    }
+
+    if (
+      mode === "register" &&
+      (cleanNickname.length < 3 ||
+        cleanNickname.length > 30)
+    ) {
+      setError(
+        "Nickname-ul trebuie să aibă între 3 și 30 de caractere."
+      );
+      return;
+    }
+
+    if (
+      mode === "register" &&
+      !/^[a-zA-Z0-9._-]+$/.test(cleanNickname)
+    ) {
+      setError(
+        "Nickname-ul poate conține doar litere, cifre, punct, _ și -."
+      );
       return;
     }
 
@@ -119,6 +147,42 @@ export default function LoginPage() {
       */
 
       if (mode === "register") {
+        /*
+          VERIFICĂM DACĂ NICKNAME-UL ESTE DEJA FOLOSIT
+        */
+
+        const {
+          data: existingNickname,
+          error: nicknameCheckError,
+        } = await supabase
+          .from("profiles")
+          .select("id")
+          .ilike("nickname", cleanNickname)
+          .maybeSingle();
+
+        if (nicknameCheckError) {
+          console.error(
+            "Eroare verificare nickname:",
+            nicknameCheckError
+          );
+
+          setError(
+            "Nickname-ul nu a putut fi verificat. Încearcă din nou."
+          );
+          return;
+        }
+
+        if (existingNickname) {
+          setError(
+            "Acest nickname este deja folosit. Alege altul."
+          );
+          return;
+        }
+
+        /*
+          CREĂM UTILIZATORUL
+        */
+
         const {
           data,
           error: signUpError,
@@ -128,6 +192,7 @@ export default function LoginPage() {
           options: {
             data: {
               name: cleanName,
+              nickname: cleanNickname,
             },
           },
         });
@@ -149,6 +214,7 @@ export default function LoginPage() {
               {
                 id: data.user.id,
                 name: cleanName,
+                nickname: cleanNickname,
               },
               {
                 onConflict: "id",
@@ -161,9 +227,18 @@ export default function LoginPage() {
               profileError
             );
 
-            setError(
-              "Contul a fost creat, dar numele nu a putut fi salvat."
-            );
+            if (
+              profileError.code === "23505"
+            ) {
+              setError(
+                "Acest nickname este deja folosit. Alege altul."
+              );
+            } else {
+              setError(
+                "Contul a fost creat, dar profilul nu a putut fi salvat."
+              );
+            }
+
             return;
           }
 
@@ -180,6 +255,7 @@ export default function LoginPage() {
         );
 
         setName("");
+        setNickname("");
         setEmail("");
         setPassword("");
         setConfirmPassword("");
@@ -219,10 +295,13 @@ export default function LoginPage() {
       const metadataName =
         data.user.user_metadata?.name?.trim();
 
+      const metadataNickname =
+        data.user.user_metadata?.nickname?.trim();
+
       if (metadataName) {
         const { data: existingProfile } = await supabase
           .from("profiles")
-          .select("id")
+          .select("id, nickname")
           .eq("id", data.user.id)
           .maybeSingle();
 
@@ -232,12 +311,31 @@ export default function LoginPage() {
             .insert({
               id: data.user.id,
               name: metadataName,
+              nickname: metadataNickname || null,
             });
 
           if (profileError) {
             console.error(
               "Eroare la crearea profilului:",
               profileError
+            );
+          }
+        } else if (
+          !existingProfile.nickname &&
+          metadataNickname
+        ) {
+          const { error: nicknameUpdateError } =
+            await supabase
+              .from("profiles")
+              .update({
+                nickname: metadataNickname,
+              })
+              .eq("id", data.user.id);
+
+          if (nicknameUpdateError) {
+            console.error(
+              "Eroare actualizare nickname:",
+              nicknameUpdateError
             );
           }
         }
@@ -267,6 +365,7 @@ export default function LoginPage() {
     setError("");
     setMessage("");
     setName("");
+    setNickname("");
     setPassword("");
     setConfirmPassword("");
   };
@@ -483,7 +582,7 @@ export default function LoginPage() {
                   onChange={(event) =>
                     setName(event.target.value)
                   }
-                  placeholder="Numele tău"
+                  placeholder="Numele tău real"
                   autoComplete="name"
                   disabled={loading}
                   maxLength={80}
@@ -499,6 +598,54 @@ export default function LoginPage() {
                     marginBottom: "19px",
                   }}
                 />
+
+                {/* NICKNAME */}
+
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "14px",
+                    fontWeight: "700",
+                    marginBottom: "8px",
+                  }}
+                >
+                  Nickname
+                </label>
+
+                <input
+                  type="text"
+                  value={nickname}
+                  onChange={(event) =>
+                    setNickname(event.target.value)
+                  }
+                  placeholder="Ex: costin24"
+                  autoComplete="username"
+                  disabled={loading}
+                  maxLength={30}
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "11px",
+                    padding: "14px 15px",
+                    fontFamily: "inherit",
+                    fontSize: "15px",
+                    outline: "none",
+                    marginBottom: "7px",
+                  }}
+                />
+
+                <div
+                  style={{
+                    color: "#6b7280",
+                    fontSize: "12px",
+                    lineHeight: "1.5",
+                    marginBottom: "19px",
+                  }}
+                >
+                  Acesta este numele tău public pe shaus.
+                  Va fi vizibil celorlalți utilizatori.
+                </div>
               </>
             )}
 
