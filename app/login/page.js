@@ -618,7 +618,7 @@ export default function LoginPage() {
                   onChange={(event) =>
                     setNickname(event.target.value)
                   }
-                  placeholder="Ex: costin24"
+                  placeholder="Ex: user1234"
                   autoComplete="username"
                   disabled={loading}
                   maxLength={30}
