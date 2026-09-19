@@ -797,11 +797,11 @@ export default function EditeazaProprietatePage() {
                                     id:
                                         image.id,
 
-                                    type:
-                                        "existing",
+                                    existing:
+    true,
 
-                                    image_url:
-                                        image.image_url,
+image_url:
+    image.image_url,
 
                                     sort_order:
                                         image.sort_order,
