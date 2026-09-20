@@ -1,5 +1,4 @@
-import CityListingsClient from "./CityListingsClient";
-
+import DeviceRouter from "./DeviceRouter";
 function formatCityName(city = "") {
   return decodeURIComponent(String(city))
     .replace(/-/g, " ")
@@ -63,5 +62,5 @@ export async function generateMetadata({ params }) {
 }
 
 export default function CityPage() {
-  return <CityListingsClient />;
+  return <DeviceRouter />;
 }
