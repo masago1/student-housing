@@ -16,23 +16,37 @@ export default function MobileHomeClient({
   const [selectedUniversity, setSelectedUniversity] =
     useState("");
 
+  const selectedCityObject = useMemo(() => {
+    return cities.find(
+      (city) =>
+        String(city.slug || "")
+          .toLowerCase() ===
+        String(selectedCity || "")
+          .toLowerCase()
+    );
+  }, [cities, selectedCity]);
+
   const cityUniversities = useMemo(() => {
-    if (!selectedCity) {
+    if (!selectedCityObject) {
       return [];
     }
+
+    const selectedCityName = String(
+      selectedCityObject.name || ""
+    )
+      .trim()
+      .toLowerCase();
 
     return universities.filter(
       (university) =>
         String(university.city || "")
           .trim()
           .toLowerCase() ===
-        String(selectedCity)
-          .trim()
-          .toLowerCase()
+        selectedCityName
     );
   }, [
     universities,
-    selectedCity,
+    selectedCityObject,
   ]);
 
   function handleCityChange(event) {
