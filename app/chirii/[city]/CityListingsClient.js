@@ -2071,9 +2071,10 @@ export default function CityListingsPage() {
                   ? "mobile-filter-chip-active"
                   : ""
               }`}
-              onClick={() =>
-                toggleMobileFilter("price")
-              }
+              onPointerDown={(event) => {
+                event.preventDefault();
+                toggleMobileFilter("price");
+              }}
             >
               Preț
             </button>
@@ -2085,9 +2086,10 @@ export default function CityListingsPage() {
                   ? "mobile-filter-chip-active"
                   : ""
               }`}
-              onClick={() =>
-                toggleMobileFilter("rooms")
-              }
+              onPointerDown={(event) => {
+                event.preventDefault();
+                toggleMobileFilter("rooms");
+              }}
             >
               Camere
             </button>
@@ -2099,9 +2101,10 @@ export default function CityListingsPage() {
                   ? "mobile-filter-chip-active"
                   : ""
               }`}
-              onClick={() =>
-                toggleMobileFilter("surface")
-              }
+              onPointerDown={(event) => {
+                event.preventDefault();
+                toggleMobileFilter("surface");
+              }}
             >
               Suprafață
             </button>
@@ -2113,9 +2116,10 @@ export default function CityListingsPage() {
                   ? "mobile-filter-chip-active"
                   : ""
               }`}
-              onClick={() =>
-                toggleMobileFilter("furnished")
-              }
+              onPointerDown={(event) => {
+                event.preventDefault();
+                toggleMobileFilter("furnished");
+              }}
             >
               Mobilat
             </button>
@@ -2127,9 +2131,10 @@ export default function CityListingsPage() {
                   ? "mobile-filter-chip-active"
                   : ""
               }`}
-              onClick={() =>
-                toggleMobileFilter("more")
-              }
+              onPointerDown={(event) => {
+                event.preventDefault();
+                toggleMobileFilter("more");
+              }}
             >
               Mai multe
             </button>
@@ -3758,10 +3763,15 @@ export default function CityListingsPage() {
 
           .mobile-filter-bar {
             display: block;
+            position: relative;
+            z-index: 20;
+            pointer-events: auto;
             margin-bottom: 12px;
           }
 
           .mobile-filter-chips {
+            position: relative;
+            z-index: 21;
             display: flex;
             align-items: center;
             gap: 7px;
@@ -3787,6 +3797,9 @@ export default function CityListingsPage() {
             font-weight: 800;
             cursor: pointer;
             white-space: nowrap;
+            pointer-events: auto;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
           }
 
           .mobile-filter-chip-active {
@@ -3796,6 +3809,9 @@ export default function CityListingsPage() {
           }
 
           .mobile-filter-panel {
+            position: relative;
+            z-index: 22;
+            pointer-events: auto;
             margin-top: 7px;
             padding: 13px;
             background: #FFFFFF;
