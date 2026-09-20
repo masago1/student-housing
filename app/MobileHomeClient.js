@@ -4,25 +4,59 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AccountButton from "./components/AccountButton";
 
+function normalizeText(value = "") {
+  return String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/ș/g, "s")
+    .replace(/ț/g, "t")
+    .replace(/ă/g, "a")
+    .replace(/â/g, "a")
+    .replace(/î/g, "i")
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+function normalizeSlug(value = "") {
+  return String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/ș/g, "s")
+    .replace(/ț/g, "t")
+    .replace(/ă/g, "a")
+    .replace(/â/g, "a")
+    .replace(/î/g, "i")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export default function MobileHomeClient({
   universities = [],
   cities = [],
 }) {
   const router = useRouter();
 
-  const [selectedCity, setSelectedCity] =
-    useState("");
-
+  const [selectedCity, setSelectedCity] = useState("");
   const [selectedUniversity, setSelectedUniversity] =
     useState("");
 
   const selectedCityObject = useMemo(() => {
-    return cities.find(
-      (city) =>
-        String(city.slug || "")
-          .toLowerCase() ===
-        String(selectedCity || "")
-          .toLowerCase()
+    if (!selectedCity) {
+      return null;
+    }
+
+    const selectedNormalized =
+      normalizeSlug(selectedCity);
+
+    return (
+      cities.find(
+        (city) =>
+          normalizeSlug(city.slug) ===
+          selectedNormalized
+      ) || null
     );
   }, [cities, selectedCity]);
 
@@ -31,19 +65,54 @@ export default function MobileHomeClient({
       return [];
     }
 
-    const selectedCityName = String(
-      selectedCityObject.name || ""
-    )
-      .trim()
-      .toLowerCase();
-
-    return universities.filter(
-      (university) =>
-        String(university.city || "")
-          .trim()
-          .toLowerCase() ===
-        selectedCityName
+    const cityName = normalizeText(
+      selectedCityObject.name
     );
+
+    const citySlug = normalizeSlug(
+      selectedCityObject.slug
+    );
+
+    return universities.filter((university) => {
+      const universityCity =
+        normalizeText(university.city);
+
+      const universityCitySlug =
+        normalizeSlug(university.city);
+
+      const universityCityName =
+        normalizeText(
+          university.city_name
+        );
+
+      const universityCitySlugValue =
+        normalizeSlug(
+          university.city_slug
+        );
+
+      const universityCityId =
+        String(
+          university.city_id || ""
+        ).trim();
+
+      const selectedCityId =
+        String(
+          selectedCityObject.id || ""
+        ).trim();
+
+      return (
+        universityCity === cityName ||
+        universityCitySlug === citySlug ||
+        universityCityName === cityName ||
+        universityCitySlugValue === citySlug ||
+        (
+          universityCityId &&
+          selectedCityId &&
+          universityCityId ===
+            selectedCityId
+        )
+      );
+    });
   }, [
     universities,
     selectedCityObject,
@@ -63,10 +132,8 @@ export default function MobileHomeClient({
 
     const city = cities.find(
       (item) =>
-        String(item.slug || "")
-          .toLowerCase() ===
-        String(selectedCity)
-          .toLowerCase()
+        normalizeSlug(item.slug) ===
+        normalizeSlug(selectedCity)
     );
 
     const citySlug =
@@ -82,8 +149,7 @@ export default function MobileHomeClient({
       );
     }
 
-    const query =
-      params.toString();
+    const query = params.toString();
 
     router.push(
       `/chirii/${citySlug}${
@@ -98,15 +164,18 @@ export default function MobileHomeClient({
     <main
       style={{
         minHeight: "100vh",
+        margin: 0,
         background: "#F8FAFC",
         color: "#0F172A",
+        fontFamily:
+          "Arial, Helvetica, sans-serif",
       }}
     >
       {/* HEADER */}
 
       <header
         style={{
-          height: "58px",
+          minHeight: "60px",
           boxSizing: "border-box",
           background: "#FFFFFF",
           borderBottom:
@@ -115,7 +184,7 @@ export default function MobileHomeClient({
           alignItems: "center",
           justifyContent:
             "space-between",
-          padding: "0 15px",
+          padding: "0 16px",
         }}
       >
         <a
@@ -123,34 +192,37 @@ export default function MobileHomeClient({
           style={{
             color: "#172554",
             textDecoration: "none",
-            fontSize: "22px",
+            fontSize: "24px",
+            lineHeight: 1,
             fontWeight: "900",
-            letterSpacing: "-0.9px",
+            letterSpacing: "-1.2px",
           }}
         >
           shaus
         </a>
 
-        <AccountButton />
+        <AccountButton mobile />
       </header>
 
       {/* HERO */}
 
       <section
         style={{
-          padding:
-            "48px 16px 35px",
+          width: "100%",
           maxWidth: "560px",
+          boxSizing: "border-box",
           margin: "0 auto",
+          padding:
+            "52px 16px 40px",
         }}
       >
         <h1
           style={{
             margin: 0,
             color: "#172554",
-            fontSize: "32px",
+            fontSize: "36px",
             lineHeight: "1.08",
-            letterSpacing: "-1.3px",
+            letterSpacing: "-1.5px",
             fontWeight: "900",
           }}
         >
@@ -169,10 +241,11 @@ export default function MobileHomeClient({
         <p
           style={{
             margin:
-              "12px 0 24px",
+              "14px 0 28px",
             color: "#64748B",
-            fontSize: "13px",
+            fontSize: "15px",
             lineHeight: "1.55",
+            fontWeight: "400",
           }}
         >
           Găsește chiria potrivită
@@ -180,17 +253,19 @@ export default function MobileHomeClient({
           loc.
         </p>
 
-        {/* CĂUTARE */}
+        {/* SEARCH CARD */}
 
         <div
           style={{
+            width: "100%",
+            boxSizing: "border-box",
             background: "#FFFFFF",
             border:
               "1px solid #E2E8F0",
-            borderRadius: "14px",
-            padding: "14px",
+            borderRadius: "16px",
+            padding: "16px",
             boxShadow:
-              "0 8px 25px rgba(15,23,42,0.06)",
+              "0 8px 28px rgba(15,23,42,0.07)",
           }}
         >
           {/* ORAȘ */}
@@ -198,9 +273,10 @@ export default function MobileHomeClient({
           <label
             style={{
               display: "block",
-              marginBottom: "6px",
-              color: "#475569",
-              fontSize: "10px",
+              marginBottom: "7px",
+              color: "#334155",
+              fontSize: "12px",
+              lineHeight: 1.2,
               fontWeight: "800",
             }}
           >
@@ -209,43 +285,40 @@ export default function MobileHomeClient({
 
           <select
             value={selectedCity}
-            onChange={
-              handleCityChange
-            }
+            onChange={handleCityChange}
             style={{
               width: "100%",
-              height: "48px",
-              boxSizing:
-                "border-box",
+              height: "50px",
+              boxSizing: "border-box",
               border:
                 "1px solid #CBD5E1",
-              borderRadius: "9px",
+              borderRadius: "10px",
               background: "#FFFFFF",
               color: selectedCity
                 ? "#0F172A"
                 : "#94A3B8",
-              padding: "0 12px",
+              padding:
+                "0 13px",
               fontFamily:
-                "inherit",
-              fontSize: "12px",
-              fontWeight: "700",
+                "Arial, Helvetica, sans-serif",
+              fontSize: "14px",
+              fontWeight: "600",
               outline: "none",
+              appearance: "auto",
             }}
           >
             <option value="">
               Alege orașul
             </option>
 
-            {cities.map(
-              (city) => (
-                <option
-                  key={city.id}
-                  value={city.slug}
-                >
-                  {city.name}
-                </option>
-              )
-            )}
+            {cities.map((city) => (
+              <option
+                key={city.id}
+                value={city.slug}
+              >
+                {city.name}
+              </option>
+            ))}
           </select>
 
           {/* UNIVERSITATE */}
@@ -253,10 +326,11 @@ export default function MobileHomeClient({
           <label
             style={{
               display: "block",
-              marginTop: "13px",
-              marginBottom: "6px",
-              color: "#475569",
-              fontSize: "10px",
+              marginTop: "16px",
+              marginBottom: "7px",
+              color: "#334155",
+              fontSize: "12px",
+              lineHeight: 1.2,
               fontWeight: "800",
             }}
           >
@@ -264,39 +338,35 @@ export default function MobileHomeClient({
           </label>
 
           <select
-            value={
-              selectedUniversity
-            }
+            value={selectedUniversity}
             onChange={(event) =>
               setSelectedUniversity(
                 event.target.value
               )
             }
-            disabled={
-              !selectedCity
-            }
+            disabled={!selectedCity}
             style={{
               width: "100%",
-              height: "48px",
-              boxSizing:
-                "border-box",
+              height: "50px",
+              boxSizing: "border-box",
               border:
                 "1px solid #CBD5E1",
-              borderRadius: "9px",
-              background:
-                !selectedCity
-                  ? "#F8FAFC"
-                  : "#FFFFFF",
+              borderRadius: "10px",
+              background: !selectedCity
+                ? "#F8FAFC"
+                : "#FFFFFF",
               color:
                 selectedUniversity
                   ? "#0F172A"
                   : "#94A3B8",
-              padding: "0 12px",
+              padding:
+                "0 13px",
               fontFamily:
-                "inherit",
-              fontSize: "12px",
-              fontWeight: "700",
+                "Arial, Helvetica, sans-serif",
+              fontSize: "14px",
+              fontWeight: "600",
               outline: "none",
+              appearance: "auto",
             }}
           >
             <option value="">
@@ -319,31 +389,25 @@ export default function MobileHomeClient({
 
           <button
             type="button"
-            onClick={
-              handleSearch
-            }
-            disabled={
-              !selectedCity
-            }
+            onClick={handleSearch}
+            disabled={!selectedCity}
             style={{
               width: "100%",
-              height: "48px",
-              marginTop: "15px",
+              height: "50px",
+              marginTop: "16px",
               border: "none",
-              borderRadius: "9px",
-              background:
-                selectedCity
-                  ? "#172554"
-                  : "#CBD5E1",
+              borderRadius: "10px",
+              background: selectedCity
+                ? "#172554"
+                : "#CBD5E1",
               color: "#FFFFFF",
               fontFamily:
-                "inherit",
-              fontSize: "12px",
-              fontWeight: "900",
-              cursor:
-                selectedCity
-                  ? "pointer"
-                  : "not-allowed",
+                "Arial, Helvetica, sans-serif",
+              fontSize: "14px",
+              fontWeight: "800",
+              cursor: selectedCity
+                ? "pointer"
+                : "not-allowed",
             }}
           >
             Vezi chiriile
