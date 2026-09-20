@@ -690,6 +690,31 @@ function DateCalendar({
   );
 }
 
+function MobileFilterActions({
+  onApply,
+  onReset,
+}) {
+  return (
+    <div className="mobile-filter-actions">
+      <button
+        type="button"
+        onClick={onReset}
+        className="mobile-filter-reset"
+      >
+        Resetează
+      </button>
+
+      <button
+        type="button"
+        onClick={onApply}
+        className="mobile-filter-apply"
+      >
+        Aplică filtrele
+      </button>
+    </div>
+  );
+}
+
 /* =========================
    PAGINA
 ========================= */
@@ -863,6 +888,32 @@ export default function CityListingsPage() {
 
   const [zone, setZone] =
     useState("");
+
+  /* =========================
+     FILTRE MOBILE
+  ========================= */
+
+  const [
+    mobileFilterOpen,
+    setMobileFilterOpen,
+  ] = useState("");
+
+  function toggleMobileFilter(filter) {
+    setMobileFilterOpen((current) =>
+      current === filter ? "" : filter
+    );
+  }
+
+  function closeMobileFilter() {
+    setMobileFilterOpen("");
+  }
+
+  function applyMobileFilters() {
+    handleSubmit({
+      preventDefault() {},
+    });
+    setMobileFilterOpen("");
+  }
 
   /* =========================
      CALENDAR
@@ -2011,7 +2062,329 @@ export default function CityListingsPage() {
 
         {/* FILTRE */}
 
+        <div className="mobile-filter-bar">
+          <div className="mobile-filter-chips">
+            <button
+              type="button"
+              className={`mobile-filter-chip ${
+                mobileFilterOpen === "price"
+                  ? "mobile-filter-chip-active"
+                  : ""
+              }`}
+              onClick={() =>
+                toggleMobileFilter("price")
+              }
+            >
+              Preț
+            </button>
+
+            <button
+              type="button"
+              className={`mobile-filter-chip ${
+                mobileFilterOpen === "rooms"
+                  ? "mobile-filter-chip-active"
+                  : ""
+              }`}
+              onClick={() =>
+                toggleMobileFilter("rooms")
+              }
+            >
+              Camere
+            </button>
+
+            <button
+              type="button"
+              className={`mobile-filter-chip ${
+                mobileFilterOpen === "surface"
+                  ? "mobile-filter-chip-active"
+                  : ""
+              }`}
+              onClick={() =>
+                toggleMobileFilter("surface")
+              }
+            >
+              Suprafață
+            </button>
+
+            <button
+              type="button"
+              className={`mobile-filter-chip ${
+                mobileFilterOpen === "furnished"
+                  ? "mobile-filter-chip-active"
+                  : ""
+              }`}
+              onClick={() =>
+                toggleMobileFilter("furnished")
+              }
+            >
+              Mobilat
+            </button>
+
+            <button
+              type="button"
+              className={`mobile-filter-chip ${
+                mobileFilterOpen === "more"
+                  ? "mobile-filter-chip-active"
+                  : ""
+              }`}
+              onClick={() =>
+                toggleMobileFilter("more")
+              }
+            >
+              Mai multe
+            </button>
+          </div>
+
+          {mobileFilterOpen === "price" && (
+            <div className="mobile-filter-panel">
+              <div className="mobile-filter-panel-title">
+                Preț lunar
+              </div>
+
+              <div className="mobile-filter-two-columns">
+                <input
+                  value={minPrice}
+                  onChange={(event) =>
+                    handleIntegerChange(
+                      event.target.value,
+                      setMinPrice
+                    )
+                  }
+                  inputMode="numeric"
+                  placeholder="Preț minim"
+                  style={inputStyle}
+                />
+
+                <input
+                  value={maxPrice}
+                  onChange={(event) =>
+                    handleIntegerChange(
+                      event.target.value,
+                      setMaxPrice
+                    )
+                  }
+                  inputMode="numeric"
+                  placeholder="Preț maxim"
+                  style={inputStyle}
+                />
+              </div>
+
+              <MobileFilterActions
+                onApply={applyMobileFilters}
+                onReset={resetFilters}
+              />
+            </div>
+          )}
+
+          {mobileFilterOpen === "rooms" && (
+            <div className="mobile-filter-panel">
+              <div className="mobile-filter-panel-title">
+                Număr camere
+              </div>
+
+              <select
+                value={rooms}
+                onChange={(event) =>
+                  setRooms(event.target.value)
+                }
+                style={inputStyle}
+              >
+                <option value="">Oricâte</option>
+                <option value="1">1 cameră</option>
+                <option value="2">2 camere</option>
+                <option value="3">3 camere</option>
+                <option value="4">4 camere</option>
+                <option value="5">5+ camere</option>
+              </select>
+
+              <MobileFilterActions
+                onApply={applyMobileFilters}
+                onReset={resetFilters}
+              />
+            </div>
+          )}
+
+          {mobileFilterOpen === "surface" && (
+            <div className="mobile-filter-panel">
+              <div className="mobile-filter-panel-title">
+                Suprafață
+              </div>
+
+              <div className="mobile-filter-two-columns">
+                <input
+                  value={minSurface}
+                  onChange={(event) =>
+                    handleIntegerChange(
+                      event.target.value,
+                      setMinSurface
+                    )
+                  }
+                  inputMode="numeric"
+                  placeholder="Min. m²"
+                  style={inputStyle}
+                />
+
+                <input
+                  value={maxSurface}
+                  onChange={(event) =>
+                    handleIntegerChange(
+                      event.target.value,
+                      setMaxSurface
+                    )
+                  }
+                  inputMode="numeric"
+                  placeholder="Max. m²"
+                  style={inputStyle}
+                />
+              </div>
+
+              <MobileFilterActions
+                onApply={applyMobileFilters}
+                onReset={resetFilters}
+              />
+            </div>
+          )}
+
+          {mobileFilterOpen === "furnished" && (
+            <div className="mobile-filter-panel">
+              <div className="mobile-filter-panel-title">
+                Mobilat
+              </div>
+
+              <select
+                value={furnished}
+                onChange={(event) =>
+                  setFurnished(event.target.value)
+                }
+                style={inputStyle}
+              >
+                <option value="">Oricare</option>
+                <option value="yes">Da, mobilat</option>
+                <option value="no">Nu, nemobilat</option>
+              </select>
+
+              <MobileFilterActions
+                onApply={applyMobileFilters}
+                onReset={resetFilters}
+              />
+            </div>
+          )}
+
+          {mobileFilterOpen === "more" && (
+            <div className="mobile-filter-panel mobile-more-panel">
+              <div className="mobile-filter-panel-title">
+                Mai multe filtre
+              </div>
+
+              <div className="mobile-filter-field">
+                <label style={labelStyle}>
+                  Dormitoare
+                </label>
+                <select
+                  value={bedrooms}
+                  onChange={(event) =>
+                    setBedrooms(event.target.value)
+                  }
+                  style={inputStyle}
+                >
+                  <option value="">Oricâte</option>
+                  <option value="1">1 dormitor</option>
+                  <option value="2">2 dormitoare</option>
+                  <option value="3">3 dormitoare</option>
+                  <option value="4">4+ dormitoare</option>
+                </select>
+              </div>
+
+              <div className="mobile-filter-field">
+                <label style={labelStyle}>
+                  Băi
+                </label>
+                <select
+                  value={bathrooms}
+                  onChange={(event) =>
+                    setBathrooms(event.target.value)
+                  }
+                  style={inputStyle}
+                >
+                  <option value="">Oricâte</option>
+                  <option value="1">1 baie</option>
+                  <option value="2">2 băi</option>
+                  <option value="3">3+ băi</option>
+                </select>
+              </div>
+
+              <div className="mobile-filter-field">
+                <label style={labelStyle}>
+                  Tip proprietate
+                </label>
+                <select
+                  value={propertyType}
+                  onChange={(event) =>
+                    setPropertyType(event.target.value)
+                  }
+                  style={inputStyle}
+                >
+                  <option value="">Toate</option>
+                  <option value="apartment">Apartament</option>
+                  <option value="studio">Garsonieră</option>
+                  <option value="house">Casă</option>
+                  <option value="room">Cameră</option>
+                </select>
+              </div>
+
+              <div className="mobile-filter-field">
+                <label style={labelStyle}>
+                  Disponibil până la
+                </label>
+                <input
+                  type="date"
+                  value={romanianDateToISO(availableFrom)}
+                  min={new Date().toISOString().split("T")[0]}
+                  onChange={(event) =>
+                    setAvailableFrom(
+                      isoDateToRomanian(
+                        event.target.value
+                      )
+                    )
+                  }
+                  style={inputStyle}
+                />
+              </div>
+
+              <div className="mobile-filter-field">
+                <label style={labelStyle}>
+                  Sortare
+                </label>
+                <select
+                  value={sort}
+                  onChange={(event) =>
+                    setSort(event.target.value)
+                  }
+                  style={inputStyle}
+                >
+                  <option value="newest">Cele mai noi</option>
+                  <option value="price_asc">
+                    Preț crescător
+                  </option>
+                  <option value="price_desc">
+                    Preț descrescător
+                  </option>
+                  <option value="surface_desc">
+                    Suprafață descrescător
+                  </option>
+                </select>
+              </div>
+
+              <MobileFilterActions
+                onApply={applyMobileFilters}
+                onReset={resetFilters}
+              />
+            </div>
+          )}
+        </div>
+
         <form
+          className="desktop-filter-form"
           onSubmit={handleSubmit}
           style={{
             background: "#FFFFFF",
@@ -3358,6 +3731,10 @@ export default function CityListingsPage() {
       </section>
 
       <style jsx global>{`
+        .mobile-filter-bar {
+          display: none;
+        }
+
         @media (max-width: 900px) {
           .filter-grid {
             grid-template-columns: repeat(
@@ -3375,6 +3752,113 @@ export default function CityListingsPage() {
         }
 
         @media (max-width: 620px) {
+          .desktop-filter-form {
+            display: none !important;
+          }
+
+          .mobile-filter-bar {
+            display: block;
+            margin-bottom: 12px;
+          }
+
+          .mobile-filter-chips {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            overflow-x: auto;
+            padding: 1px 1px 5px;
+            scrollbar-width: none;
+          }
+
+          .mobile-filter-chips::-webkit-scrollbar {
+            display: none;
+          }
+
+          .mobile-filter-chip {
+            flex: 0 0 auto;
+            height: 32px;
+            padding: 0 12px;
+            border: 1px solid #CBD5E1;
+            border-radius: 999px;
+            background: #FFFFFF;
+            color: #172554;
+            font-family: inherit;
+            font-size: 10px;
+            font-weight: 800;
+            cursor: pointer;
+            white-space: nowrap;
+          }
+
+          .mobile-filter-chip-active {
+            border-color: #172554;
+            background: #172554;
+            color: #FFFFFF;
+          }
+
+          .mobile-filter-panel {
+            margin-top: 7px;
+            padding: 13px;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+          }
+
+          .mobile-more-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 11px;
+          }
+
+          .mobile-filter-panel-title {
+            color: #172554;
+            font-size: 12px;
+            font-weight: 900;
+            margin-bottom: 1px;
+          }
+
+          .mobile-filter-two-columns {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+          }
+
+          .mobile-filter-field {
+            width: 100%;
+          }
+
+          .mobile-filter-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 7px;
+            margin-top: 2px;
+          }
+
+          .mobile-filter-reset,
+          .mobile-filter-apply {
+            height: 36px;
+            padding: 0 13px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 10px;
+            font-weight: 800;
+            cursor: pointer;
+          }
+
+          .mobile-filter-reset {
+            border: 1px solid #CBD5E1;
+            background: #FFFFFF;
+            color: #475569;
+          }
+
+          .mobile-filter-apply {
+            border: none;
+            background: #172554;
+            color: #FFFFFF;
+            box-shadow: 0 4px 10px rgba(23, 37, 84, 0.14);
+          }
+
           .filter-grid {
             grid-template-columns: 1fr !important;
           }
