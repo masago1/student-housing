@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import AccountButton from "./components/AccountButton";
 
 export default function MobileHomeClient({
   universities = [],
@@ -116,17 +117,7 @@ export default function MobileHomeClient({
           shaus
         </a>
 
-        <a
-          href="/cont"
-          style={{
-            color: "#172554",
-            textDecoration: "none",
-            fontSize: "11px",
-            fontWeight: "800",
-          }}
-        >
-          Contul meu
-        </a>
+        <AccountButton />
       </header>
 
       {/* HERO */}
