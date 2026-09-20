@@ -1,6 +1,7 @@
 import { supabase } from "./lib/supabase";
 import SearchBox from "./components/SearchBox";
 import AccountButton from "./components/AccountButton";
+import HomeDeviceRouter from "./HomeDeviceRouter";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,7 @@ export default async function Home() {
     citiesError ||
     neighborhoodsError;
 
-  return (
+  const desktopHome = (
     <main
       style={{
         margin: 0,
@@ -126,10 +127,12 @@ export default async function Home() {
         style={{
           height: "72px",
           background: "#ffffff",
-          borderBottom: "1px solid #e5e7eb",
+          borderBottom:
+            "1px solid #e5e7eb",
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent:
+            "space-between",
           padding: "0 7%",
         }}
       >
@@ -181,7 +184,8 @@ export default async function Home() {
         style={{
           maxWidth: "1180px",
           margin: "0 auto",
-          padding: "105px 30px 100px",
+          padding:
+            "105px 30px 100px",
           textAlign: "center",
         }}
       >
@@ -225,22 +229,29 @@ export default async function Home() {
           className="home-description"
           style={{
             maxWidth: "650px",
-            margin: "25px auto 40px",
+            margin:
+              "25px auto 40px",
             fontSize: "19px",
             lineHeight: "1.6",
             color: "#6b7280",
           }}
         >
-          Găsește apartamente și camere aproape de universitatea ta,
+          Găsește apartamente și
+          camere aproape de
+          universitatea ta,
           într-un singur loc.
         </p>
 
         {/* SEARCH */}
         <div className="home-search">
           <SearchBox
-            universities={universities || []}
+            universities={
+              universities || []
+            }
             cities={cities || []}
-            neighborhoods={neighborhoods || []}
+            neighborhoods={
+              neighborhoods || []
+            }
           />
         </div>
 
@@ -251,10 +262,19 @@ export default async function Home() {
               color: "#dc2626",
             }}
           >
-            Eroare Supabase: {error.message}
+            Eroare Supabase:{" "}
+            {error.message}
           </p>
         )}
       </section>
     </main>
+  );
+
+  return (
+    <HomeDeviceRouter
+      universities={universities || []}
+      cities={cities || []}
+      desktop={desktopHome}
+    />
   );
 }
