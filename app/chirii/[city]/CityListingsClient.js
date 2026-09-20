@@ -2455,7 +2455,9 @@ export default function CityListingsPage() {
               Aplică filtrele
             </button>
           </div>
-                        {/* REZULTATE */}
+        </form>
+
+        {/* REZULTATE */}
 
         <div
           style={{
@@ -3401,6 +3403,7 @@ export default function CityListingsPage() {
     </main>
   );
 }
+
 /* =========================
    STILURI
 ========================= */
@@ -3439,4 +3442,3 @@ const detailChipStyle = {
   fontSize: "9px",
   fontWeight: "800",
 };
-        </form>
