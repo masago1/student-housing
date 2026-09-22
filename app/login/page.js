@@ -356,8 +356,38 @@ export default function LoginPage() {
     }
   };
 
+  const handleRecovery = async (event) => {
+    event.preventDefault();
+    if (loading) return;
+
+    setError("");
+    setMessage("");
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      setError("Completează adresa de email.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error: recoveryError } = await supabase.auth.resetPasswordForEmail(
+        cleanEmail,
+        { redirectTo: `${window.location.origin}/reset-password` }
+      );
+      if (recoveryError) {
+        setError("Linkul nu a putut fi trimis. Încearcă din nou peste câteva minute.");
+        return;
+      }
+      setMessage("Dacă există un cont cu această adresă, vei primi un link pentru resetarea parolei. Verifică emailul.");
+    } catch {
+      setError("Linkul nu a putut fi trimis. Verifică conexiunea și încearcă din nou.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   /*
-    SCHIMBARE LOGIN / REGISTER
+    SCHIMBARE LOGIN / REGISTER / RECOVERY
   */
 
   const changeMode = (newMode) => {
@@ -475,6 +505,8 @@ export default function LoginPage() {
           >
             {mode === "login"
               ? "Intră în cont"
+              : mode === "recovery"
+              ? "Ai uitat parola?"
               : "Creează un cont"}
           </h1>
 
@@ -488,12 +520,14 @@ export default function LoginPage() {
           >
             {mode === "login"
               ? "Autentifică-te pentru a-ți administra anunțurile și mesajele."
+              : mode === "recovery"
+              ? "Introdu adresa de email a contului tău și îți trimitem un link pentru resetarea parolei."
               : "Creează-ți contul pentru a putea publica și administra anunțuri."}
           </p>
 
           {/* TABS */}
 
-          <div
+          {mode !== "recovery" && <div
             style={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
@@ -558,9 +592,9 @@ export default function LoginPage() {
             >
               Creează cont
             </button>
-          </div>
+          </div>}
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={mode === "recovery" ? handleRecovery : handleSubmit}>
             {/* NAME */}
 
             {mode === "register" && (
@@ -664,6 +698,7 @@ export default function LoginPage() {
 
             <input
               type="email"
+              required={mode === "recovery"}
               value={email}
               onChange={(event) =>
                 setEmail(event.target.value)
@@ -686,6 +721,7 @@ export default function LoginPage() {
 
             {/* PASSWORD */}
 
+            {mode !== "recovery" && <>
             <label
               style={{
                 display: "block",
@@ -725,6 +761,18 @@ export default function LoginPage() {
                     : "22px",
               }}
             />
+            </>}
+
+            {mode === "login" && (
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => changeMode("recovery")}
+                style={{ border: "none", background: "transparent", padding: "0 0 18px", borderRadius: "9px", color: "#2563eb", fontFamily: "inherit", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}
+              >
+                Ai uitat parola?
+              </button>
+            )}
 
             {/* CONFIRM PASSWORD */}
 
@@ -771,6 +819,7 @@ export default function LoginPage() {
 
             {error && (
               <div
+                role="alert"
                 style={{
                   background: "#fef2f2",
                   border: "1px solid #fecaca",
@@ -790,6 +839,7 @@ export default function LoginPage() {
 
             {message && (
               <div
+                role="status"
                 style={{
                   background: "#f0fdf4",
                   border: "1px solid #bbf7d0",
@@ -831,6 +881,8 @@ export default function LoginPage() {
                 ? "Se procesează..."
                 : mode === "login"
                 ? "Intră în cont"
+                : mode === "recovery"
+                ? "Trimite linkul de resetare"
                 : "Creează cont"}
             </button>
           </form>
@@ -844,12 +896,13 @@ export default function LoginPage() {
               margin: "22px 0 0",
             }}
           >
-            {mode === "login"
+            {mode === "recovery" ? "" : mode === "login"
               ? "Nu ai încă un cont? "
               : "Ai deja un cont? "}
 
             <button
               type="button"
+              disabled={mode === "recovery" && loading}
               onClick={() =>
                 changeMode(
                   mode === "login"
@@ -870,6 +923,8 @@ export default function LoginPage() {
             >
               {mode === "login"
                 ? "Creează cont"
+                : mode === "recovery"
+                ? "Înapoi la autentificare"
                 : "Intră în cont"}
             </button>
           </p>
