@@ -41,6 +41,7 @@ export default function DashboardPage() {
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [listingToDelete, setListingToDelete] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileChatOpen, setMobileChatOpen] = useState(false);
 
   /*
     ÎNCĂRCARE DASHBOARD
@@ -1661,6 +1662,7 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => {
+                setMobileChatOpen(false);
                 setActiveSection(
                   "messages"
                 );
@@ -2862,7 +2864,7 @@ export default function DashboardPage() {
                 />
               ) : (
                 <div
-                  className="messages-layout"
+                  className={`messages-layout${mobileChatOpen ? " is-mobile-chat-open" : ""}`}
                   style={{
                     display:
                       "grid",
@@ -2933,11 +2935,12 @@ export default function DashboardPage() {
                               conversation.id
                             }
                             type="button"
-                            onClick={() =>
+                            onClick={() => {
                               openConversation(
                                 conversation.id
-                              )
-                            }
+                              );
+                              setMobileChatOpen(true);
+                            }}
                             style={{
                               width:
                                 "100%",
@@ -3169,6 +3172,14 @@ export default function DashboardPage() {
                         "#F8FAFC",
                     }}
                   >
+                    <button
+                      type="button"
+                      className="dashboard-mobile-chat-back"
+                      aria-label="Înapoi la conversații"
+                      onClick={() => setMobileChatOpen(false)}
+                    >
+                      Înapoi
+                    </button>
                     {selectedConversation ? (
                       <>
                         <div
@@ -4139,7 +4150,8 @@ export default function DashboardPage() {
       )}
 
       <style jsx global>{`
-        .dashboard-mobile-menu {
+        .dashboard-mobile-menu,
+        .dashboard-mobile-chat-back {
           display: none;
         }
 
@@ -4349,7 +4361,29 @@ export default function DashboardPage() {
           }
 
           .dashboard-page .conversation-list {
-            max-height: 220px;
+            max-height: none;
+            border-bottom: none;
+          }
+
+          .dashboard-page .messages-layout:not(.is-mobile-chat-open) .chat-panel,
+          .dashboard-page .messages-layout.is-mobile-chat-open .conversation-list {
+            display: none !important;
+          }
+
+          .dashboard-mobile-chat-back {
+            display: block;
+            flex-shrink: 0;
+            width: 100%;
+            padding: 12px 14px;
+            border: none;
+            border-bottom: 1px solid #E2E8F0;
+            background: #FFFFFF;
+            color: #172554;
+            text-align: left;
+            font: inherit;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
           }
 
           .dashboard-page .conversation-list button > div:last-child > div {
