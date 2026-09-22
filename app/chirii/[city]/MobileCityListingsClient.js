@@ -1,9 +1,89 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import FavoriteButton from "../../components/FavoriteButton";
+
+const defaultFilters = {
+  minPrice: "", maxPrice: "", rooms: "",
+  minSurface: "", maxSurface: "", furnished: "",
+  bedrooms: "", bathrooms: "", propertyType: "",
+  availableFrom: "", sort: "newest",
+};
+
+const filterFields = {
+  "Preț": [
+    { name: "minPrice", label: "Preț minim (€)", type: "number" },
+    { name: "maxPrice", label: "Preț maxim (€)", type: "number" },
+  ],
+  "Camere": [
+    { name: "rooms", label: "Număr de camere", options: [["", "Oricâte"], ["1", "1"], ["2", "2"], ["3", "3"], ["4+", "4+"]] },
+  ],
+  "Suprafață": [
+    { name: "minSurface", label: "Suprafață minimă (m²)", type: "number" },
+    { name: "maxSurface", label: "Suprafață maximă (m²)", type: "number" },
+  ],
+  "Mobilat": [
+    { name: "furnished", label: "Mobilat", options: [["", "Oricare"], ["yes", "Da"], ["no", "Nu"]] },
+  ],
+  "Mai multe": [
+    { name: "bedrooms", label: "Dormitoare", options: [["", "Oricâte"], ["0", "0"], ["1", "1"], ["2", "2"], ["3", "3"], ["4+", "4+"]] },
+    { name: "bathrooms", label: "Băi", options: [["", "Oricâte"], ["1", "1"], ["2", "2"], ["3+", "3+"]] },
+    { name: "propertyType", label: "Tip proprietate", options: [["", "Toate"], ["apartment", "Apartament"], ["studio", "Garsonieră"], ["house", "Casă"], ["room", "Cameră"]] },
+    { name: "availableFrom", label: "Disponibilitate — disponibil până la", type: "date" },
+    { name: "sort", label: "Sortare", options: [["newest", "Cele mai noi"], ["price_asc", "Preț crescător"], ["price_desc", "Preț descrescător"], ["surface_desc", "Suprafață descrescătoare"]] },
+  ],
+};
+
+function filterListings(listings, filters) {
+  const numericValue = (value) =>
+    value == null || value === "" ? NaN : Number(value);
+  const inRange = (value, min, max) => {
+    if (min === "" && max === "") return true;
+    const number = numericValue(value);
+    return Number.isFinite(number) &&
+      (min === "" || number >= Number(min)) &&
+      (max === "" || number <= Number(max));
+  };
+  const matchesCount = (value, selected) => {
+    if (!selected) return true;
+    const number = numericValue(value);
+    return selected.endsWith("+")
+      ? number >= Number(selected.slice(0, -1))
+      : number === Number(selected);
+  };
+
+  const result = listings.filter((listing) =>
+    inRange(listing.price_monthly, filters.minPrice, filters.maxPrice) &&
+    inRange(listing.surface_m2, filters.minSurface, filters.maxSurface) &&
+    matchesCount(listing.rooms, filters.rooms) &&
+    matchesCount(listing.bedrooms, filters.bedrooms) &&
+    matchesCount(listing.bathrooms, filters.bathrooms) &&
+    (!filters.propertyType || listing.property_type === filters.propertyType) &&
+    (!filters.furnished || listing.furnished === (filters.furnished === "yes")) &&
+    (!filters.availableFrom || (listing.available_from &&
+      listing.available_from.slice(0, 10) <= filters.availableFrom))
+  );
+
+  const sortFields = {
+    price_asc: ["price_monthly", 1],
+    price_desc: ["price_monthly", -1],
+    surface_desc: ["surface_m2", -1],
+  };
+  return result.sort((a, b) => {
+    const sortField = sortFields[filters.sort];
+    if (sortField) {
+      const [field, direction] = sortField;
+      const first = numericValue(a[field]);
+      const second = numericValue(b[field]);
+      if (!Number.isFinite(first)) return Number.isFinite(second) ? 1 : 0;
+      if (!Number.isFinite(second)) return -1;
+      return (first - second) * direction;
+    }
+    return (Date.parse(b.created_at) || 0) - (Date.parse(a.created_at) || 0);
+  });
+}
 
 export default function MobileCityListingsClient() {
   const params = useParams();
@@ -14,6 +94,41 @@ export default function MobileCityListingsClient() {
 
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [openFilter, setOpenFilter] = useState(null);
+  const [draftFilters, setDraftFilters] = useState(defaultFilters);
+  const [appliedFilters, setAppliedFilters] = useState(defaultFilters);
+  const [filterError, setFilterError] = useState("");
+  const visibleListings = useMemo(
+    () => filterListings(listings, appliedFilters),
+    [listings, appliedFilters]
+  );
+
+  function applyFilters() {
+    for (const [min, max, label] of [
+      ["minPrice", "maxPrice", "Prețul"],
+      ["minSurface", "maxSurface", "Suprafața"],
+    ]) {
+      if ([min, max].some((key) => draftFilters[key] !== "" &&
+        (!Number.isFinite(Number(draftFilters[key])) || Number(draftFilters[key]) < 0))) {
+        setFilterError(`${label}: introdu valori pozitive sau zero.`);
+        return;
+      }
+      if (draftFilters[min] !== "" && draftFilters[max] !== "" &&
+        Number(draftFilters[min]) > Number(draftFilters[max])) {
+        setFilterError(`${label}: valoarea minimă nu poate depăși valoarea maximă.`);
+        return;
+      }
+    }
+    setFilterError("");
+    setAppliedFilters({ ...draftFilters });
+    setOpenFilter(null);
+  }
+
+  function resetFilters() {
+    setDraftFilters({ ...defaultFilters });
+    setAppliedFilters({ ...defaultFilters });
+    setFilterError("");
+  }
 
   useEffect(() => {
     async function loadListings() {
@@ -28,7 +143,10 @@ export default function MobileCityListingsClient() {
           price_monthly,
           rooms,
           bedrooms,
+          bathrooms,
           surface_m2,
+          property_type,
+          available_from,
           furnished,
           image_url,
           active,
@@ -164,8 +282,8 @@ export default function MobileCityListingsClient() {
           >
             {loading
               ? "Se încarcă..."
-              : `${listings.length} ${
-                  listings.length === 1
+              : `${visibleListings.length} ${
+                  visibleListings.length === 1
                     ? "proprietate"
                     : "proprietăți"
                 } disponibile`}
@@ -192,11 +310,14 @@ export default function MobileCityListingsClient() {
             <button
               key={filter}
               type="button"
+              onClick={() => setOpenFilter((current) => current === filter ? null : filter)}
+              aria-expanded={openFilter === filter}
+              aria-controls="mobile-city-filter-panel"
               style={{
                 flexShrink: 0,
                 border:
                   "1px solid #CBD5E1",
-                background: "#FFFFFF",
+                background: openFilter === filter ? "#E2E8F0" : "#FFFFFF",
                 color: "#172554",
                 borderRadius: "999px",
                 padding:
@@ -212,8 +333,51 @@ export default function MobileCityListingsClient() {
           ))}
         </div>
 
+        <div id="mobile-city-filter-panel" hidden={!openFilter}>
+          {openFilter && (
+            <section
+              aria-label={openFilter}
+              style={{ display: "flex", flexDirection: "column", gap: "14px", padding: "16px", marginBottom: "14px", background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: "12px" }}
+            >
+              {filterFields[openFilter].map((field) => {
+                const inputProps = {
+                  id: `mobile-filter-${field.name}`,
+                  value: draftFilters[field.name],
+                  onChange: (event) => {
+                    setDraftFilters((current) => ({ ...current, [field.name]: event.target.value }));
+                    setFilterError("");
+                  },
+                  style: { boxSizing: "border-box", width: "100%", minWidth: 0, minHeight: "44px", padding: "10px", border: "1px solid #CBD5E1", borderRadius: "9px", background: "#FFFFFF", color: "#172554", fontFamily: "inherit", fontSize: "16px" },
+                };
+                return (
+                  <div key={field.name} style={{ display: "flex", flexDirection: "column", gap: "6px", minWidth: 0 }}>
+                    <label htmlFor={inputProps.id} style={{ color: "#172554", fontSize: "12px", fontWeight: "800" }}>{field.label}</label>
+                    {field.options ? (
+                      <select {...inputProps}>
+                        {field.options.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                      </select>
+                    ) : (
+                      <input {...inputProps} type={field.type} min={field.type === "number" ? "0" : undefined} step={field.type === "number" ? "any" : undefined} inputMode={field.type === "number" ? "decimal" : undefined} />
+                    )}
+                  </div>
+                );
+              })}
+            </section>
+          )}
+        </div>
+
+        {filterError && <p role="alert" style={{ color: "#B91C1C", fontSize: "13px" }}>{filterError}</p>}
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "14px" }}>
+          <button type="button" onClick={applyFilters} style={{ minHeight: "44px", border: "none", borderRadius: "9px", background: "#172554", color: "#FFFFFF", fontFamily: "inherit", fontSize: "12px", fontWeight: "800" }}>
+            Aplică filtrele
+          </button>
+          <button type="button" onClick={resetFilters} style={{ minHeight: "44px", border: "1px solid #CBD5E1", borderRadius: "9px", background: "#FFFFFF", color: "#172554", fontFamily: "inherit", fontSize: "12px", fontWeight: "800" }}>
+            Resetează
+          </button>
+        </div>
+
         {!loading &&
-          listings.length === 0 && (
+          visibleListings.length === 0 && (
             <div
               style={{
                 background:
@@ -250,7 +414,7 @@ export default function MobileCityListingsClient() {
             gap: "12px",
           }}
         >
-          {listings.map(
+          {visibleListings.map(
             (listing) => (
               <article
                 key={listing.id}
