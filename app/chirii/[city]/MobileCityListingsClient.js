@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import FavoriteButton from "../../components/FavoriteButton";
+import AccountButton from "../../components/AccountButton";
 
 const defaultFilters = {
   minPrice: "", maxPrice: "", rooms: "",
@@ -233,17 +234,23 @@ export default function MobileCityListingsClient() {
           shaus
         </a>
 
-        <a
-          href="/cont"
+        <div
+          className="mobile-city-account"
           style={{
-            color: "#172554",
-            textDecoration: "none",
             fontSize: "11px",
             fontWeight: "800",
           }}
         >
-          Contul meu
-        </a>
+          <AccountButton />
+          <style>{`
+            .mobile-city-account > a {
+              color: #172554 !important;
+              padding: 0 !important;
+              border: 0 !important;
+              background: transparent !important;
+            }
+          `}</style>
+        </div>
       </header>
 
       <section
