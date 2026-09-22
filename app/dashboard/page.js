@@ -1777,6 +1777,7 @@ export default function DashboardPage() {
           {/* BUTON GLOBAL ÎNAPOI */}
 
           <div
+            className={activeSection === "messages" ? "dashboard-messages-history-back" : undefined}
             style={{
               width: "100%",
               display: "flex",
@@ -4193,6 +4194,10 @@ export default function DashboardPage() {
         }
 
         @media (max-width: 768px) {
+          .dashboard-messages-history-back {
+            display: none !important;
+          }
+
           .dashboard-page,
           .dashboard-page * {
             box-sizing: border-box;
