@@ -40,6 +40,7 @@ export default function DashboardPage() {
   // SINGURA ADĂUGARE: confirmare ieșire din cont
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [listingToDelete, setListingToDelete] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   /*
     ÎNCĂRCARE DASHBOARD
@@ -1463,6 +1464,7 @@ export default function DashboardPage() {
   }
   return (
     <main
+      className="dashboard-page"
       style={{
         minHeight: "100vh",
         background: "#F4F7FB",
@@ -1472,6 +1474,7 @@ export default function DashboardPage() {
       }}
     >
       <header
+        className="dashboard-header"
         style={{
           height: "72px",
           background: "#FFFFFF",
@@ -1504,6 +1507,7 @@ export default function DashboardPage() {
         </a>
 
         <div
+          className="dashboard-header-account"
           style={{
             display: "flex",
             alignItems: "center",
@@ -1553,8 +1557,23 @@ export default function DashboardPage() {
       >
         {/* SIDEBAR */}
 
+        <button
+          type="button"
+          className="dashboard-mobile-menu"
+          aria-expanded={mobileMenuOpen}
+          aria-controls="dashboard-navigation"
+          onClick={() => setMobileMenuOpen((open) => !open)}
+        >
+          <span>Meniu cont</span>
+          <span aria-hidden="true">{mobileMenuOpen ? "−" : "+"}</span>
+        </button>
+
         <aside
-          className="dashboard-sidebar"
+          id="dashboard-navigation"
+          className={`dashboard-sidebar${mobileMenuOpen ? " is-open" : ""}`}
+          onClick={(event) => {
+            if (event.target.closest("button")) setMobileMenuOpen(false);
+          }}
           style={{
             background: "#FFFFFF",
             borderRight:
@@ -1875,6 +1894,7 @@ export default function DashboardPage() {
               </div>
 
               <div
+                className="dashboard-section-heading"
                 style={{
                   display: "flex",
                   justifyContent:
@@ -1958,6 +1978,7 @@ export default function DashboardPage() {
             "listings" && (
             <>
               <div
+                className="dashboard-section-heading"
                 style={{
                   display: "flex",
                   justifyContent:
@@ -2137,6 +2158,7 @@ export default function DashboardPage() {
               )}
 
               <div
+                className="dashboard-profile-card"
                 style={{
                   maxWidth:
                     "620px",
@@ -3150,6 +3172,7 @@ export default function DashboardPage() {
                     {selectedConversation ? (
                       <>
                         <div
+                          className="dashboard-chat-header"
                           style={{
                             padding:
                               "16px 20px",
@@ -3258,6 +3281,7 @@ export default function DashboardPage() {
                         </div>
 
                         <div
+                          className="dashboard-chat-messages"
                           style={{
                             flex: 1,
                             overflowY:
@@ -3330,6 +3354,7 @@ export default function DashboardPage() {
                                     }}
                                   >
                                     <div
+                                      className="dashboard-message-bubble"
                                       style={{
                                         maxWidth:
                                           "72%",
@@ -3377,6 +3402,7 @@ export default function DashboardPage() {
                         </div>
 
                         <div
+                          className="dashboard-chat-composer"
                           style={{
                             padding:
                               "14px",
@@ -3574,6 +3600,7 @@ export default function DashboardPage() {
                   {favorites.map(
                     (listing) => (
                       <div
+                        className="dashboard-property-card"
                         key={
                           listing.id
                         }
@@ -3828,6 +3855,7 @@ export default function DashboardPage() {
 
       {listingToDelete && (
         <div
+          className="dashboard-modal"
           onClick={() =>
             setListingToDelete(null)
           }
@@ -3964,6 +3992,7 @@ export default function DashboardPage() {
       {/* SINGURA ADĂUGARE: modal confirmare ieșire din cont */}
       {logoutConfirmOpen && (
         <div
+          className="dashboard-modal"
           onClick={() =>
             setLogoutConfirmOpen(
               false
@@ -4110,6 +4139,10 @@ export default function DashboardPage() {
       )}
 
       <style jsx global>{`
+        .dashboard-mobile-menu {
+          display: none;
+        }
+
         @media (max-width: 900px) {
           .dashboard-layout {
             grid-template-columns: 1fr !important;
@@ -4144,6 +4177,266 @@ export default function DashboardPage() {
           .dashboard-content {
             padding-left: 16px !important;
             padding-right: 16px !important;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .dashboard-page,
+          .dashboard-page * {
+            box-sizing: border-box;
+            min-width: 0;
+          }
+
+          .dashboard-page {
+            width: 100%;
+            overflow-wrap: anywhere;
+          }
+
+          .dashboard-page button,
+          .dashboard-page input,
+          .dashboard-page textarea {
+            max-width: 100%;
+          }
+
+          .dashboard-page button {
+            min-height: 44px;
+          }
+
+          .dashboard-header {
+            height: auto !important;
+            min-height: 72px;
+            padding: 14px 16px !important;
+            gap: 16px;
+          }
+
+          .dashboard-header > a {
+            flex-shrink: 0;
+          }
+
+          .dashboard-header-account {
+            flex: 1;
+            justify-content: flex-end;
+            gap: 10px !important;
+          }
+
+          .dashboard-header-account > span {
+            overflow-wrap: anywhere;
+            text-align: right;
+            font-size: 12px !important;
+          }
+
+          .dashboard-header-account > button {
+            flex-shrink: 0;
+          }
+
+          .dashboard-page .dashboard-layout {
+            grid-template-columns: minmax(0, 1fr) !important;
+            align-content: start;
+          }
+
+          .dashboard-mobile-menu {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 16px 16px 0;
+            padding: 12px 14px;
+            border: 1px solid #E2E8F0;
+            border-radius: 10px;
+            background: #FFFFFF;
+            color: #172554;
+            font: inherit;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+          }
+
+          .dashboard-page .dashboard-sidebar {
+            display: none;
+            padding: 12px !important;
+            margin: 8px 16px 0;
+            border: 1px solid #E2E8F0 !important;
+            border-radius: 12px;
+          }
+
+          .dashboard-page .dashboard-sidebar.is-open {
+            display: block;
+          }
+
+          .dashboard-sidebar > div:first-child {
+            display: none;
+          }
+
+          .dashboard-sidebar > div:last-child {
+            margin-top: 10px !important;
+            padding-top: 12px !important;
+          }
+
+          .dashboard-page .dashboard-content {
+            padding: 20px 16px 48px !important;
+          }
+
+          .dashboard-content h1 {
+            font-size: 28px !important;
+          }
+
+          .dashboard-section-heading {
+            align-items: flex-start !important;
+            flex-direction: column;
+            gap: 12px !important;
+          }
+
+          .dashboard-section-heading > button {
+            white-space: normal !important;
+          }
+
+          .dashboard-page .stats-grid {
+            grid-template-columns: minmax(0, 1fr) !important;
+            gap: 12px !important;
+            margin-bottom: 28px !important;
+          }
+
+          .dashboard-property-card {
+            grid-template-columns: minmax(0, 1fr) !important;
+            gap: 12px !important;
+          }
+
+          .dashboard-property-card > div:first-child {
+            width: 100% !important;
+            height: 180px !important;
+          }
+
+          .dashboard-property-card > div:nth-child(2) div {
+            white-space: normal !important;
+            overflow-wrap: anywhere;
+          }
+
+          .dashboard-property-card > div:last-child {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px !important;
+          }
+
+          .dashboard-property-card > div:last-child button {
+            font-size: 12px !important;
+            white-space: normal;
+          }
+
+          .dashboard-profile-card {
+            width: 100%;
+            padding: 18px !important;
+          }
+
+          .dashboard-profile-card input,
+          .dashboard-profile-card select {
+            width: 100%;
+            font-size: 16px !important;
+          }
+
+          .dashboard-profile-card label {
+            font-size: 14px !important;
+          }
+
+          .dashboard-profile-card button {
+            width: 100%;
+            white-space: normal;
+            font-size: 14px !important;
+          }
+
+          .dashboard-page .messages-layout {
+            width: 100%;
+            grid-template-columns: minmax(0, 1fr) !important;
+          }
+
+          .dashboard-page .conversation-list {
+            max-height: 220px;
+          }
+
+          .dashboard-page .conversation-list button > div:last-child > div {
+            white-space: normal !important;
+            overflow-wrap: anywhere;
+          }
+
+          .dashboard-page .conversation-list button > div:last-child > div:last-child {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+          }
+
+          .dashboard-page .conversation-list button > div:last-child > div:first-child > div {
+            white-space: normal !important;
+          }
+
+          .dashboard-page .chat-panel {
+            height: 65vh;
+            height: 65svh;
+            min-height: 420px;
+            max-height: 640px;
+          }
+
+          .dashboard-chat-header {
+            padding: 14px !important;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+            gap: 10px !important;
+          }
+
+          .dashboard-chat-header > div {
+            flex: 1 1 100%;
+          }
+
+          .dashboard-chat-header > div > div {
+            white-space: normal !important;
+          }
+
+          .dashboard-chat-messages {
+            min-height: 0;
+            padding: 14px !important;
+          }
+
+          .dashboard-message-bubble {
+            max-width: 90% !important;
+            flex-shrink: 0;
+            font-size: 14px !important;
+          }
+
+          .dashboard-chat-composer {
+            flex-shrink: 0;
+          }
+
+          .dashboard-chat-composer > div {
+            flex-direction: column;
+            align-items: stretch !important;
+          }
+
+          .dashboard-chat-composer textarea {
+            flex: auto !important;
+            width: 100%;
+            font-size: 16px !important;
+          }
+
+          .dashboard-chat-composer button {
+            width: 100%;
+            font-size: 13px !important;
+          }
+
+          .dashboard-modal {
+            padding: 16px !important;
+          }
+
+          .dashboard-modal > div {
+            max-height: calc(100dvh - 32px);
+            overflow-y: auto;
+            padding: 20px !important;
+          }
+
+          .dashboard-modal > div > div:last-child {
+            flex-wrap: wrap;
+          }
+
+          .dashboard-modal button {
+            flex: 1 1 120px;
+            white-space: normal;
           }
         }
       `}</style>
@@ -4277,6 +4570,7 @@ function ListingsList({
       {listings.map(
         (listing) => (
           <div
+            className="dashboard-property-card"
             key={listing.id}
             style={{
               background:
