@@ -2297,13 +2297,15 @@ export default function DashboardPage() {
                         boxSizing:
                           "border-box",
                         border:
-                          "1px solid #CBD5E1",
+                          savedNickname ? "1px solid #E2E8F0" : "1px solid #CBD5E1",
                         borderRadius:
                           "9px",
                         padding:
                           "0 12px",
                         color:
-                          "#172554",
+                          savedNickname ? "#64748B" : "#172554",
+                        background: savedNickname ? "#F8FAFC" : "#FFFFFF",
+                        cursor: savedNickname ? "default" : "text",
                         fontFamily:
                           "inherit",
                         fontSize:

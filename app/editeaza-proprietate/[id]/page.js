@@ -2941,6 +2941,14 @@ preview:
             "none",
     };
 
+    const readOnlyInputStyle = {
+        ...inputStyle,
+        background: "#F8FAFC",
+        color: "#64748B",
+        border: "1px solid #E2E8F0",
+        cursor: "default",
+    };
+
     const textareaStyle = {
         width:
             "100%",
@@ -6196,7 +6204,7 @@ preview:
                                     placeholder="Nickname"
 
                                     style={
-                                        inputStyle
+                                        readOnlyInputStyle
                                     }
                                 />
                             </div>
@@ -6224,7 +6232,7 @@ preview:
                                     placeholder="07xx xxx xxx"
 
                                     style={
-                                        inputStyle
+                                        readOnlyInputStyle
                                     }
                                 />
                             </div>
@@ -6252,7 +6260,7 @@ preview:
                                     placeholder="email@exemplu.ro"
 
                                     style={
-                                        inputStyle
+                                        readOnlyInputStyle
                                     }
                                 />
                             </div>
