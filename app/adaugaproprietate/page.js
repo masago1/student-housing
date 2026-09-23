@@ -51,6 +51,27 @@ export default function AdaugaProprietatePage() {
     ========================= */
 
     const [calendarOpen, setCalendarOpen] = useState(false);
+    const calendarRef = useRef(null);
+
+    useEffect(() => {
+        if (!calendarOpen) return;
+
+        const handleOutsidePointer = (event) => {
+            if (calendarRef.current && !calendarRef.current.contains(event.target)) {
+                setCalendarOpen(false);
+            }
+        };
+        const handleEscape = (event) => {
+            if (event.key === "Escape") setCalendarOpen(false);
+        };
+
+        document.addEventListener("pointerdown", handleOutsidePointer, true);
+        document.addEventListener("keydown", handleEscape);
+        return () => {
+            document.removeEventListener("pointerdown", handleOutsidePointer, true);
+            document.removeEventListener("keydown", handleEscape);
+        };
+    }, [calendarOpen]);
 
     const [calendarMonth, setCalendarMonth] = useState(() => {
         const now = new Date();
@@ -3258,6 +3279,7 @@ export default function AdaugaProprietatePage() {
                             </div>
 
                             <div
+                                ref={calendarRef}
                                 style={{
                                     ...fieldStyle,
                                     position: "relative",
