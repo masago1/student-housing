@@ -1520,6 +1520,21 @@ preview:
                 availableSlots
             );
 
+        // Validate before creating previews or adding any new files to state.
+        for (const file of selectedFiles) {
+            if (!file.type.startsWith("image/")) {
+                setError("Poți încărca doar fișiere de tip imagine.");
+                event.target.value = "";
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) {
+                setError("Fiecare fotografie trebuie să aibă maximum 10 MB.");
+                event.target.value = "";
+                return;
+            }
+        }
+
         const newImages =
             selectedFiles.map(
                 (
