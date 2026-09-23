@@ -10,7 +10,7 @@ const defaultFilters = {
   minPrice: "", maxPrice: "", rooms: "",
   minSurface: "", maxSurface: "", furnished: "",
   bedrooms: "", bathrooms: "", propertyType: "",
-  availableFrom: "", sort: "newest",
+  availableFrom: "", sort: "newest", zone: "",
 };
 
 const filterFields = {
@@ -29,6 +29,7 @@ const filterFields = {
     { name: "furnished", label: "Mobilat", options: [["", "Oricare"], ["yes", "Da"], ["no", "Nu"]] },
   ],
   "Mai multe": [
+    { name: "zone", label: "Cartier", options: [["", "Toate cartierele"]] },
     { name: "bedrooms", label: "Dormitoare", options: [["", "Oricâte"], ["0", "0"], ["1", "1"], ["2", "2"], ["3", "3"], ["4+", "4+"]] },
     { name: "bathrooms", label: "Băi", options: [["", "Oricâte"], ["1", "1"], ["2", "2"], ["3+", "3+"]] },
     { name: "propertyType", label: "Tip proprietate", options: [["", "Toate"], ["apartment", "Apartament"], ["studio", "Garsonieră"], ["house", "Casă"], ["room", "Cameră"]] },
@@ -56,6 +57,7 @@ function filterListings(listings, filters) {
   };
 
   const result = listings.filter((listing) =>
+    (!filters.zone || listing.neighborhoods?.slug === filters.zone) &&
     inRange(listing.price_monthly, filters.minPrice, filters.maxPrice) &&
     inRange(listing.surface_m2, filters.minSurface, filters.maxSurface) &&
     matchesCount(listing.rooms, filters.rooms) &&
@@ -99,10 +101,20 @@ export default function MobileCityListingsClient() {
   const [draftFilters, setDraftFilters] = useState(defaultFilters);
   const [appliedFilters, setAppliedFilters] = useState(defaultFilters);
   const [filterError, setFilterError] = useState("");
+  const [neighborhoods, setNeighborhoods] = useState([]);
+  const [neighborhoodsLoading, setNeighborhoodsLoading] = useState(true);
+  const [neighborhoodsError, setNeighborhoodsError] = useState("");
   const visibleListings = useMemo(
     () => filterListings(listings, appliedFilters),
     [listings, appliedFilters]
   );
+
+  function updateNeighborhoodUrl(zone) {
+    const url = new URL(window.location.href);
+    if (zone) url.searchParams.set("zona", zone);
+    else url.searchParams.delete("zona");
+    window.history.replaceState(window.history.state, "", url);
+  }
 
   function applyFilters() {
     for (const [min, max, label] of [
@@ -122,14 +134,57 @@ export default function MobileCityListingsClient() {
     }
     setFilterError("");
     setAppliedFilters({ ...draftFilters });
+    updateNeighborhoodUrl(draftFilters.zone);
     setOpenFilter(null);
   }
 
   function resetFilters() {
     setDraftFilters({ ...defaultFilters });
     setAppliedFilters({ ...defaultFilters });
+    updateNeighborhoodUrl("");
     setFilterError("");
   }
+
+  useEffect(() => {
+    let cancelled = false;
+    setNeighborhoods([]);
+    setNeighborhoodsLoading(true);
+    setNeighborhoodsError("");
+    setDraftFilters((current) => ({ ...current, zone: "" }));
+    setAppliedFilters((current) => ({ ...current, zone: "" }));
+
+    async function loadNeighborhoods() {
+      try {
+        const { data: city, error: cityError } = await supabase
+          .from("cities")
+          .select("id")
+          .eq("slug", citySlug)
+          .maybeSingle();
+        if (cityError) throw cityError;
+        const { data, error } = city
+          ? await supabase.from("neighborhoods")
+              .select("id, name, slug")
+              .eq("city_id", city.id)
+              .order("name")
+          : { data: [], error: null };
+        if (error) throw error;
+        if (cancelled) return;
+        const options = data || [];
+        setNeighborhoods(options);
+        const requestedZone = new URL(window.location.href).searchParams.get("zona");
+        const zone = options.some((item) => item.slug === requestedZone) ? requestedZone : "";
+        setDraftFilters((current) => ({ ...current, zone }));
+        setAppliedFilters((current) => ({ ...current, zone }));
+      } catch {
+        if (!cancelled) setNeighborhoodsError("Cartierele nu au putut fi încărcate. Încearcă să reîncarci pagina.");
+      } finally {
+        if (!cancelled) setNeighborhoodsLoading(false);
+      }
+    }
+
+    loadNeighborhoods();
+    return () => { cancelled = true; };
+  }, [citySlug]);
 
   useEffect(() => {
     async function loadListings() {
@@ -153,7 +208,8 @@ export default function MobileCityListingsClient() {
           active,
           created_at,
           neighborhoods (
-            name
+            name,
+            slug
           )
         `)
         .eq("active", true)
@@ -347,6 +403,9 @@ export default function MobileCityListingsClient() {
               style={{ display: "flex", flexDirection: "column", gap: "14px", padding: "16px", marginBottom: "14px", background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: "12px" }}
             >
               {filterFields[openFilter].map((field) => {
+                const options = field.name === "zone"
+                  ? [["", "Toate cartierele"], ...neighborhoods.map((item) => [item.slug, item.name])]
+                  : field.options;
                 const inputProps = {
                   id: `mobile-filter-${field.name}`,
                   value: draftFilters[field.name],
@@ -359,13 +418,14 @@ export default function MobileCityListingsClient() {
                 return (
                   <div key={field.name} style={{ display: "flex", flexDirection: "column", gap: "6px", minWidth: 0 }}>
                     <label htmlFor={inputProps.id} style={{ color: "#172554", fontSize: "12px", fontWeight: "800" }}>{field.label}</label>
-                    {field.options ? (
-                      <select {...inputProps}>
-                        {field.options.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                    {options ? (
+                      <select {...inputProps} disabled={field.name === "zone" && neighborhoodsLoading}>
+                        {options.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                       </select>
                     ) : (
                       <input {...inputProps} type={field.type} min={field.type === "number" ? "0" : undefined} step={field.type === "number" ? "any" : undefined} inputMode={field.type === "number" ? "decimal" : undefined} />
                     )}
+                    {field.name === "zone" && neighborhoodsError && <p role="status" style={{ margin: 0, fontSize: "12px", color: "#B91C1C" }}>{neighborhoodsError}</p>}
                   </div>
                 );
               })}
