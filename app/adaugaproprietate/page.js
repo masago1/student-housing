@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import { isValidRomanianMobilePhone } from "../lib/phone";
 
 export default function AdaugaProprietatePage() {
     const router = useRouter();
@@ -166,7 +167,7 @@ export default function AdaugaProprietatePage() {
             const profilePhone =
                 profile?.phone?.trim() || "";
 
-            if (!profilePhone) {
+            if (!isValidRomanianMobilePhone(profilePhone)) {
                 router.replace(
                     "/dashboard?section=profile&required=phone"
                 );
@@ -1299,7 +1300,7 @@ export default function AdaugaProprietatePage() {
                 currentProfile?.phone?.trim() ||
                 "";
 
-            if (!currentPhone) {
+            if (!isValidRomanianMobilePhone(currentPhone)) {
                 router.push(
                     "/dashboard?section=profile&required=phone"
                 );

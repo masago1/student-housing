@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import { isValidRomanianMobilePhone } from "../lib/phone";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -27,6 +28,7 @@ export default function DashboardPage() {
   const [profileName, setProfileName] = useState("");
   const [profileNickname, setProfileNickname] = useState("");
   const [profilePhone, setProfilePhone] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState("");
   const [phoneRequired, setPhoneRequired] = useState(false);
@@ -931,6 +933,7 @@ export default function DashboardPage() {
         profilePhone.trim();
 
       setProfileSuccess("");
+      setPhoneError("");
       setError("");
 
       if (!cleanName) {
@@ -999,14 +1002,12 @@ export default function DashboardPage() {
         return;
       }
 
-      if (
-        cleanPhone &&
-        cleanPhone.length < 7
-      ) {
-        setError(
-          "Numărul de telefon nu este valid."
+      if (cleanPhone && !isValidRomanianMobilePhone(cleanPhone)) {
+        setPhoneError(
+          !/^[0-9]{10}$/.test(cleanPhone)
+            ? "Numărul de telefon trebuie să conțină 10 cifre."
+            : "Numărul de telefon trebuie să înceapă cu 07."
         );
-
         return;
       }
 
@@ -1732,7 +1733,7 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => {
-                if (!profilePhone.trim()) {
+                if (!isValidRomanianMobilePhone(profilePhone)) {
                   setPhoneRequired(true);
                   setActiveSection("profile");
 
@@ -2029,7 +2030,7 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (!profilePhone.trim()) {
+                    if (!isValidRomanianMobilePhone(profilePhone)) {
                       setPhoneRequired(true);
                       setActiveSection("profile");
 
@@ -2151,12 +2152,8 @@ export default function DashboardPage() {
                       "1.5",
                   }}
                 >
-                  Pentru a publica
-                  un anunț,
-                  actualizează
-                  profilul cu
-                  numărul tău de
-                  telefon.
+                  Pentru a publica un anunț, adaugă în profil un număr de telefon valid,
+                  format din 10 cifre și care începe cu 07.
                 </div>
               )}
 
@@ -2396,17 +2393,18 @@ export default function DashboardPage() {
 
                     <input
                       type="tel"
+                      inputMode="numeric"
+                      aria-label="Număr de telefon"
+                      aria-invalid={Boolean(phoneError)}
+                      aria-describedby={phoneError ? "profile-phone-error" : undefined}
                       value={
                         profilePhone
                       }
                       onChange={(
                         event
                       ) => {
-                        setProfilePhone(
-                          event
-                            .target
-                            .value
-                        );
+                        setProfilePhone(event.target.value.replace(/[^0-9]/g, "").slice(0, 10));
+                        setPhoneError("");
 
                         setProfileSuccess(
                           ""
@@ -2442,6 +2440,16 @@ export default function DashboardPage() {
                             : "none",
                       }}
                     />
+                    {phoneError && (
+                      <div
+                        id="profile-phone-error"
+                        role="alert"
+                        style={{ marginTop: "7px", color: "#B91C1C", fontSize: "12px", lineHeight: "1.5", overflowWrap: "anywhere" }}
+                      >
+                        {phoneError}
+                      </div>
+                    )}
+
 
                     <div
                       style={{
