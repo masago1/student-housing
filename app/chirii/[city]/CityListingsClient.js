@@ -9,6 +9,7 @@ import {
 import { useParams } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import FavoriteButton from "../../components/FavoriteButton";
+import AccountButton from "../../components/AccountButton";
 
 export const dynamic = "force-dynamic";
 
@@ -1990,6 +1991,8 @@ export default function CityListingsPage() {
           shaus
         </a>
 
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "11px", fontWeight: "800", whiteSpace: "nowrap" }}>
+          <AccountButton />
         <a
           href="/adaugaproprietate"
           style={{
@@ -2002,8 +2005,9 @@ export default function CityListingsPage() {
             fontWeight: "800",
           }}
         >
-          Adaugă proprietatea
+          + Adaugă anunț
         </a>
+        </div>
       </header>
 
       <section

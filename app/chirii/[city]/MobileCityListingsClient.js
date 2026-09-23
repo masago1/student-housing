@@ -293,13 +293,20 @@ export default function MobileCityListingsClient() {
         <div
           className="mobile-city-account"
           style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            whiteSpace: "nowrap",
             fontSize: "11px",
             fontWeight: "800",
           }}
         >
           <AccountButton />
+          <a className="mobile-city-add-listing" href="/adaugaproprietate" style={{ background: "#172554", color: "#FFFFFF", textDecoration: "none", borderRadius: "9px", padding: "10px 12px" }}>
+            + Adaugă anunț
+          </a>
           <style>{`
-            .mobile-city-account > a {
+            .mobile-city-account > a:not(.mobile-city-add-listing) {
               color: #172554 !important;
               padding: 0 !important;
               border: 0 !important;

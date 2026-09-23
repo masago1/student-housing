@@ -9,6 +9,7 @@ import {
 import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import FavoriteButton from "../../../components/FavoriteButton";
+import AccountButton from "../../../components/AccountButton";
 
 export const dynamic = "force-dynamic";
 
@@ -1889,7 +1890,9 @@ export default function UniversityListingsPage() {
 
       <header
         style={{
-          height: "72px",
+          minHeight: "72px",
+          flexWrap: "wrap",
+          gap: "12px",
           background: "#FFFFFF",
           borderBottom:
             "1px solid #E2E8F0",
@@ -1897,7 +1900,7 @@ export default function UniversityListingsPage() {
           alignItems: "center",
           justifyContent:
             "space-between",
-          padding: "0 6%",
+          padding: "12px 6%",
           boxSizing: "border-box",
         }}
       >
@@ -1938,6 +1941,12 @@ export default function UniversityListingsPage() {
         >
           Înapoi la căutare
         </a>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "10px", marginLeft: "auto", fontSize: "11px", fontWeight: "800", whiteSpace: "nowrap" }}>
+          <AccountButton />
+          <a href="/adaugaproprietate" style={{ background: "#172554", color: "#FFFFFF", textDecoration: "none", borderRadius: "9px", padding: "10px 15px", fontSize: "11px", fontWeight: "800" }}>
+            + Adaugă anunț
+          </a>
+        </div>
       </header>
 
       <section
