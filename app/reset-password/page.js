@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "../lib/supabase";
+import { supabase, isPasswordRecoverySession } from "../lib/supabase";
 
 const invalidLinkMessage =
   "Linkul de resetare este invalid sau a expirat. Revino la autentificare și solicită un link nou.";
@@ -57,7 +57,7 @@ export default function ResetPasswordPage() {
 
         const { data, error: userError } = await supabase.auth.getUser();
         if (!mounted) return;
-        if (userError || !data?.user) {
+        if (userError || !data?.user || !isPasswordRecoverySession(data.user)) {
           setError(invalidLinkMessage);
           return;
         }
@@ -71,7 +71,12 @@ export default function ResetPasswordPage() {
       }
     }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (mounted && !hasLinkError && event === "PASSWORD_RECOVERY" && session?.user) {
+        setCanReset(true);
+        setError("");
+        setCheckingSession(false);
+      }
       if (mounted && event === "SIGNED_OUT") {
         setCanReset(false);
       }
@@ -188,7 +193,7 @@ export default function ResetPasswordPage() {
             </button>
           ) : (
             <p style={{ textAlign: "center", fontSize: "13px", lineHeight: "1.5", margin: "22px 0 0" }}>
-              <a href="/login" style={{ color: "#2563eb", textDecoration: "none", fontWeight: "700" }}>Înapoi la autentificare</a>
+              <button type="button" onClick={returnToLogin} disabled={loading} style={{ border: "none", background: "transparent", padding: 0, color: "#2563eb", fontFamily: "inherit", fontSize: "inherit", fontWeight: "700", cursor: "pointer" }}>Înapoi la autentificare</button>
             </p>
           )}
         </div>

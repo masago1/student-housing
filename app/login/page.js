@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "../lib/supabase";
+import { supabase, isPasswordRecoverySession } from "../lib/supabase";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -48,7 +48,7 @@ export default function LoginPage() {
         }
 
         if (session?.user) {
-          router.replace("/dashboard");
+          router.replace(isPasswordRecoverySession(session.user) ? "/reset-password" : "/dashboard");
           return;
         }
 
