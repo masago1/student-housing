@@ -1,161 +1,60 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import mapboxgl from "mapbox-gl";
+import { useEffect, useState } from "react";
+import { useConsent } from "./ConsentProvider";
 
+export default function ApproximateLocationMap({ latitude, longitude }) {
+  const { externalServices, saveChoice } = useConsent();
+  const [MapComponent, setMapComponent] = useState(null);
+  const [loadError, setLoadError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+  useEffect(() => {
+    if (!externalServices) return;
+    let cancelled = false;
+    setLoadError(false);
+    // This is the only path to the module importing Mapbox GL JS.
+    import("./MapboxLocationMap")
+      .then((module) => { if (!cancelled) setMapComponent(() => module.default); })
+      .catch(() => { if (!cancelled) setLoadError(true); });
+    return () => { cancelled = true; };
+  }, [externalServices, attempt]);
 
-function createCircle(center, radiusInMeters = 500, points = 64) {
-    const [longitude, latitude] = center;
+  if (externalServices && MapComponent) {
+    return <MapComponent latitude={latitude} longitude={longitude} />;
+  }
 
-    const coordinates = [];
-    const earthRadius = 6371000;
-    const latitudeRadians = (latitude * Math.PI) / 180;
-
-    for (let i = 0; i <= points; i++) {
-        const angle = (i / points) * Math.PI * 2;
-
-        const dx = Math.cos(angle) * radiusInMeters;
-        const dy = Math.sin(angle) * radiusInMeters;
-
-        const deltaLatitude =
-            (dy / earthRadius) * (180 / Math.PI);
-
-        const deltaLongitude =
-            (dx /
-                (earthRadius * Math.cos(latitudeRadians))) *
-            (180 / Math.PI);
-
-        coordinates.push([
-            longitude + deltaLongitude,
-            latitude + deltaLatitude,
-        ]);
-    }
-
-    return {
-        type: "Feature",
-        properties: {},
-        geometry: {
-            type: "Polygon",
-            coordinates: [coordinates],
-        },
-    };
+  return (
+    <section aria-label="Locație aproximativă" style={{
+      width: "100%", minHeight: "360px", boxSizing: "border-box",
+      borderRadius: "16px", border: "1px solid #e5e7eb", background: "#f8fafc",
+      padding: "24px", display: "flex", flexDirection: "column",
+      justifyContent: "center", alignItems: "center", textAlign: "center", gap: "14px",
+      overflowWrap: "anywhere",
+    }}>
+      <h3 style={{ fontSize: "18px", margin: 0 }}>Locație aproximativă</h3>
+      {externalServices ? (
+        <>
+          <p role="status" style={{ margin: 0, color: "#475569" }}>
+            {loadError ? "Harta nu a putut fi încărcată." : "Se încarcă harta…"}
+          </p>
+          {loadError && <button type="button" onClick={() => setAttempt((value) => value + 1)} style={buttonStyle}>Încearcă din nou</button>}
+        </>
+      ) : (
+        <>
+          <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>Pentru afișarea hărții interactive folosim Mapbox.</p>
+          <p style={{ margin: 0, color: "#475569", fontSize: "14px", lineHeight: 1.6 }}>
+            Prin activare, permiți serviciile externe pentru hărți pe shaus. Mapbox poate stoca identificatori în browser și primi date despre utilizarea hărții. Poți retrage acordul din „Preferințe cookies”.
+          </p>
+          <button type="button" onClick={() => saveChoice(true)} style={buttonStyle}>Activează harta</button>
+        </>
+      )}
+    </section>
+  );
 }
 
-export default function ApproximateLocationMap({
-    latitude,
-    longitude,
-}) {
-    const containerRef = useRef(null);
-    const mapRef = useRef(null);
-
-    useEffect(() => {
-        const lat = Number(latitude);
-        const lng = Number(longitude);
-
-        if (
-            !MAPBOX_TOKEN ||
-            !containerRef.current ||
-            !Number.isFinite(lat) ||
-            !Number.isFinite(lng)
-        ) {
-            return;
-        }
-
-        mapboxgl.accessToken = MAPBOX_TOKEN;
-
-        const map = new mapboxgl.Map({
-            container: containerRef.current,
-            style: "mapbox://styles/mapbox/streets-v12",
-            center: [lng, lat],
-            zoom: 14.2,
-            attributionControl: true,
-        });
-
-        mapRef.current = map;
-
-        map.addControl(
-            new mapboxgl.NavigationControl({
-                showCompass: false,
-            }),
-            "top-right"
-        );
-
-        map.on("load", () => {
-            if (!map.getSource("approximate-location")) {
-                map.addSource("approximate-location", {
-                    type: "geojson",
-                    data: createCircle([lng, lat], 500),
-                });
-            }
-
-            if (!map.getLayer("approximate-location-fill")) {
-                map.addLayer({
-                    id: "approximate-location-fill",
-                    type: "fill",
-                    source: "approximate-location",
-                    paint: {
-                        "fill-color": "#2563eb",
-                        "fill-opacity": 0.18,
-                    },
-                });
-            }
-
-            if (!map.getLayer("approximate-location-outline")) {
-                map.addLayer({
-                    id: "approximate-location-outline",
-                    type: "line",
-                    source: "approximate-location",
-                    paint: {
-                        "line-color": "#2563eb",
-                        "line-width": 2,
-                        "line-opacity": 0.75,
-                    },
-                });
-            }
-        });
-
-        return () => {
-            map.remove();
-            mapRef.current = null;
-        };
-    }, [latitude, longitude]);
-
-    const lat = Number(latitude);
-    const lng = Number(longitude);
-
-    if (
-        !MAPBOX_TOKEN ||
-        !Number.isFinite(lat) ||
-        !Number.isFinite(lng)
-    ) {
-        return null;
-    }
-
-    return (
-        <div style={{ width: "100%" }}>
-            <div
-                ref={containerRef}
-                style={{
-                    width: "100%",
-                    height: "360px",
-                    borderRadius: "16px",
-                    overflow: "hidden",
-                    border: "1px solid #e5e7eb",
-                }}
-            />
-
-            <div
-                style={{
-                    marginTop: "11px",
-                    color: "#6b7280",
-                    fontSize: "13px",
-                    lineHeight: "1.5",
-                }}
-            >
-                Locația afișată pe hartă este aproximativă.
-            </div>
-        </div>
-    );
-}
+const buttonStyle = {
+  font: "inherit", fontWeight: 600, color: "#111827", background: "#fff",
+  border: "1px solid #cbd5e1", borderRadius: "10px", padding: "12px 18px",
+  minHeight: "44px", maxWidth: "100%", cursor: "pointer",
+};
