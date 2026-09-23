@@ -29,6 +29,7 @@ export default function EditeazaProprietatePage() {
 
     const [images, setImages] =
         useState([]);
+    const [imageError, setImageError] = useState("");
 
     const [
         removedExistingImages,
@@ -1523,13 +1524,13 @@ preview:
         // Validate before creating previews or adding any new files to state.
         for (const file of selectedFiles) {
             if (!file.type.startsWith("image/")) {
-                setError("Poți încărca doar fișiere de tip imagine.");
+                setImageError("Poți încărca doar fișiere de tip imagine.");
                 event.target.value = "";
                 return;
             }
 
             if (file.size > 10 * 1024 * 1024) {
-                setError("Fiecare fotografie trebuie să aibă maximum 10 MB.");
+                setImageError("Fiecare fotografie trebuie să aibă maximum 10 MB.");
                 event.target.value = "";
                 return;
             }
@@ -1563,11 +1564,11 @@ preview:
             files.length >
             availableSlots
         ) {
-            setError(
+            setImageError(
                 "Poți avea maximum 10 fotografii."
             );
         } else {
-            setError(
+            setImageError(
                 ""
             );
         }
@@ -6121,6 +6122,26 @@ preview:
                                         </div>
                                     )
                                 )}
+                            </div>
+                        )}
+                        {imageError && (
+                            <div
+                                role="alert"
+                                style={{
+                                    marginTop: "16px",
+                                    padding: "13px 15px",
+                                    border: "1px solid #FECACA",
+                                    borderRadius: "10px",
+                                    background: "#FEF2F2",
+                                    color: "#B91C1C",
+                                    fontSize: "13px",
+                                    fontWeight: "700",
+                                    lineHeight: "1.5",
+                                    overflowWrap: "anywhere",
+                                    minWidth: 0,
+                                }}
+                            >
+                                {imageError}
                             </div>
                         )}
                     </section>
