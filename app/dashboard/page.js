@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import DeleteAccountSection from "../components/DeleteAccountSection";
 import { isValidRomanianMobilePhone } from "../lib/phone";
 
 export default function DashboardPage() {
@@ -2830,6 +2831,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
+              <DeleteAccountSection />
             </>
           )}
 
