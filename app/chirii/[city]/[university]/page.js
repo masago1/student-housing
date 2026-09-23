@@ -1130,7 +1130,7 @@ export default function UniversityListingsPage() {
           data: listingsData,
           error: listingsError,
         } = await supabase
-          .from("listings")
+          .from("public_listings")
           .select(`
             id,
             title,

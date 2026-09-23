@@ -123,7 +123,7 @@ export default function DashboardPage() {
           id,
           listing_id,
           created_at,
-          listings (
+          listings:shared_listing_summaries (
             id,
             title,
             city,
@@ -518,7 +518,7 @@ export default function DashboardPage() {
           owner_id,
           created_at,
           updated_at,
-          listings (
+          listings:shared_listing_summaries (
             id,
             title,
             city,

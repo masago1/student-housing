@@ -15,7 +15,7 @@ export default async function sitemap() {
   try {
     // Luăm toate anunțurile active
     const { data: listings, error } = await supabase
-      .from("listings")
+      .from("public_listings")
       .select("id, city, created_at")
       .eq("active", true);
 

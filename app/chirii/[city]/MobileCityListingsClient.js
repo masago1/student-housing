@@ -191,7 +191,7 @@ export default function MobileCityListingsClient() {
       setLoading(true);
 
       const { data, error } = await supabase
-        .from("listings")
+        .from("public_listings")
         .select(`
           id,
           title,

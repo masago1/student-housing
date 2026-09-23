@@ -11,7 +11,7 @@ export async function generateMetadata({ params }) {
     const { id } = await params;
 
     const { data: listing } = await supabase
-        .from("listings")
+        .from("public_listings")
         .select(
             "title, city, address, property_type, rooms, surface_m2, price_monthly, image_url"
         )
@@ -148,7 +148,7 @@ export default async function PropertyPage({ params }) {
     const { id } = await params;
 
     const { data: listing, error: listingError } = await supabase
-        .from("listings")
+        .from("public_listings")
         .select(`
             id, user_id, title, description, city, address,
             latitude, longitude, price_monthly, property_type,

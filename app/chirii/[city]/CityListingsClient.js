@@ -1144,7 +1144,7 @@ export default function CityListingsPage() {
           data,
           error,
         } = await supabase
-          .from("listings")
+          .from("public_listings")
           .select(`
             id,
             title,
