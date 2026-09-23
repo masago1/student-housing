@@ -12,10 +12,13 @@ export default function ContactPage() {
       <h2>Confidențialitate și date personale</h2>
       <p><a href="mailto:privacy@shaus.ro">privacy@shaus.ro</a></p>
       <p>Informații despre date și exercitarea drepturilor: <Link href="/confidentialitate">Politica de confidențialitate</Link>.</p>
-      <h2>Operator</h2>
-      <p>Persoană fizică: <strong>[NUME COMPLET OPERATOR]</strong></p>
-      <p>Adresă poștală: <strong>[ADRESĂ POȘTALĂ OPERATOR]</strong></p>
-      <aside><p><strong>Datele operatorului marcate între paranteze trebuie completate înainte de lansarea publică.</strong></p></aside>
+      {/* TODO BEFORE PUBLIC LAUNCH:
+          Add legal operator details:
+          - legal company/operator name
+          - registered office/postal address
+          - CUI
+          - Trade Register number, if applicable
+      */}
       <h2>Raportarea conținutului</h2>
       <p>Poți raporta un anunț sau alt conținut potențial ilegal ori abuziv la <a href="mailto:contact@shaus.ro">contact@shaus.ro</a>. Include, unde este posibil:</p>
       <ul>

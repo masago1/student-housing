@@ -8,7 +8,14 @@ export default function TermsPage() {
     <InformationPage title="Termeni și condiții">
       <p>Ultima actualizare: <time dateTime="2026-09-23">23 septembrie 2026</time></p>
       <h2>1. Operator și contact</h2>
-      <p>shaus.ro este operat de persoana fizică <strong>[NUME COMPLET OPERATOR]</strong>, cu adresa poștală <strong>[ADRESĂ POȘTALĂ OPERATOR]</strong>. Contact: <a href="mailto:contact@shaus.ro">contact@shaus.ro</a>.</p>
+      {/* TODO BEFORE PUBLIC LAUNCH:
+          Add legal operator details:
+          - legal company/operator name
+          - registered office/postal address
+          - CUI
+          - Trade Register number, if applicable
+      */}
+      <p>Contact: <a href="mailto:contact@shaus.ro">contact@shaus.ro</a>.</p>
       <h2>2. Rolul platformei</h2>
       <p>shaus oferă o platformă tehnică pentru anunțuri de închiriere și comunicare. Utilizatorii publică propriile informații și decid dacă intră într-o relație de închiriere. shaus nu este parte la acordurile dintre ei și nu garantează încheierea unei tranzacții.</p>
       <h2>3. Conturi</h2>

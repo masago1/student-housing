@@ -10,8 +10,13 @@ export default function PrivacyPage() {
       <p>Această politică explică modul în care sunt prelucrate datele personale atunci când folosești shaus.ro, ce informații sunt publice și cum îți poți exercita drepturile.</p>
 
       <h2>1. Operatorul datelor</h2>
-      <p>Platforma este operată de o persoană fizică: <strong>[NUME COMPLET OPERATOR]</strong>.</p>
-      <p>Adresă poștală: <strong>[ADRESĂ POȘTALĂ OPERATOR]</strong>.</p>
+      {/* TODO BEFORE PUBLIC LAUNCH:
+          Add legal operator details:
+          - legal company/operator name
+          - registered office/postal address
+          - CUI
+          - Trade Register number, if applicable
+      */}
       <p>Contact general: <a href="mailto:contact@shaus.ro">contact@shaus.ro</a>. Pentru cereri privind datele personale: <a href="mailto:privacy@shaus.ro">privacy@shaus.ro</a>.</p>
 
       <h2>2. Ce este shaus</h2>
