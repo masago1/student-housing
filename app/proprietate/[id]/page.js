@@ -274,28 +274,8 @@ export default async function PropertyPage({ params }) {
 
     const allImages = [...new Set(imageUrls)];
 
-    const { data: ownerProfile, error: ownerProfileError } =
-        await supabase
-            .from("profiles")
-            .select("name, phone")
-            .eq("id", listing.user_id)
-            .maybeSingle();
-
-    if (ownerProfileError) {
-        console.error(
-            "Eroare la încărcarea profilului proprietarului:",
-            ownerProfileError
-        );
-    }
-    const ownerName =
-        ownerProfile?.name?.trim() ||
-        listing.owner_name?.trim() ||
-        "";
-
-    const ownerPhone =
-        ownerProfile?.phone?.trim() ||
-        listing.owner_phone?.trim() ||
-        "";
+    const ownerName = listing.owner_name?.trim() || "";
+    const ownerPhone = listing.owner_phone?.trim() || "";
 
     const propertyTypeLabels = {
         apartment: "Apartament",

@@ -155,9 +155,9 @@ export default function LoginPage() {
           data: existingNickname,
           error: nicknameCheckError,
         } = await supabase
-          .from("profiles")
+          .from("public_profiles")
           .select("id")
-          .ilike("nickname", cleanNickname)
+          .ilike("nickname", cleanNickname.replace(/_/g, "\\_"))
           .maybeSingle();
 
         if (nicknameCheckError) {

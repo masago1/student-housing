@@ -386,7 +386,7 @@ export default function DashboardPage() {
       ] = await Promise.all([
         otherUserIds.length
           ? supabase
-              .from("profiles")
+              .from("public_profiles")
               .select("id, nickname, name")
               .in(
                 "id",
@@ -972,9 +972,9 @@ export default function DashboardPage() {
         data: nicknameOwner,
         error: nicknameCheckError,
       } = await supabase
-        .from("profiles")
+        .from("public_profiles")
         .select("id")
-        .ilike("nickname", cleanNickname)
+        .ilike("nickname", cleanNickname.replace(/_/g, "\\_"))
         .neq("id", user.id)
         .maybeSingle();
 
