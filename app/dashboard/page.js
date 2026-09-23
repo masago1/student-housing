@@ -1796,7 +1796,7 @@ export default function DashboardPage() {
           {/* BUTON GLOBAL ÎNAPOI */}
 
           <div
-            className={activeSection === "messages" ? "dashboard-messages-history-back" : undefined}
+            className={activeSection === "messages" && mobileChatOpen ? "dashboard-messages-history-back" : undefined}
             style={{
               width: "100%",
               display: "flex",
@@ -1807,7 +1807,14 @@ export default function DashboardPage() {
           >
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={() => {
+                if (activeSection === "listings") {
+                  setActiveSection("dashboard");
+                  router.replace("/dashboard");
+                } else {
+                  router.push("/");
+                }
+              }}
               aria-label="Înapoi"
               style={{
                 height: "38px",
