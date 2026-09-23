@@ -11,6 +11,7 @@ export default function EditeazaProprietatePage() {
     const listingId = params?.id;
 
     const [user, setUser] = useState(null);
+    const [ownerContact, setOwnerContact] = useState({ nickname: "", phone: "", email: "" });
 
     const [checkingAuth, setCheckingAuth] =
         useState(true);
@@ -120,9 +121,6 @@ export default function EditeazaProprietatePage() {
         max_tenants: "",
         deposit_amount: "",
         utilities_included: "false",
-        owner_name: "",
-        owner_phone: "",
-        owner_email: "",
     });
 
     const [calendarOpen, setCalendarOpen] =
@@ -221,7 +219,7 @@ export default function EditeazaProprietatePage() {
                         "profiles"
                     )
                     .select(
-                        "name, phone"
+                        "nickname, phone"
                     )
                     .eq(
                         "id",
@@ -250,28 +248,13 @@ export default function EditeazaProprietatePage() {
                     return;
                 }
 
-                setForm(
-                    (current) => ({
-                        ...current,
-
-                        owner_name:
-                            profileData
-                                ?.name ||
-                            currentUser
-                                .user_metadata
-                                ?.name ||
-                            "",
-
-                        owner_phone:
-                            profileData
-                                ?.phone ||
-                            "",
-
-                        owner_email:
-                            currentUser.email ||
-                            "",
-                    })
-                );
+                if (mounted) {
+                    setOwnerContact({
+                        nickname: profileData?.nickname || "",
+                        phone: profileData?.phone || "",
+                        email: currentUser.email || "",
+                    });
+                }
             } catch (
                 authError
             ) {
@@ -723,20 +706,8 @@ export default function EditeazaProprietatePage() {
                                     ? "true"
                                     : "false",
 
-                            owner_name:
-                                listingData.owner_name ||
-                                current.owner_name ||
-                                "",
 
-                            owner_phone:
-                                listingData.owner_phone ||
-                                current.owner_phone ||
-                                "",
 
-                            owner_email:
-                                listingData.owner_email ||
-                                current.owner_email ||
-                                "",
                         })
                     );
 
@@ -2294,14 +2265,8 @@ preview:
                             form.utilities_included ===
                             "true",
 
-                        owner_name:
-                            form.owner_name.trim(),
 
-                        owner_phone:
-                            form.owner_phone.trim(),
 
-                        owner_email:
-                            form.owner_email.trim(),
                     };
 
                 const {
@@ -6192,10 +6157,7 @@ preview:
                                         "13px",
                                 }}
                             >
-                                Informațiile
-                                prin care
-                                studenții te
-                                pot contacta.
+                                Informațiile prin care poți fi contactat.
                             </p>
                         </div>
 
@@ -6205,7 +6167,7 @@ preview:
                                     "grid",
 
                                 gridTemplateColumns:
-                                    "repeat(3, 1fr)",
+                                    "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
 
                                 gap:
                                     "16px",
@@ -6217,23 +6179,21 @@ preview:
                                         labelStyle
                                     }
                                 >
-                                    Nume
+                                    Nickname
                                 </label>
 
                                 <input
                                     type="text"
 
-                                    name="owner_name"
+                                    readOnly
+                                    aria-label="Nickname"
 
                                     value={
-                                        form.owner_name
+                                        ownerContact.nickname
                                     }
 
-                                    onChange={
-                                        handleChange
-                                    }
 
-                                    placeholder="Numele proprietarului"
+                                    placeholder="Nickname"
 
                                     style={
                                         inputStyle
@@ -6253,15 +6213,13 @@ preview:
                                 <input
                                     type="tel"
 
-                                    name="owner_phone"
+                                    readOnly
+                                    aria-label="Telefon"
 
                                     value={
-                                        form.owner_phone
+                                        ownerContact.phone
                                     }
 
-                                    onChange={
-                                        handleChange
-                                    }
 
                                     placeholder="07xx xxx xxx"
 
@@ -6283,15 +6241,13 @@ preview:
                                 <input
                                     type="email"
 
-                                    name="owner_email"
+                                    readOnly
+                                    aria-label="Email"
 
                                     value={
-                                        form.owner_email
+                                        ownerContact.email
                                     }
 
-                                    onChange={
-                                        handleChange
-                                    }
 
                                     placeholder="email@exemplu.ro"
 

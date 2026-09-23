@@ -27,6 +27,7 @@ export default function DashboardPage() {
 
   const [profileName, setProfileName] = useState("");
   const [profileNickname, setProfileNickname] = useState("");
+  const [savedNickname, setSavedNickname] = useState("");
   const [profilePhone, setProfilePhone] = useState("");
   const [phoneError, setPhoneError] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
@@ -81,11 +82,8 @@ export default function DashboardPage() {
             user.user_metadata?.name ||
             ""
         );
-        setProfileNickname(
-          profileData?.nickname ||
-            user.user_metadata?.nickname ||
-            ""
-        );
+        setProfileNickname(profileData?.nickname || "");
+        setSavedNickname(profileData?.nickname || "");
         setProfilePhone(profileData?.phone || "");
       }
 
@@ -926,8 +924,24 @@ export default function DashboardPage() {
       const cleanName =
         profileName.trim();
 
-      const cleanNickname =
-        profileNickname.trim();
+      const { data: currentProfile, error: currentProfileError } = await supabase
+        .from("profiles")
+        .select("id, nickname")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (currentProfileError) {
+        setError("Profilul nu a putut fi verificat. Încearcă din nou.");
+        return;
+      }
+
+      const existingNickname = currentProfile?.nickname || "";
+      const choosingNickname = existingNickname === "";
+      const cleanNickname = choosingNickname ? profileNickname.trim() : existingNickname;
+      if (!choosingNickname) {
+        setSavedNickname(existingNickname);
+        setProfileNickname(existingNickname);
+      }
 
       const cleanPhone =
         profilePhone.trim();
@@ -944,62 +958,65 @@ export default function DashboardPage() {
         return;
       }
 
-      if (!cleanNickname) {
-        setError(
-          "Introdu un nickname."
-        );
+      if (choosingNickname) {
+        if (!cleanNickname) {
+          setError(
+            "Introdu un nickname."
+          );
 
-        return;
-      }
+          return;
+        }
 
-      if (
-        cleanNickname.length < 3 ||
-        cleanNickname.length > 30
-      ) {
-        setError(
-          "Nickname-ul trebuie să aibă între 3 și 30 de caractere."
-        );
+        if (
+          cleanNickname.length < 3 ||
+          cleanNickname.length > 30
+        ) {
+          setError(
+            "Nickname-ul trebuie să aibă între 3 și 30 de caractere."
+          );
 
-        return;
-      }
+          return;
+        }
 
-      if (!/^[a-zA-Z0-9._-]+$/.test(cleanNickname)) {
-        setError(
-          "Nickname-ul poate conține doar litere, cifre, punct, _ și -."
-        );
+        if (!/^[a-zA-Z0-9._-]+$/.test(cleanNickname)) {
+          setError(
+            "Nickname-ul poate conține doar litere, cifre, punct, _ și -."
+          );
 
-        return;
-      }
+          return;
+        }
 
-      const {
-        data: nicknameOwner,
-        error: nicknameCheckError,
-      } = await supabase
-        .from("public_profiles")
-        .select("id")
-        .ilike("nickname", cleanNickname.replace(/_/g, "\\_"))
-        .neq("id", user.id)
-        .maybeSingle();
+        const {
+          data: nicknameOwner,
+          error: nicknameCheckError,
+        } = await supabase
+          .from("public_profiles")
+          .select("id")
+          .ilike("nickname", cleanNickname.replace(/_/g, "\\_"))
+          .neq("id", user.id)
+          .maybeSingle();
 
-      if (nicknameCheckError) {
-        console.error(
-          "Eroare verificare nickname:",
-          nicknameCheckError
-        );
+        if (nicknameCheckError) {
+          console.error(
+            "Eroare verificare nickname:",
+            nicknameCheckError
+          );
 
-        setError(
-          "Nickname-ul nu a putut fi verificat."
-        );
+          setError(
+            "Nickname-ul nu a putut fi verificat."
+          );
 
-        return;
-      }
+          return;
+        }
 
-      if (nicknameOwner) {
-        setError(
-          "Acest nickname este deja folosit. Alege altul."
-        );
+        if (nicknameOwner) {
+          setError(
+            "Acest nickname este deja folosit. Alege altul."
+          );
 
-        return;
+          return;
+        }
+
       }
 
       if (cleanPhone && !isValidRomanianMobilePhone(cleanPhone)) {
@@ -1013,22 +1030,24 @@ export default function DashboardPage() {
 
       setProfileSaving(true);
 
-      const {
-        error: profileError,
-      } = await supabase
-        .from("profiles")
-        .upsert(
-          {
-            id: user.id,
-            name: cleanName,
-            nickname: cleanNickname,
-            phone:
-              cleanPhone || null,
-          },
-          {
-            onConflict: "id",
-          }
-        );
+      const profileValues = {
+        name: cleanName,
+        phone: cleanPhone || null,
+        ...(choosingNickname ? { nickname: cleanNickname } : {}),
+      };
+      let profileWrite;
+      if (currentProfile) {
+        profileWrite = supabase.from("profiles").update(profileValues).eq("id", user.id);
+        // Avoid overwriting a nickname chosen in another tab after our read.
+        if (choosingNickname) {
+          profileWrite = currentProfile.nickname === null
+            ? profileWrite.is("nickname", null)
+            : profileWrite.eq("nickname", "");
+        }
+      } else {
+        profileWrite = supabase.from("profiles").insert({ id: user.id, ...profileValues });
+      }
+      const { error: profileError } = await profileWrite.select("id").single();
 
       if (profileError) {
         console.error(
@@ -1062,7 +1081,7 @@ export default function DashboardPage() {
         await supabase.auth.updateUser({
           data: {
             name: cleanName,
-            nickname: cleanNickname,
+            ...(choosingNickname ? { nickname: cleanNickname } : {}),
           },
         });
 
@@ -1085,8 +1104,7 @@ export default function DashboardPage() {
 
                   name:
                     cleanName,
-                  nickname:
-                    cleanNickname,
+                  ...(choosingNickname ? { nickname: cleanNickname } : {}),
                 },
               }
             : current
@@ -1096,9 +1114,8 @@ export default function DashboardPage() {
         cleanName
       );
 
-      setProfileNickname(
-        cleanNickname
-      );
+      setProfileNickname(cleanNickname);
+      setSavedNickname(cleanNickname);
 
       setProfilePhone(
         cleanPhone
@@ -2263,21 +2280,12 @@ export default function DashboardPage() {
 
                     <input
                       type="text"
-                      value={
-                        profileNickname
-                      }
-                      onChange={(
-                        event
-                      ) => {
-                        setProfileNickname(
-                          event
-                            .target
-                            .value
-                        );
-
-                        setProfileSuccess(
-                          ""
-                        );
+                      value={savedNickname || profileNickname}
+                      readOnly={Boolean(savedNickname)}
+                      aria-label="Nickname"
+                      onChange={savedNickname ? undefined : (event) => {
+                        setProfileNickname(event.target.value);
+                        setProfileSuccess("");
                       }}
                       placeholder="Ex: user123"
                       maxLength={30}
@@ -2318,7 +2326,7 @@ export default function DashboardPage() {
                       }}
                     >
                       Acesta este numele tău public pe shaus. Va fi
-                      vizibil celorlalți utilizatori.
+                      vizibil celorlalți utilizatori. Nickname-ul nu poate fi schimbat după salvare.
                     </div>
                   </div>
 
