@@ -149,7 +149,15 @@ export default async function PropertyPage({ params }) {
 
     const { data: listing, error: listingError } = await supabase
         .from("listings")
-        .select("*")
+        .select(`
+            id, user_id, title, description, city, address,
+            latitude, longitude, price_monthly, property_type,
+            rooms, bedrooms, bathrooms, surface_m2, floor, total_floors,
+            furnished, air_conditioning, balcony, parking,
+            construction_year, heating_type, max_tenants,
+            pets_allowed, smoking_allowed, utilities_included, deposit_amount,
+            available_from, image_url, owner_name, owner_phone
+        `)
         .eq("id", id)
         .single();
 

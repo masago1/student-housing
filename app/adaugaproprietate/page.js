@@ -119,7 +119,6 @@ export default function AdaugaProprietatePage() {
 
         owner_name: "",
         owner_phone: "",
-        owner_email: "",
     });
 
     /* =========================
@@ -187,10 +186,6 @@ export default function AdaugaProprietatePage() {
                 owner_phone:
                     profilePhone,
 
-                owner_email:
-                    current.owner_email ||
-                    user.email ||
-                    "",
             }));
 
             setCheckingAuth(false);
@@ -1716,10 +1711,6 @@ export default function AdaugaProprietatePage() {
 
                     owner_phone:
                         currentPhone,
-
-                    owner_email:
-                        user.email ||
-                        null,
 
                     active:
                         true,
@@ -4132,7 +4123,7 @@ export default function AdaugaProprietatePage() {
                                 <input
                                     type="email"
                                     value={
-                                        form.owner_email
+                                        user?.email || ""
                                     }
                                     readOnly
                                     style={{
