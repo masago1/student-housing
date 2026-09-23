@@ -144,7 +144,7 @@ export default function AdaugaProprietatePage() {
                 error: profileError,
             } = await supabase
                 .from("profiles")
-                .select("name, phone")
+                .select("nickname, phone")
                 .eq("id", user.id)
                 .maybeSingle();
 
@@ -178,9 +178,7 @@ export default function AdaugaProprietatePage() {
                 ...current,
 
                 owner_name:
-                    current.owner_name ||
-                    profile?.name ||
-                    user.user_metadata?.name ||
+                    profile?.nickname?.trim() ||
                     "",
 
                 owner_phone:
@@ -1274,7 +1272,7 @@ export default function AdaugaProprietatePage() {
                 error: profileCheckError,
             } = await supabase
                 .from("profiles")
-                .select("name, phone")
+                .select("nickname, phone")
                 .eq("id", user.id)
                 .maybeSingle();
 
@@ -1564,9 +1562,7 @@ export default function AdaugaProprietatePage() {
                 }
 
                 const ownerName =
-                    currentProfile?.name?.trim() ||
-                    form.owner_name.trim() ||
-                    user.user_metadata?.name ||
+                    currentProfile?.nickname?.trim() ||
                     "";
 
                 const listingData = {
@@ -4071,7 +4067,7 @@ export default function AdaugaProprietatePage() {
 
                         <div style={fieldStyle}>
                             <label style={labelStyle}>
-                                Nume
+                                Nickname
                             </label>
 
                             <input

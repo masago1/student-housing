@@ -1,5 +1,6 @@
 import "mapbox-gl/dist/mapbox-gl.css";
 import ConsentProvider from "./components/ConsentProvider";
+import SiteFooter from "./components/SiteFooter";
 import { Inter } from "next/font/google";
 
 const inter = Inter({
@@ -86,7 +87,10 @@ export default function RootLayout({ children }) {
           textRendering: "optimizeLegibility",
         }}
       >
-        <ConsentProvider>{children}</ConsentProvider>
+        <ConsentProvider>
+          {children}
+          <SiteFooter />
+        </ConsentProvider>
       </body>
     </html>
   );

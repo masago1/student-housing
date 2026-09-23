@@ -50,7 +50,7 @@ export default function ConsentProvider({ children }) {
   }
 
   return (
-    <ConsentContext.Provider value={{ externalServices: ready && choice?.externalServices === true, saveChoice, openPreferences }}>
+    <ConsentContext.Provider value={{ externalServices: ready && choice?.externalServices === true, saveChoice, openPreferences, storageError }}>
       {ready && !choice && (
         <section className={styles.banner} aria-labelledby="consent-banner-title">
           <div className={styles.inner}>
@@ -67,10 +67,6 @@ export default function ConsentProvider({ children }) {
         </section>
       )}
       {children}
-      <footer className={styles.footer}>
-        <button type="button" onClick={openPreferences}>Preferințe cookies</button>
-        {storageError && <p role="status">{storageError}</p>}
-      </footer>
       <dialog ref={dialogRef} className={styles.dialog} aria-labelledby="consent-dialog-title">
         <h2 id="consent-dialog-title">Preferințe de confidențialitate</h2>
         <label className={styles.category}>

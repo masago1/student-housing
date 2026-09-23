@@ -388,7 +388,7 @@ export default function DashboardPage() {
         otherUserIds.length
           ? supabase
               .from("public_profiles")
-              .select("id, nickname, name")
+              .select("id, nickname")
               .in(
                 "id",
                 otherUserIds
@@ -442,7 +442,6 @@ export default function DashboardPage() {
             profile.id
           ] =
             profile.nickname?.trim() ||
-            profile.name ||
             "Utilizator";
         }
       );

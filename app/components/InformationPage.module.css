@@ -1,0 +1,21 @@
+.page { background: #f7f8fa; color: #475569; min-height: 55vh; }
+.header { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 20px max(20px, calc((100% - 1120px) / 2)); }
+.header a { color: #111827; text-decoration: none; font-size: 25px; font-weight: 800; letter-spacing: -1px; }
+.content { max-width: 800px; margin: 0 auto; padding: 48px 24px 64px; box-sizing: border-box; overflow-wrap: anywhere; }
+.content h1 { margin: 0 0 24px; font-size: clamp(28px, 5vw, 38px); line-height: 1.2; color: #172554; letter-spacing: -.5px; }
+.content p, .content li { line-height: 1.75; font-size: 16px; }
+.content ol { padding-left: 24px; }
+.content li { padding-left: 4px; margin-bottom: 10px; }
+.content h2 { color: #172554; font-size: 18px; margin: 28px 0 8px; }
+.content strong { color: #172554; }
+.content h3 { color: #172554; font-size: 16px; margin: 22px 0 8px; }
+.content ul { padding-left: 24px; }
+.content a { color: #1d4ed8; text-underline-offset: 3px; }
+.content a:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 3px; border-radius: 3px; }
+.content table { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 20px 0; font-size: 15px; line-height: 1.6; }
+.content caption { text-align: left; color: #172554; font-weight: 600; margin-bottom: 10px; }
+.content th, .content td { text-align: left; vertical-align: top; padding: 12px; border: 1px solid #dbe2ea; overflow-wrap: anywhere; }
+.content th { background: #eaf0f6; color: #172554; }
+.content td { background: #fff; }
+.content aside { padding: 4px 16px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; }
+@media (max-width: 600px) { .content { padding: 32px 18px 40px; } }
