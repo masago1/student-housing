@@ -16,9 +16,9 @@ export default function CookiesPage() {
         <tbody>
           <tr><td>Supabase Auth</td><td>localStorage: păstrează sesiunea de autentificare, conform expirării și reînnoirii acesteia; deconectarea elimină sesiunea locală.</td></tr>
           <tr><td>shaus-password-recovery-user</td><td>sessionStorage: identifică fluxul de recuperare a parolei; este eliminată la încheierea fluxului sau a sesiunii filei.</td></tr>
-          <tr><td>studenthousing-search-url</td><td>sessionStorage: revenirea la căutarea anterioară în sesiunea filei.</td></tr>
-          <tr><td>studenthousing-search-scroll</td><td>sessionStorage: refacerea poziției de derulare a rezultatelor în sesiunea filei.</td></tr>
-          <tr><td>studenthousing-view-mode</td><td>localStorage: preferința listă/grilă, până la schimbare sau ștergerea stocării.</td></tr>
+          <tr><td>shaus-search-url</td><td>sessionStorage: revenirea la căutarea anterioară în sesiunea filei.</td></tr>
+          <tr><td>shaus-search-scroll</td><td>sessionStorage: refacerea poziției de derulare a rezultatelor în sesiunea filei.</td></tr>
+          <tr><td>shaus-view-mode</td><td>localStorage: preferința listă/grilă, până la schimbare sau ștergerea stocării.</td></tr>
           <tr><td>shaus-consent</td><td>localStorage: alegerea de confidențialitate, până la schimbare, ștergere sau o nouă versiune care solicită alegerea din nou.</td></tr>
         </tbody>
       </table>

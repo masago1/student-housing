@@ -761,7 +761,7 @@ export default function CityListingsPage() {
 
     const savedViewMode =
       localStorage.getItem(
-        "studenthousing-view-mode"
+        "shaus-view-mode"
       );
 
     if (
@@ -777,7 +777,7 @@ export default function CityListingsPage() {
 
     if (typeof window !== "undefined") {
       localStorage.setItem(
-        "studenthousing-view-mode",
+        "shaus-view-mode",
         mode
       );
     }
@@ -801,12 +801,12 @@ export default function CityListingsPage() {
 
     const savedUrl =
       sessionStorage.getItem(
-        "studenthousing-search-url"
+        "shaus-search-url"
       );
 
     const savedScroll =
       sessionStorage.getItem(
-        "studenthousing-search-scroll"
+        "shaus-search-scroll"
       );
 
     const currentUrl =
@@ -3175,13 +3175,13 @@ export default function CityListingsPage() {
                                 "undefined"
                               ) {
                                 sessionStorage.setItem(
-                                  "studenthousing-search-url",
+                                  "shaus-search-url",
                                   window.location.pathname +
                                     window.location.search
                                 );
 
                                 sessionStorage.setItem(
-                                  "studenthousing-search-scroll",
+                                  "shaus-search-scroll",
                                   String(
                                     window.scrollY
                                   )
@@ -3228,13 +3228,13 @@ export default function CityListingsPage() {
                                 "undefined"
                               ) {
                                 sessionStorage.setItem(
-                                  "studenthousing-search-url",
+                                  "shaus-search-url",
                                   window.location.pathname +
                                     window.location.search
                                 );
 
                                 sessionStorage.setItem(
-                                  "studenthousing-search-scroll",
+                                  "shaus-search-scroll",
                                   String(
                                     window.scrollY
                                   )
@@ -3480,13 +3480,13 @@ export default function CityListingsPage() {
                                   "undefined"
                                 ) {
                                   sessionStorage.setItem(
-                                    "studenthousing-search-url",
+                                    "shaus-search-url",
                                     window.location.pathname +
                                       window.location.search
                                   );
 
                                   sessionStorage.setItem(
-                                    "studenthousing-search-scroll",
+                                    "shaus-search-scroll",
                                     String(
                                       window.scrollY
                                     )
@@ -3690,13 +3690,13 @@ export default function CityListingsPage() {
                               "undefined"
                             ) {
                               sessionStorage.setItem(
-                                "studenthousing-search-url",
+                                "shaus-search-url",
                                 window.location.pathname +
                                   window.location.search
                               );
 
                               sessionStorage.setItem(
-                                "studenthousing-search-scroll",
+                                "shaus-search-scroll",
                                 String(
                                   window.scrollY
                                 )
