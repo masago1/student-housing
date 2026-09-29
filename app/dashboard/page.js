@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import DeleteAccountSection from "../components/DeleteAccountSection";
-import { isValidRomanianMobilePhone } from "../lib/phone";
+import { isValidRomanianMobilePhone, normalizeProfilePhone, profilePhoneDisplay } from "../lib/phone";
+import ProfilePhoneInput from "../components/ProfilePhoneInput";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -30,6 +31,8 @@ export default function DashboardPage() {
   const [profileNickname, setProfileNickname] = useState("");
   const [savedNickname, setSavedNickname] = useState("");
   const [profilePhone, setProfilePhone] = useState("");
+  const [savedPhone, setSavedPhone] = useState("");
+  const [phoneCountry, setPhoneCountry] = useState("RO");
   const [phoneError, setPhoneError] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState("");
@@ -85,7 +88,10 @@ export default function DashboardPage() {
         );
         setProfileNickname(profileData?.nickname || "");
         setSavedNickname(profileData?.nickname || "");
-        setProfilePhone(profileData?.phone || "");
+        const phoneDisplay = profilePhoneDisplay(profileData?.phone || "");
+        setProfilePhone(phoneDisplay.national);
+        setPhoneCountry(phoneDisplay.country);
+        setSavedPhone(profileData?.phone || "");
       }
 
       const { data, error: listingsError } = await supabase
@@ -919,14 +925,14 @@ export default function DashboardPage() {
 
   const saveProfile =
     async () => {
-      if (!user?.id) return;
+      if (!user?.id || profileSaving) return;
 
       const cleanName =
         profileName.trim();
 
       const { data: currentProfile, error: currentProfileError } = await supabase
         .from("profiles")
-        .select("id, nickname")
+        .select("id, nickname, phone")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -943,8 +949,15 @@ export default function DashboardPage() {
         setProfileNickname(existingNickname);
       }
 
-      const cleanPhone =
-        profilePhone.trim();
+      const existingPhone = currentProfile?.phone?.trim() || "";
+      const choosingPhone = !existingPhone;
+      const cleanPhone = existingPhone || normalizeProfilePhone(profilePhone, phoneCountry);
+      if (!choosingPhone) {
+        const display = profilePhoneDisplay(existingPhone);
+        setSavedPhone(existingPhone);
+        setProfilePhone(display.national);
+        setPhoneCountry(display.country);
+      }
 
       setProfileSuccess("");
       setPhoneError("");
@@ -1019,20 +1032,28 @@ export default function DashboardPage() {
 
       }
 
-      if (cleanPhone && !isValidRomanianMobilePhone(cleanPhone)) {
-        setPhoneError(
-          !/^[0-9]{10}$/.test(cleanPhone)
-            ? "Numărul de telefon trebuie să conțină 10 cifre."
-            : "Numărul de telefon trebuie să înceapă cu 07."
-        );
+      if (choosingPhone && profilePhone.trim() && !cleanPhone) {
+        setPhoneError("Introdu un număr de telefon valid pentru țara selectată.");
         return;
+      }
+
+      if (choosingPhone && cleanPhone) {
+        const { data: phoneTaken, error: phoneCheckError } = await supabase.rpc("profile_phone_taken", { candidate_phone: cleanPhone });
+        if (phoneCheckError || typeof phoneTaken !== "boolean") {
+          setPhoneError("Numărul de telefon nu a putut fi verificat. Încearcă din nou.");
+          return;
+        }
+        if (phoneTaken) {
+          setPhoneError("Acest număr de telefon este asociat altui cont.");
+          return;
+        }
       }
 
       setProfileSaving(true);
 
       const profileValues = {
         name: cleanName,
-        phone: cleanPhone || null,
+        ...(choosingPhone && cleanPhone ? { phone: cleanPhone } : {}),
         ...(choosingNickname ? { nickname: cleanNickname } : {}),
       };
       let profileWrite;
@@ -1055,6 +1076,28 @@ export default function DashboardPage() {
           profileError
         );
 
+        const phoneConflict = profileError.code === "23505" && (
+          profileError.message?.toLowerCase().includes("phone") ||
+          (choosingPhone && cleanPhone && (await supabase.rpc("profile_phone_taken", { candidate_phone: cleanPhone })).data === true)
+        );
+        if (phoneConflict) {
+          setPhoneError("Acest număr de telefon este asociat altui cont.");
+          setProfileSaving(false);
+          return;
+        }
+        if (profileError.message?.includes("profile_phone_immutable")) {
+          const { data: latest } = await supabase.from("profiles").select("phone").eq("id", user.id).maybeSingle();
+          if (latest?.phone) {
+            const display = profilePhoneDisplay(latest.phone);
+            setSavedPhone(latest.phone);
+            setProfilePhone(display.national);
+            setPhoneCountry(display.country);
+          }
+          setPhoneError("Numărul de telefon a fost deja salvat și nu poate fi schimbat.");
+          setProfileSaving(false);
+          return;
+        }
+
         setError(
           profileError.code === "23505"
             ? (
@@ -1073,6 +1116,12 @@ export default function DashboardPage() {
 
         return;
       }
+
+      // Lock the phone as soon as the database write succeeds.
+      setSavedPhone(cleanPhone || "");
+      const savedDisplay = profilePhoneDisplay(cleanPhone || "", phoneCountry);
+      setProfilePhone(savedDisplay.national);
+      setPhoneCountry(savedDisplay.country);
 
       const {
         error:
@@ -1116,10 +1165,6 @@ export default function DashboardPage() {
 
       setProfileNickname(cleanNickname);
       setSavedNickname(cleanNickname);
-
-      setProfilePhone(
-        cleanPhone
-      );
 
       setProfileSuccess(
         "Profilul a fost actualizat."
@@ -1750,7 +1795,7 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => {
-                if (!isValidRomanianMobilePhone(profilePhone)) {
+                if (!isValidRomanianMobilePhone(savedPhone)) {
                   setPhoneRequired(true);
                   setActiveSection("profile");
 
@@ -2054,7 +2099,7 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (!isValidRomanianMobilePhone(profilePhone)) {
+                    if (!isValidRomanianMobilePhone(savedPhone)) {
                       setPhoneRequired(true);
                       setActiveSection("profile");
 
@@ -2177,7 +2222,7 @@ export default function DashboardPage() {
                   }}
                 >
                   Pentru a publica un anunț, adaugă în profil un număr de telefon valid,
-                  format din 10 cifre și care începe cu 07.
+                  alegând țara și prefixul corespunzător.
                 </div>
               )}
 
@@ -2408,55 +2453,15 @@ export default function DashboardPage() {
                       telefon
                     </label>
 
-                    <input
-                      type="tel"
-                      inputMode="numeric"
-                      aria-label="Număr de telefon"
-                      aria-invalid={Boolean(phoneError)}
-                      aria-describedby={phoneError ? "profile-phone-error" : undefined}
-                      value={
-                        profilePhone
-                      }
-                      onChange={(
-                        event
-                      ) => {
-                        setProfilePhone(event.target.value.replace(/[^0-9]/g, "").slice(0, 10));
+                    <ProfilePhoneInput value={profilePhone} country={phoneCountry}
+                      readOnly={Boolean(savedPhone)} disabled={profileSaving}
+                      required={phoneRequired} error={phoneError}
+                      onChange={(value, country) => {
+                        setProfilePhone(value);
+                        setPhoneCountry(country);
                         setPhoneError("");
-
-                        setProfileSuccess(
-                          ""
-                        );
-                      }}
-                      placeholder="Ex: 07xxxxxxxx"
-                      style={{
-                        width:
-                          "100%",
-                        height:
-                          "44px",
-                        boxSizing:
-                          "border-box",
-                        border:
-                          phoneRequired
-                            ? "1px solid #60A5FA"
-                            : "1px solid #CBD5E1",
-                        borderRadius:
-                          "9px",
-                        padding:
-                          "0 12px",
-                        color:
-                          "#172554",
-                        fontFamily:
-                          "inherit",
-                        fontSize:
-                          "13px",
-                        outline:
-                          "none",
-                        boxShadow:
-                          phoneRequired
-                            ? "0 0 0 3px rgba(59, 130, 246, 0.08)"
-                            : "none",
-                      }}
-                    />
+                        setProfileSuccess("");
+                      }} />
                     {phoneError && (
                       <div
                         id="profile-phone-error"
