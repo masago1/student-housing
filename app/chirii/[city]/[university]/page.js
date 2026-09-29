@@ -1,5 +1,6 @@
 "use client";
 
+import ListingImageGallery from "../../../components/ListingImageGallery";
 import {
   useEffect,
   useMemo,
@@ -2765,6 +2766,7 @@ export default function UniversityListingsPage() {
                       }}
                     >
                       {listing.image_url ? (
+                        <ListingImageGallery listingId={listing.id} cover={listing.image_url} title={listing.title}>
                         <img
                           src={listing.image_url}
                           alt={listing.title}
@@ -2775,6 +2777,7 @@ export default function UniversityListingsPage() {
                             display: "block",
                           }}
                         />
+                        </ListingImageGallery>
                       ) : (
                         <div
                           style={{

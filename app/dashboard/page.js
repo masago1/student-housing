@@ -1,5 +1,6 @@
 "use client";
 
+import ListingImageGallery from "../components/ListingImageGallery";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
@@ -3683,6 +3684,7 @@ export default function DashboardPage() {
                           }}
                         >
                           {listing.image_url ? (
+                            <ListingImageGallery listingId={listing.id} cover={listing.image_url} title={listing.title}>
                             <img
                               src={
                                 listing.image_url
@@ -3702,6 +3704,7 @@ export default function DashboardPage() {
                                   "block",
                               }}
                             />
+                            </ListingImageGallery>
                           ) : (
                             <div
                               style={{
@@ -4673,6 +4676,7 @@ function ListingsList({
               }}
             >
               {listing.image_url ? (
+                <ListingImageGallery listingId={listing.id} cover={listing.image_url} title={listing.title}>
                 <img
                   src={
                     listing.image_url
@@ -4692,6 +4696,7 @@ function ListingsList({
                       "block",
                   }}
                 />
+                </ListingImageGallery>
               ) : (
                 <div
                   style={{

@@ -1,5 +1,6 @@
 "use client";
 
+import ListingImageGallery from "../../components/ListingImageGallery";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "../../lib/supabase";
@@ -515,6 +516,7 @@ export default function MobileCityListingsClient() {
                   }}
                 >
                   {listing.image_url ? (
+                    <ListingImageGallery listingId={listing.id} cover={listing.image_url} title={listing.title}>
                     <img
                       src={
                         listing.image_url
@@ -534,6 +536,7 @@ export default function MobileCityListingsClient() {
                           "block",
                       }}
                     />
+                    </ListingImageGallery>
                   ) : (
                     <div
                       style={{
@@ -812,7 +815,7 @@ export default function MobileCityListingsClient() {
                         "center",
                     }}
                   >
-                    Vezi proprietatea
+                    Vezi anunțul
                   </a>
                 </div>
               </article>

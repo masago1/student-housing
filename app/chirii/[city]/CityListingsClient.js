@@ -1,5 +1,6 @@
 "use client";
 
+import ListingImageGallery from "../../components/ListingImageGallery";
 import {
   useEffect,
   useMemo,
@@ -3165,38 +3166,7 @@ export default function CityListingsPage() {
                         }}
                       >
                         {currentImage ? (
-                          <a
-                            href={
-                              listingUrl
-                            }
-                            onClick={() => {
-                              if (
-                                typeof window !==
-                                "undefined"
-                              ) {
-                                sessionStorage.setItem(
-                                  "shaus-search-url",
-                                  window.location.pathname +
-                                    window.location.search
-                                );
-
-                                sessionStorage.setItem(
-                                  "shaus-search-scroll",
-                                  String(
-                                    window.scrollY
-                                  )
-                                );
-                              }
-                            }}
-                            style={{
-                              display:
-                                "block",
-                              width:
-                                "100%",
-                              height:
-                                "100%",
-                            }}
-                          >
+                          <ListingImageGallery images={images} initialIndex={currentImageIndex} title={listing.title}>
                             <img
                               src={
                                 currentImage
@@ -3216,7 +3186,7 @@ export default function CityListingsPage() {
                                   "block",
                               }}
                             />
-                          </a>
+                          </ListingImageGallery>
                         ) : (
                           <a
                             href={
@@ -3728,7 +3698,7 @@ export default function CityListingsPage() {
                               "center",
                           }}
                         >
-                          Vezi proprietatea
+                          Vezi anunțul
                         </a>
                       </div>
                     </article>
