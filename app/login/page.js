@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase, isPasswordRecoverySession } from "../lib/supabase";
 
-const nicknameTakenMessage = "This username is already taken. Please choose another one.";
-const emailTakenMessage = "This email is already registered. Please use another email or log in.";
+const nicknameTakenMessage = "Acest username este deja folosit. Alege alt username.";
+const emailTakenMessage = "Acest email este deja înregistrat. Folosește alt email sau intră în cont.";
 
 async function checkEmailAvailability(value, signal) {
   const response = await fetch("/api/auth/email-availability", {
