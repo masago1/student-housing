@@ -4,6 +4,32 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase, isPasswordRecoverySession } from "../lib/supabase";
 
+const nicknameTakenMessage = "This username is already taken. Please choose another one.";
+const emailTakenMessage = "This email is already registered. Please use another email or log in.";
+
+async function checkEmailAvailability(value, signal) {
+  const response = await fetch("/api/auth/email-availability", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: value }),
+    cache: "no-store",
+    signal: signal || AbortSignal.timeout(8000),
+  });
+  if (!response.ok) throw new Error("Email check unavailable");
+  const result = await response.json();
+  if (typeof result.registered !== "boolean") throw new Error("Invalid email check");
+  return result.registered;
+}
+
+function checkNicknameAvailability(value) {
+  return supabase
+    .from("public_profiles")
+    .select("id")
+    .eq("nickname", value)
+    .limit(1)
+    .maybeSingle();
+}
+
 export default function LoginPage() {
   const router = useRouter();
 
@@ -18,6 +44,59 @@ export default function LoginPage() {
   const [checkingSession, setCheckingSession] = useState(true);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [nicknameCheck, setNicknameCheck] = useState(null);
+  const cleanNicknameValue = nickname.trim();
+  const nicknameTaken = nicknameCheck?.value === cleanNicknameValue &&
+    nicknameCheck?.status === "taken";
+
+  useEffect(() => {
+    if (mode !== "register" || loading ||
+        !/^[a-zA-Z0-9._-]{3,30}$/.test(cleanNicknameValue)) return;
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const { data, error: checkError } = await checkNicknameAvailability(cleanNicknameValue);
+        if (!cancelled) {
+          setNicknameCheck({
+            value: cleanNicknameValue,
+            status: checkError ? "error" : data ? "taken" : "available",
+          });
+        }
+      } catch {
+        if (!cancelled) setNicknameCheck({ value: cleanNicknameValue, status: "error" });
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [nickname, cleanNicknameValue, mode, loading]);
+
+  const [emailCheck, setEmailCheck] = useState(null);
+  const normalizedEmail = email.trim().toLowerCase();
+  const emailTaken = emailCheck?.value === normalizedEmail && emailCheck?.status === "taken";
+
+  useEffect(() => {
+    if (mode !== "register" || loading || normalizedEmail.length > 254 ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) return;
+    let cancelled = false;
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const registered = await checkEmailAvailability(normalizedEmail, controller.signal);
+        if (!cancelled) setEmailCheck({ value: normalizedEmail, status: registered ? "taken" : "available" });
+      } catch {
+        if (!cancelled) setEmailCheck({ value: normalizedEmail, status: "error" });
+      }
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [email, normalizedEmail, mode, loading]);
 
   /*
     VERIFICĂM DACĂ UTILIZATORUL ESTE DEJA LOGAT
@@ -82,6 +161,9 @@ export default function LoginPage() {
     if (loading) {
       return;
     }
+
+    if (mode === "register" && nicknameTaken) return;
+    if (mode === "register" && emailTaken) return;
 
     setError("");
     setMessage("");
@@ -154,11 +236,7 @@ export default function LoginPage() {
         const {
           data: existingNickname,
           error: nicknameCheckError,
-        } = await supabase
-          .from("public_profiles")
-          .select("id")
-          .ilike("nickname", cleanNickname.replace(/_/g, "\\_"))
-          .maybeSingle();
+        } = await checkNicknameAvailability(cleanNickname);
 
         if (nicknameCheckError) {
           console.error(
@@ -173,9 +251,17 @@ export default function LoginPage() {
         }
 
         if (existingNickname) {
-          setError(
-            "Acest nickname este deja folosit. Alege altul."
-          );
+          setNicknameCheck({ value: cleanNickname, status: "taken" });
+          return;
+        }
+
+        try {
+          if (await checkEmailAvailability(cleanEmail)) {
+            setEmailCheck({ value: cleanEmail.toLowerCase(), status: "taken" });
+            return;
+          }
+        } catch {
+          setError("Email-ul nu a putut fi verificat. Încearcă din nou.");
           return;
         }
 
@@ -198,7 +284,24 @@ export default function LoginPage() {
         });
 
         if (signUpError) {
+          if (["email_exists", "user_already_exists"].includes(signUpError.code) ||
+              /^User already registered\.?$/i.test(signUpError.message || "")) {
+            setEmailCheck({ value: cleanEmail.toLowerCase(), status: "taken" });
+            return;
+          }
+          // Auth can hide a trigger's unique violation behind a generic error.
+          const { data: nicknameOwner } = await checkNicknameAvailability(cleanNickname);
+          if (signUpError.code === "23505" || nicknameOwner) {
+            setNicknameCheck({ value: cleanNickname, status: "taken" });
+            return;
+          }
           setError(signUpError.message);
+          return;
+        }
+
+        // With confirmation enabled, Auth may obscure an existing confirmed user.
+        if (!data?.session && Array.isArray(data?.user?.identities) && data.user.identities.length === 0) {
+          setEmailCheck({ value: cleanEmail.toLowerCase(), status: "taken" });
           return;
         }
 
@@ -230,9 +333,7 @@ export default function LoginPage() {
             if (
               profileError.code === "23505"
             ) {
-              setError(
-                "Acest nickname este deja folosit. Alege altul."
-              );
+              setNicknameCheck({ value: cleanNickname, status: "taken" });
             } else {
               setError(
                 "Contul a fost creat, dar profilul nu a putut fi salvat."
@@ -391,6 +492,8 @@ export default function LoginPage() {
   */
 
   const changeMode = (newMode) => {
+    setEmailCheck(null);
+    setNicknameCheck(null);
     setMode(newMode);
     setError("");
     setMessage("");
@@ -649,9 +752,12 @@ export default function LoginPage() {
                 <input
                   type="text"
                   value={nickname}
-                  onChange={(event) =>
-                    setNickname(event.target.value)
-                  }
+                  onChange={(event) => {
+                    setNicknameCheck(null);
+                    setNickname(event.target.value);
+                  }}
+                  aria-invalid={nicknameTaken || undefined}
+                  aria-describedby={nicknameTaken ? "nickname-error" : undefined}
                   placeholder="Ex: user1234"
                   autoComplete="username"
                   disabled={loading}
@@ -668,6 +774,14 @@ export default function LoginPage() {
                     marginBottom: "7px",
                   }}
                 />
+
+                {nicknameTaken && (
+                  <div id="nickname-error" role="alert" style={{
+                    color: "#dc2626", fontSize: "12px", lineHeight: "1.5", marginBottom: "7px",
+                  }}>
+                    {nicknameTakenMessage}
+                  </div>
+                )}
 
                 <div
                   style={{
@@ -700,9 +814,12 @@ export default function LoginPage() {
               type="email"
               required={mode === "recovery"}
               value={email}
-              onChange={(event) =>
-                setEmail(event.target.value)
-              }
+              onChange={(event) => {
+                setEmailCheck(null);
+                setEmail(event.target.value);
+              }}
+              aria-invalid={(mode === "register" && emailTaken) || undefined}
+              aria-describedby={mode === "register" && emailTaken ? "email-error" : undefined}
               placeholder="nume@email.com"
               autoComplete="email"
               disabled={loading}
@@ -720,6 +837,14 @@ export default function LoginPage() {
             />
 
             {/* PASSWORD */}
+
+            {mode === "register" && emailTaken && (
+              <div id="email-error" role="alert" style={{
+                color: "#dc2626", fontSize: "12px", lineHeight: "1.5", marginTop: "-12px", marginBottom: "19px",
+              }}>
+                {emailTakenMessage}
+              </div>
+            )}
 
             {mode !== "recovery" && <>
             <label
@@ -859,7 +984,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (mode === "register" && (nicknameTaken || emailTaken))}
               style={{
                 width: "100%",
                 border: "none",
