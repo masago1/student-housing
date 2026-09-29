@@ -41,7 +41,8 @@ conflicts show **Acest număr de telefon este asociat altui cont.** inline.
 ## Application behavior
 
 - The selector lists the countries supported by `libphonenumber-js`, with Romanian
-  country names, flags and calling codes. Romania is the default.
+  country names, flags and calling codes. Romania is the default: selector
+  `🇷🇴 +40`, placeholder `7XX XXX XXX`, combined example `+40 7XX XXX XXX`.
 - The field contains the national part. A valid pasted `+…`/`00…` number selects
   its country and removes the calling code from the field. National input is
   formatted on blur to avoid moving the cursor during editing.
@@ -49,7 +50,7 @@ conflicts show **Acest număr de telefon este asociat altui cont.** inline.
   Italian leading zeroes and accepts country-specific mobile and fixed-line
   numbers. Extensions and non-geographic calling codes are outside this country's
   selector and are rejected. Formatting follows the library metadata, so Serbia
-  may display `64 1234567` rather than manually grouping `64 123 4567`.
+  may display `6X XXXXXXX` rather than manually grouping `6X XXX XXXX`.
 - Only E.164 is used for the duplicate RPC and new profile writes. Existing saved
   phones are omitted from subsequent profile writes, remain visible and read-only,
   and have a disabled country selector. The notice appears only before saving.

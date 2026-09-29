@@ -43,7 +43,7 @@ export default function ProfilePhoneInput({ value, country, onChange, readOnly, 
             else onChange(input, country);
           }}
           onBlur={() => { if (!readOnly) format(value); }}
-          placeholder={country === "RO" ? "722 377 995" : "Număr de telefon"}
+          placeholder={country === "RO" ? "7XX XXX XXX" : "Număr de telefon"}
           maxLength={40} style={{ ...style, width: "100%", minWidth: 0 }} />
       </div>
       {!readOnly && <div id="profile-phone-notice" style={{ marginTop: "7px", color: "#64748B", fontSize: "11px", lineHeight: "1.5" }}>
