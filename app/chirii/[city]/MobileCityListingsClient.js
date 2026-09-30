@@ -7,10 +7,21 @@ import { supabase } from "../../lib/supabase";
 import FavoriteButton from "../../components/FavoriteButton";
 import AccountButton from "../../components/AccountButton";
 
+// Match desktop city normalization for both the route slug and stored city name.
+function normalizeCity(value = "") {
+  return decodeURIComponent(String(value))
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 const defaultFilters = {
   minPrice: "", maxPrice: "", rooms: "",
   minSurface: "", maxSurface: "", furnished: "",
-  bedrooms: "", bathrooms: "", propertyType: "",
+  bedrooms: "", bathrooms: "", propertyType: "", listingType: "",
   availableFrom: "", sort: "newest", zone: "",
 };
 
@@ -20,7 +31,7 @@ const filterFields = {
     { name: "maxPrice", label: "Preț maxim (€)", type: "number" },
   ],
   "Camere": [
-    { name: "rooms", label: "Număr de camere", options: [["", "Oricâte"], ["1", "1"], ["2", "2"], ["3", "3"], ["4+", "4+"]] },
+    { name: "rooms", label: "Număr de camere", options: [["", "Oricâte"], ["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"], ["5", "5+"]] },
   ],
   "Suprafață": [
     { name: "minSurface", label: "Suprafață minimă (m²)", type: "number" },
@@ -31,62 +42,87 @@ const filterFields = {
   ],
   "Mai multe": [
     { name: "zone", label: "Cartier", options: [["", "Toate cartierele"]] },
-    { name: "bedrooms", label: "Dormitoare", options: [["", "Oricâte"], ["0", "0"], ["1", "1"], ["2", "2"], ["3", "3"], ["4+", "4+"]] },
-    { name: "bathrooms", label: "Băi", options: [["", "Oricâte"], ["1", "1"], ["2", "2"], ["3+", "3+"]] },
+    { name: "bedrooms", label: "Dormitoare", options: [["", "Oricâte"], ["1", "1"], ["2", "2"], ["3", "3"], ["4", "4+"]] },
+    { name: "bathrooms", label: "Băi", options: [["", "Oricâte"], ["1", "1"], ["2", "2"], ["3", "3+"]] },
     { name: "propertyType", label: "Tip proprietate", options: [["", "Toate"], ["apartment", "Apartament"], ["studio", "Garsonieră"], ["house", "Casă"], ["room", "Cameră"]] },
+    { name: "listingType", label: "Tip închiriere", options: [["", "Toate"], ["entire", "Locuință întreagă"], ["room", "Cameră"]] },
     { name: "availableFrom", label: "Disponibilitate — disponibil până la", type: "date" },
     { name: "sort", label: "Sortare", options: [["newest", "Cele mai noi"], ["price_asc", "Preț crescător"], ["price_desc", "Preț descrescător"], ["surface_desc", "Suprafață descrescătoare"]] },
   ],
 };
 
+function readUrlFilters(search) {
+  const params = new URLSearchParams(search);
+  const filters = { ...defaultFilters };
+  for (const key of Object.keys(filters)) {
+    filters[key] = params.get(key === "zone" ? "zona" : key) || defaultFilters[key];
+  }
+  if (filters.listingType === "rent") filters.listingType = "entire";
+  // The native mobile date input uses ISO; desktop displays this same date as DD/MM/YYYY.
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(filters.availableFrom)) filters.availableFrom = "";
+  return filters;
+}
+
+function filtersToSearchParams(filters) {
+  const params = new URLSearchParams();
+  for (const key of Object.keys(defaultFilters)) {
+    if (filters[key]) params.set(key === "zone" ? "zona" : key, filters[key]);
+  }
+  return params;
+}
+
 function filterListings(listings, filters) {
-  const numericValue = (value) =>
-    value == null || value === "" ? NaN : Number(value);
-  const inRange = (value, min, max) => {
-    if (min === "" && max === "") return true;
-    const number = numericValue(value);
-    return Number.isFinite(number) &&
-      (min === "" || number >= Number(min)) &&
-      (max === "" || number <= Number(max));
-  };
-  const matchesCount = (value, selected) => {
-    if (!selected) return true;
-    const number = numericValue(value);
-    return selected.endsWith("+")
-      ? number >= Number(selected.slice(0, -1))
-      : number === Number(selected);
-  };
-
-  const result = listings.filter((listing) =>
-    (!filters.zone || listing.neighborhoods?.slug === filters.zone) &&
-    inRange(listing.price_monthly, filters.minPrice, filters.maxPrice) &&
-    inRange(listing.surface_m2, filters.minSurface, filters.maxSurface) &&
-    matchesCount(listing.rooms, filters.rooms) &&
-    matchesCount(listing.bedrooms, filters.bedrooms) &&
-    matchesCount(listing.bathrooms, filters.bathrooms) &&
-    (!filters.propertyType || listing.property_type === filters.propertyType) &&
-    (!filters.furnished || listing.furnished === (filters.furnished === "yes")) &&
-    (!filters.availableFrom || (listing.available_from &&
-      listing.available_from.slice(0, 10) <= filters.availableFrom))
-  );
-
-  const sortFields = {
-    price_asc: ["price_monthly", 1],
-    price_desc: ["price_monthly", -1],
-    surface_desc: ["surface_m2", -1],
-  };
-  return result.sort((a, b) => {
-    const sortField = sortFields[filters.sort];
-    if (sortField) {
-      const [field, direction] = sortField;
-      const first = numericValue(a[field]);
-      const second = numericValue(b[field]);
-      if (!Number.isFinite(first)) return Number.isFinite(second) ? 1 : 0;
-      if (!Number.isFinite(second)) return -1;
-      return (first - second) * direction;
-    }
-    return (Date.parse(b.created_at) || 0) - (Date.parse(a.created_at) || 0);
+  // Keep comparisons and numeric coercion identical to CityListingsClient.
+  const result = listings.filter((listing) => {
+    if (filters.zone && (listing.neighborhoods?.slug || "") !== filters.zone) return false;
+    if (filters.minPrice && Number(listing.price_monthly) < Number(filters.minPrice)) return false;
+    if (filters.maxPrice && Number(listing.price_monthly) > Number(filters.maxPrice)) return false;
+    if (filters.rooms && Number(listing.rooms) !== Number(filters.rooms)) return false;
+    if (filters.bedrooms && Number(listing.bedrooms) !== Number(filters.bedrooms)) return false;
+    if (filters.bathrooms && Number(listing.bathrooms) !== Number(filters.bathrooms)) return false;
+    if (filters.minSurface && Number(listing.surface_m2) < Number(filters.minSurface)) return false;
+    if (filters.maxSurface && Number(listing.surface_m2) > Number(filters.maxSurface)) return false;
+    if (filters.propertyType && listing.property_type !== filters.propertyType) return false;
+    if (filters.listingType && listing.listing_type !== filters.listingType) return false;
+    if (filters.furnished === "yes" && listing.furnished !== true) return false;
+    if (filters.furnished === "no" && listing.furnished !== false) return false;
+    if (filters.availableFrom && (!listing.available_from || listing.available_from > filters.availableFrom)) return false;
+    return true;
   });
+
+  return result.sort((a, b) => {
+    switch (filters.sort) {
+      case "price_asc": return Number(a.price_monthly) - Number(b.price_monthly);
+      case "price_desc": return Number(b.price_monthly) - Number(a.price_monthly);
+      case "surface_desc": return Number(b.surface_m2 || 0) - Number(a.surface_m2 || 0);
+      case "newest":
+      default: return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    }
+  });
+}
+
+function validateFilterValues(filters) {
+  for (const [min, max, label, limit] of [
+    ["minPrice", "maxPrice", "Prețul", 100000],
+    ["minSurface", "maxSurface", "Suprafața", 10000],
+  ]) {
+    if ([min, max].some((key) => filters[key] &&
+      (!/^[1-9]\d*$/.test(filters[key]) || !Number.isInteger(Number(filters[key])) || Number(filters[key]) > limit))) {
+      return `${label}: introdu numere întregi între 1 și ${limit}.`;
+    }
+    if (filters[min] && filters[max] && Number(filters[min]) > Number(filters[max])) {
+      return `${label}: valoarea minimă nu poate depăși valoarea maximă.`;
+    }
+  }
+  if (filters.availableFrom) {
+    const [year, month, day] = filters.availableFrom.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(filters.availableFrom) ||
+      date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+      return "Data disponibilității nu este validă.";
+    }
+  }
+  return "";
 }
 
 export default function MobileCityListingsClient() {
@@ -110,49 +146,41 @@ export default function MobileCityListingsClient() {
     [listings, appliedFilters]
   );
 
-  function updateNeighborhoodUrl(zone) {
-    const url = new URL(window.location.href);
-    if (zone) url.searchParams.set("zona", zone);
-    else url.searchParams.delete("zona");
-    window.history.replaceState(window.history.state, "", url);
+  function updateFiltersUrl(filters) {
+    const query = filters ? filtersToSearchParams(filters).toString() : "";
+    window.history.pushState({}, "", `/chirii/${citySlug}${query ? `?${query}` : ""}`);
   }
 
   function applyFilters() {
-    for (const [min, max, label] of [
-      ["minPrice", "maxPrice", "Prețul"],
-      ["minSurface", "maxSurface", "Suprafața"],
-    ]) {
-      if ([min, max].some((key) => draftFilters[key] !== "" &&
-        (!Number.isFinite(Number(draftFilters[key])) || Number(draftFilters[key]) < 0))) {
-        setFilterError(`${label}: introdu valori pozitive sau zero.`);
-        return;
-      }
-      if (draftFilters[min] !== "" && draftFilters[max] !== "" &&
-        Number(draftFilters[min]) > Number(draftFilters[max])) {
-        setFilterError(`${label}: valoarea minimă nu poate depăși valoarea maximă.`);
-        return;
-      }
+    const error = validateFilterValues(draftFilters);
+    if (error) {
+      setFilterError(error);
+      return;
     }
     setFilterError("");
     setAppliedFilters({ ...draftFilters });
-    updateNeighborhoodUrl(draftFilters.zone);
+    updateFiltersUrl(draftFilters);
     setOpenFilter(null);
   }
 
   function resetFilters() {
     setDraftFilters({ ...defaultFilters });
     setAppliedFilters({ ...defaultFilters });
-    updateNeighborhoodUrl("");
+    updateFiltersUrl(null);
     setFilterError("");
   }
+
+  useEffect(() => {
+    const filters = readUrlFilters(window.location.search);
+    setDraftFilters(filters);
+    setAppliedFilters(filters);
+  }, [citySlug]);
 
   useEffect(() => {
     let cancelled = false;
     setNeighborhoods([]);
     setNeighborhoodsLoading(true);
     setNeighborhoodsError("");
-    setDraftFilters((current) => ({ ...current, zone: "" }));
-    setAppliedFilters((current) => ({ ...current, zone: "" }));
 
     async function loadNeighborhoods() {
       try {
@@ -172,10 +200,6 @@ export default function MobileCityListingsClient() {
         if (cancelled) return;
         const options = data || [];
         setNeighborhoods(options);
-        const requestedZone = new URL(window.location.href).searchParams.get("zona");
-        const zone = options.some((item) => item.slug === requestedZone) ? requestedZone : "";
-        setDraftFilters((current) => ({ ...current, zone }));
-        setAppliedFilters((current) => ({ ...current, zone }));
       } catch {
         if (!cancelled) setNeighborhoodsError("Cartierele nu au putut fi încărcate. Încearcă să reîncarci pagina.");
       } finally {
@@ -203,6 +227,7 @@ export default function MobileCityListingsClient() {
           bathrooms,
           surface_m2,
           property_type,
+          listing_type,
           available_from,
           furnished,
           image_url,
@@ -219,24 +244,11 @@ export default function MobileCityListingsClient() {
         });
 
       if (!error) {
-        const normalizedCity = decodeURIComponent(
-          citySlug
-        )
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .toLowerCase()
-          .replace(/-/g, " ")
-          .trim();
+        const normalizedCity = normalizeCity(citySlug);
 
         const filtered = (data || []).filter(
           (listing) => {
-            const listingCity = String(
-              listing.city || ""
-            )
-              .normalize("NFD")
-              .replace(/[\u0300-\u036f]/g, "")
-              .toLowerCase()
-              .trim();
+            const listingCity = normalizeCity(listing.city);
 
             return listingCity === normalizedCity;
           }
