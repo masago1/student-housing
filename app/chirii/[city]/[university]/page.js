@@ -1,5 +1,8 @@
 "use client";
 
+import { desktopUrlFilters, filtersToSearchParams, filterDesktopListings, universitiesForCity, findUniversity } from "../../../lib/rentalFilters.mjs";
+import UniversityFilter from "../../../components/UniversityFilter";
+import NeighborhoodFilter from "../../../components/NeighborhoodFilter";
 import ListingImageGallery from "../../../components/ListingImageGallery";
 import {
   useEffect,
@@ -734,6 +737,7 @@ export default function UniversityListingsPage() {
   const [listings, setListings] =
     useState([]);
 
+  const [zone, setZone] = useState("");
   const [university, setUniversity] =
     useState(null);
 
@@ -850,6 +854,7 @@ export default function UniversityListingsPage() {
     listingType: "",
     availableFrom: "",
     sort: "newest",
+    zone: "",
   });
 
   const [
@@ -874,120 +879,26 @@ export default function UniversityListingsPage() {
       return;
     }
 
-    const searchParams =
-      new URLSearchParams(
-        window.location.search
-      );
-
-    const urlMinPrice =
-      searchParams.get(
-        "minPrice"
-      ) || "";
-
-    const urlMaxPrice =
-      searchParams.get(
-        "maxPrice"
-      ) || "";
-
-    const urlRooms =
-      searchParams.get(
-        "rooms"
-      ) || "";
-
-    const urlBedrooms =
-      searchParams.get(
-        "bedrooms"
-      ) || "";
-
-    const urlBathrooms =
-      searchParams.get(
-        "bathrooms"
-      ) || "";
-
-    const urlMinSurface =
-      searchParams.get(
-        "minSurface"
-      ) || "";
-
-    const urlMaxSurface =
-      searchParams.get(
-        "maxSurface"
-      ) || "";
-
-    const urlPropertyType =
-      searchParams.get(
-        "propertyType"
-      ) || "";
-
-    const urlFurnished =
-      searchParams.get(
-        "furnished"
-      ) || "";
-
-    const urlListingType =
-      searchParams.get(
-        "listingType"
-      ) || "";
-
-    const urlSort =
-      searchParams.get(
-        "sort"
-      ) || "newest";
-
-    const urlAvailableFrom =
-      searchParams.get(
-        "availableFrom"
-      ) || "";
-
-    const formattedAvailableFrom =
-      isoDateToRomanian(
-        urlAvailableFrom
-      );
-
-    setMinPrice(urlMinPrice);
-    setMaxPrice(urlMaxPrice);
-    setRooms(urlRooms);
-    setBedrooms(urlBedrooms);
-    setBathrooms(urlBathrooms);
-    setMinSurface(urlMinSurface);
-    setMaxSurface(urlMaxSurface);
-
-    setPropertyType(
-      urlPropertyType
-    );
-
-    setFurnished(
-      urlFurnished
-    );
-
-    setListingType(
-      urlListingType
-    );
-
-    setAvailableFrom(
-      formattedAvailableFrom
-    );
-
-    setSort(urlSort);
-
-    setAppliedFilters({
-      minPrice: urlMinPrice,
-      maxPrice: urlMaxPrice,
-      rooms: urlRooms,
-      bedrooms: urlBedrooms,
-      bathrooms: urlBathrooms,
-      minSurface: urlMinSurface,
-      maxSurface: urlMaxSurface,
-      propertyType:
-        urlPropertyType,
-      furnished:
-        urlFurnished,
-      listingType:
-        urlListingType,
-      availableFrom:
-        formattedAvailableFrom,
-      sort: urlSort,
-    });
+    function restoreFilters() {
+    const filters = desktopUrlFilters(window.location.search);
+    setMinPrice(filters.minPrice);
+    setMaxPrice(filters.maxPrice);
+    setRooms(filters.rooms);
+    setBedrooms(filters.bedrooms);
+    setBathrooms(filters.bathrooms);
+    setMinSurface(filters.minSurface);
+    setMaxSurface(filters.maxSurface);
+    setPropertyType(filters.propertyType);
+    setFurnished(filters.furnished);
+    setListingType(filters.listingType);
+    setAvailableFrom(filters.availableFrom);
+    setSort(filters.sort);
+    setZone(filters.zone);
+    setAppliedFilters(filters);
+    }
+    restoreFilters();
+    window.addEventListener("popstate", restoreFilters);
+    return () => window.removeEventListener("popstate", restoreFilters);
   }, [
     citySlug,
     universitySlug,
@@ -1018,7 +929,7 @@ export default function UniversityListingsPage() {
         } = await supabase
           .from("universities")
           .select(
-            "id, name, short_name, city"
+            "*"
           );
 
         if (universitiesError) {
@@ -1029,34 +940,12 @@ export default function UniversityListingsPage() {
           return;
         }
 
-        const matchingUniversity =
-          (
-            universitiesData || []
-          ).find((item) => {
-            const sameCity =
-              normalizeValue(
-                item.city
-              ) ===
-              normalizedRequestedCity;
-
-            const shortNameMatches =
-              normalizeValue(
-                item.short_name
-              ) ===
-              normalizedRequestedUniversity;
-
-            const nameMatches =
-              normalizeValue(
-                item.name
-              ) ===
-              normalizedRequestedUniversity;
-
-            return (
-              sameCity &&
-              (shortNameMatches ||
-                nameMatches)
-            );
-          });
+        const { data: cityRows, error: cityError } = await supabase.from("cities").select("id, name, slug");
+        if (cityError) throw cityError;
+        const requestedCity = (cityRows || []).find(city => normalizeValue(city.slug || city.name) === normalizedRequestedCity)
+          || { name: citySlug, slug: citySlug };
+        const matchingUniversity = findUniversity(universitiesForCity(universitiesData || [], requestedCity), universitySlug);
+        if (cancelled) return;
 
         if (!matchingUniversity) {
           setUniversity(null);
@@ -1149,7 +1038,8 @@ export default function UniversityListingsPage() {
             available_from,
             image_url,
             active,
-            created_at
+            created_at,
+            neighborhoods (name, slug)
           `)
           .in(
             "id",
@@ -1384,96 +1274,14 @@ export default function UniversityListingsPage() {
       listingType,
       availableFrom,
       sort,
+      zone,
     });
 
-    const searchParams =
-      new URLSearchParams();
-
-    if (minPrice) {
-      searchParams.set(
-        "minPrice",
-        minPrice
-      );
-    }
-
-    if (maxPrice) {
-      searchParams.set(
-        "maxPrice",
-        maxPrice
-      );
-    }
-
-    if (rooms) {
-      searchParams.set(
-        "rooms",
-        rooms
-      );
-    }
-
-    if (bedrooms) {
-      searchParams.set(
-        "bedrooms",
-        bedrooms
-      );
-    }
-
-    if (bathrooms) {
-      searchParams.set(
-        "bathrooms",
-        bathrooms
-      );
-    }
-
-    if (minSurface) {
-      searchParams.set(
-        "minSurface",
-        minSurface
-      );
-    }
-
-    if (maxSurface) {
-      searchParams.set(
-        "maxSurface",
-        maxSurface
-      );
-    }
-
-    if (propertyType) {
-      searchParams.set(
-        "propertyType",
-        propertyType
-      );
-    }
-
-    if (furnished) {
-      searchParams.set(
-        "furnished",
-        furnished
-      );
-    }
-
-    if (listingType) {
-      searchParams.set(
-        "listingType",
-        listingType
-      );
-    }
-
-    if (availableFrom) {
-      searchParams.set(
-        "availableFrom",
-        romanianDateToISO(
-          availableFrom
-        )
-      );
-    }
-
-    if (sort) {
-      searchParams.set(
-        "sort",
-        sort
-      );
-    }
+    const searchParams = filtersToSearchParams({
+      minPrice, maxPrice, rooms, bedrooms, bathrooms, minSurface, maxSurface,
+      propertyType, furnished, listingType, zone, sort,
+      availableFrom: romanianDateToISO(availableFrom),
+    });
 
     const query =
       searchParams.toString();
@@ -1518,6 +1326,7 @@ export default function UniversityListingsPage() {
     setListingType("");
     setAvailableFrom("");
     setSort("newest");
+    setZone("");
 
     setCalendarOpen(false);
 
@@ -1534,6 +1343,7 @@ export default function UniversityListingsPage() {
       listingType: "",
       availableFrom: "",
       sort: "newest",
+      zone: "",
     });
 
     setValidationErrors([]);
@@ -1580,286 +1390,11 @@ export default function UniversityListingsPage() {
      appliedFilters.
   ========================= */
 
-  const filteredListings =
-    useMemo(() => {
-      let result = [
-        ...listings,
-      ];
-
-      const minimumPrice =
-        numberValue(
-          appliedFilters.minPrice
-        );
-
-      const maximumPrice =
-        numberValue(
-          appliedFilters.maxPrice
-        );
-
-      const minimumSurface =
-        numberValue(
-          appliedFilters.minSurface
-        );
-
-      const maximumSurface =
-        numberValue(
-          appliedFilters.maxSurface
-        );
-
-      if (
-        minimumPrice !== null
-      ) {
-        result = result.filter(
-          (listing) =>
-            Number(
-              listing.price_monthly
-            ) >= minimumPrice
-        );
-      }
-
-      if (
-        maximumPrice !== null
-      ) {
-        result = result.filter(
-          (listing) =>
-            Number(
-              listing.price_monthly
-            ) <= maximumPrice
-        );
-      }
-
-      if (
-        appliedFilters.rooms
-      ) {
-        const selectedRooms =
-          Number(
-            appliedFilters.rooms
-          );
-
-        if (
-          selectedRooms === 5
-        ) {
-          result = result.filter(
-            (listing) =>
-              Number(
-                listing.rooms
-              ) >= 5
-          );
-        } else {
-          result = result.filter(
-            (listing) =>
-              Number(
-                listing.rooms
-              ) === selectedRooms
-          );
-        }
-      }
-
-      if (
-        appliedFilters.bedrooms
-      ) {
-        const selectedBedrooms =
-          Number(
-            appliedFilters.bedrooms
-          );
-
-        if (
-          selectedBedrooms === 4
-        ) {
-          result = result.filter(
-            (listing) =>
-              Number(
-                listing.bedrooms
-              ) >= 4
-          );
-        } else {
-          result = result.filter(
-            (listing) =>
-              Number(
-                listing.bedrooms
-              ) ===
-              selectedBedrooms
-          );
-        }
-      }
-
-      if (
-        appliedFilters.bathrooms
-      ) {
-        const selectedBathrooms =
-          Number(
-            appliedFilters.bathrooms
-          );
-
-        if (
-          selectedBathrooms === 3
-        ) {
-          result = result.filter(
-            (listing) =>
-              Number(
-                listing.bathrooms
-              ) >= 3
-          );
-        } else {
-          result = result.filter(
-            (listing) =>
-              Number(
-                listing.bathrooms
-              ) ===
-              selectedBathrooms
-          );
-        }
-      }
-
-      if (
-        minimumSurface !== null
-      ) {
-        result = result.filter(
-          (listing) =>
-            Number(
-              listing.surface_m2
-            ) >= minimumSurface
-        );
-      }
-
-      if (
-        maximumSurface !== null
-      ) {
-        result = result.filter(
-          (listing) =>
-            Number(
-              listing.surface_m2
-            ) <= maximumSurface
-        );
-      }
-
-      if (
-        appliedFilters.propertyType
-      ) {
-        result = result.filter(
-          (listing) =>
-            listing.property_type ===
-            appliedFilters.propertyType
-        );
-      }
-
-      if (
-        appliedFilters.furnished ===
-        "yes"
-      ) {
-        result = result.filter(
-          (listing) =>
-            listing.furnished === true
-        );
-      }
-
-      if (
-        appliedFilters.furnished ===
-        "no"
-      ) {
-        result = result.filter(
-          (listing) =>
-            listing.furnished === false
-        );
-      }
-
-      if (
-        appliedFilters.listingType
-      ) {
-        result = result.filter(
-          (listing) =>
-            listing.listing_type ===
-            appliedFilters.listingType
-        );
-      }
-
-      if (
-        appliedFilters.availableFrom
-      ) {
-        const isoDate =
-          romanianDateToISO(
-            appliedFilters.availableFrom
-          );
-
-        if (isoDate) {
-          result = result.filter(
-            (listing) =>
-              listing.available_from &&
-              listing.available_from <=
-                isoDate
-          );
-        }
-      }
-
-      if (
-        appliedFilters.sort ===
-        "price_asc"
-      ) {
-        result.sort(
-          (a, b) =>
-            Number(
-              a.price_monthly
-            ) -
-            Number(
-              b.price_monthly
-            )
-        );
-      }
-
-      if (
-        appliedFilters.sort ===
-        "price_desc"
-      ) {
-        result.sort(
-          (a, b) =>
-            Number(
-              b.price_monthly
-            ) -
-            Number(
-              a.price_monthly
-            )
-        );
-      }
-
-      if (
-        appliedFilters.sort ===
-        "surface_desc"
-      ) {
-        result.sort(
-          (a, b) =>
-            Number(
-              b.surface_m2 || 0
-            ) -
-            Number(
-              a.surface_m2 || 0
-            )
-        );
-      }
-
-      if (
-        appliedFilters.sort ===
-        "newest"
-      ) {
-        result.sort(
-          (a, b) =>
-            new Date(
-              b.created_at
-            ).getTime() -
-            new Date(
-              a.created_at
-            ).getTime()
-        );
-      }
-
-      return result;
-    }, [
-      listings,
-      appliedFilters,
-    ]);
+  const filteredListings = useMemo(() => filterDesktopListings(listings, appliedFilters), [listings, appliedFilters]);
 
   const hasAppliedFilters =
     Boolean(
-      appliedFilters.minPrice ||
+      appliedFilters.zone || appliedFilters.minPrice ||
         appliedFilters.maxPrice ||
         appliedFilters.rooms ||
         appliedFilters.bedrooms ||
@@ -2328,6 +1863,9 @@ export default function UniversityListingsPage() {
             </div>
           </div>
 
+          <NeighborhoodFilter citySlug={citySlug} value={zone} onChange={setZone} inputStyle={inputStyle} labelStyle={labelStyle} />
+          <UniversityFilter citySlug={citySlug} selected={universitySlug} filters={{ minPrice, maxPrice, rooms, bedrooms, bathrooms, minSurface, maxSurface, propertyType, furnished, listingType, zone, sort, availableFrom: romanianDateToISO(availableFrom) }} inputStyle={inputStyle} labelStyle={labelStyle} />
+
           {/* RÂND 3 */}
 
           <div
@@ -2386,8 +1924,8 @@ export default function UniversityListingsPage() {
                   Oricare
                 </option>
 
-                <option value="rent">
-                  Închiriere
+                <option value="entire">
+                  Locuință întreagă
                 </option>
 
                 <option value="room">

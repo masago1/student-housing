@@ -272,6 +272,7 @@ export default async function Home() {
 
   return (
     <HomeDeviceRouter
+      neighborhoods={neighborhoods || []}
       universities={universities || []}
       cities={cities || []}
       desktop={desktopHome}

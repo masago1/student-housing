@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { universitiesForCity as matchingUniversities, searchUrl, validateFilterValues } from "../lib/rentalFilters.mjs";
+import { filterFields } from "../lib/rentalFilterFields.mjs";
 import { useRouter } from "next/navigation";
+
+const canonicalFields = Object.fromEntries(Object.values(filterFields).flat().map(field => [field.name, field]));
 
 /* =========================
    CALENDAR ROMÂNESC
@@ -503,6 +507,8 @@ export default function SearchBox({
   const [maxSurface, setMaxSurface] = useState("");
 
   const [propertyType, setPropertyType] = useState("");
+  const [listingType, setListingType] = useState("");
+  const [filterError, setFilterError] = useState("");
   const [furnished, setFurnished] = useState("");
 
   const [availableFrom, setAvailableFrom] = useState("");
@@ -667,10 +673,7 @@ export default function SearchBox({
   const universitiesForCity = useMemo(() => {
     if (!selectedCity) return [];
 
-    return universities.filter(
-      (university) =>
-        university.city === selectedCity.name
-    );
+    return matchingUniversities(universities, selectedCity);
   }, [
     universities,
     selectedCity,
@@ -774,6 +777,8 @@ export default function SearchBox({
     setMaxSurface("");
     setPropertyType("");
     setFurnished("");
+    setListingType("");
+    setFilterError("");
     setAvailableFrom("");
     setSort("newest");
     setCalendarOpen(false);
@@ -786,129 +791,15 @@ export default function SearchBox({
   const handleSearch = () => {
     if (!selectedCity) return;
 
-    const citySlug =
-      selectedCity.slug ||
-      slugify(selectedCity.name);
-
-    const searchParams =
-      new URLSearchParams();
-
-    if (selectedNeighborhood?.slug) {
-      searchParams.set(
-        "zona",
-        selectedNeighborhood.slug
-      );
-    }
-
-    if (minPrice) {
-      searchParams.set(
-        "minPrice",
-        minPrice
-      );
-    }
-
-    if (maxPrice) {
-      searchParams.set(
-        "maxPrice",
-        maxPrice
-      );
-    }
-
-    if (rooms) {
-      searchParams.set(
-        "rooms",
-        rooms
-      );
-    }
-
-    if (bedrooms) {
-      searchParams.set(
-        "bedrooms",
-        bedrooms
-      );
-    }
-
-    if (bathrooms) {
-      searchParams.set(
-        "bathrooms",
-        bathrooms
-      );
-    }
-
-    if (minSurface) {
-      searchParams.set(
-        "minSurface",
-        minSurface
-      );
-    }
-
-    if (maxSurface) {
-      searchParams.set(
-        "maxSurface",
-        maxSurface
-      );
-    }
-
-    if (propertyType) {
-      searchParams.set(
-        "propertyType",
-        propertyType
-      );
-    }
-
-    if (furnished) {
-      searchParams.set(
-        "furnished",
-        furnished
-      );
-    }
-
-    if (availableFrom) {
-      const isoDate =
-        romanianDateToISO(
-          availableFrom
-        );
-
-      if (isoDate) {
-        searchParams.set(
-          "availableFrom",
-          isoDate
-        );
-      }
-    }
-
-    if (
-      sort &&
-      sort !== "newest"
-    ) {
-      searchParams.set(
-        "sort",
-        sort
-      );
-    }
-
-    const query =
-      searchParams.toString();
-
-    let baseUrl =
-      `/chirii/${citySlug}`;
-
-    if (selectedUniversity) {
-      const universitySlug =
-        slugify(
-          selectedUniversity.short_name ||
-            selectedUniversity.name
-        );
-
-      baseUrl +=
-        `/${universitySlug}`;
-    }
-
-    router.push(
-      query
-        ? `${baseUrl}?${query}`
-        : baseUrl
-    );
+    const filters = {
+      minPrice, maxPrice, rooms, bedrooms, bathrooms, minSurface, maxSurface,
+      propertyType, furnished, listingType, sort, zone: selectedNeighborhood?.slug || "",
+      availableFrom: romanianDateToISO(availableFrom),
+    };
+    const error = validateFilterValues(filters);
+    setFilterError(error);
+    if (error) return;
+    router.push(searchUrl(selectedCity.slug || selectedCity.name, selectedUniversity, filters));
   };
 
   /* =========================
@@ -1319,6 +1210,7 @@ export default function SearchBox({
           FILTRE EXTINSE
       ========================= */}
 
+      {filterError && <p role="alert" style={{ color: "#B91C1C" }}>{filterError}</p>}
       {showMoreFilters && (
         <div
           style={{
@@ -1462,11 +1354,12 @@ export default function SearchBox({
             {/* PREȚ MINIM */}
 
             <div>
-              <label style={labelStyle}>Preț minim</label>
+              <label htmlFor="home-desktop-minPrice" style={labelStyle}>Preț minim</label>
 
               <input
                 type="text"
                 inputMode="numeric"
+                id="home-desktop-minPrice"
                 value={minPrice}
                 placeholder="De la €"
                 onChange={(event) =>
@@ -1482,11 +1375,12 @@ export default function SearchBox({
             {/* PREȚ MAXIM */}
 
             <div>
-              <label style={labelStyle}>Preț maxim</label>
+              <label htmlFor="home-desktop-maxPrice" style={labelStyle}>Preț maxim</label>
 
               <input
                 type="text"
                 inputMode="numeric"
+                id="home-desktop-maxPrice"
                 value={maxPrice}
                 placeholder="Până la €"
                 onChange={(event) =>
@@ -1502,101 +1396,68 @@ export default function SearchBox({
             {/* CAMERE */}
 
             <div>
-              <label style={labelStyle}>Camere</label>
+              <label htmlFor="home-desktop-rooms" style={labelStyle}>Camere</label>
 
-              <select
-                value={rooms}
-                onChange={(event) => setRooms(event.target.value)}
-                style={{
-                  ...inputStyle,
-                  cursor: "pointer",
-                }}
-              >
-                <option value="">Oricare</option>
-                <option value="1">1 cameră</option>
-                <option value="2">2 camere</option>
-                <option value="3">3 camere</option>
-                <option value="4">4 camere</option>
-                <option value="5">5+ camere</option>
+              <select id="home-desktop-rooms" value={rooms}
+                onChange={event => setRooms(event.target.value)}
+                style={{ ...inputStyle, cursor: "pointer" }}>
+                {canonicalFields.rooms.options.map(([value, label]) => (
+                  <option key={value} value={value}>{({"": "Oricare", "1": "1 cameră", "2": "2 camere", "3": "3 camere", "4": "4 camere", "5": "5+ camere"})[value] || label}</option>
+                ))}
               </select>
             </div>
 
             {/* TIP PROPRIETATE */}
 
             <div>
-              <label style={labelStyle}>Tip proprietate</label>
+              <label htmlFor="home-desktop-propertyType" style={labelStyle}>Tip proprietate</label>
 
-              <select
-                value={propertyType}
-                onChange={(event) =>
-                  setPropertyType(event.target.value)
-                }
-                style={{
-                  ...inputStyle,
-                  cursor: "pointer",
-                }}
-              >
-                <option value="">Oricare</option>
-                <option value="apartment">Apartament</option>
-                <option value="studio">Garsonieră</option>
-                <option value="room">Cameră</option>
-                <option value="house">Casă</option>
+              <select id="home-desktop-propertyType" value={propertyType}
+                onChange={event => setPropertyType(event.target.value)}
+                style={{ ...inputStyle, cursor: "pointer" }}>
+                {canonicalFields.propertyType.options.map(([value, label]) => (
+                  <option key={value} value={value}>{({"": "Oricare", "apartment": "Apartament", "studio": "Garsonieră", "room": "Cameră", "house": "Casă"})[value] || label}</option>
+                ))}
               </select>
             </div>
 
             {/* DORMITOARE */}
 
             <div>
-              <label style={labelStyle}>Dormitoare</label>
+              <label htmlFor="home-desktop-bedrooms" style={labelStyle}>Dormitoare</label>
 
-              <select
-                value={bedrooms}
-                onChange={(event) =>
-                  setBedrooms(event.target.value)
-                }
-                style={{
-                  ...inputStyle,
-                  cursor: "pointer",
-                }}
-              >
-                <option value="">Oricare</option>
-                <option value="1">1 dormitor</option>
-                <option value="2">2 dormitoare</option>
-                <option value="3">3 dormitoare</option>
-                <option value="4">4+ dormitoare</option>
+              <select id="home-desktop-bedrooms" value={bedrooms}
+                onChange={event => setBedrooms(event.target.value)}
+                style={{ ...inputStyle, cursor: "pointer" }}>
+                {canonicalFields.bedrooms.options.map(([value, label]) => (
+                  <option key={value} value={value}>{({"": "Oricare", "1": "1 dormitor", "2": "2 dormitoare", "3": "3 dormitoare", "4": "4+ dormitoare"})[value] || label}</option>
+                ))}
               </select>
             </div>
 
             {/* BĂI */}
 
             <div>
-              <label style={labelStyle}>Băi</label>
+              <label htmlFor="home-desktop-bathrooms" style={labelStyle}>Băi</label>
 
-              <select
-                value={bathrooms}
-                onChange={(event) =>
-                  setBathrooms(event.target.value)
-                }
-                style={{
-                  ...inputStyle,
-                  cursor: "pointer",
-                }}
-              >
-                <option value="">Oricare</option>
-                <option value="1">1 baie</option>
-                <option value="2">2 băi</option>
-                <option value="3">3+ băi</option>
+              <select id="home-desktop-bathrooms" value={bathrooms}
+                onChange={event => setBathrooms(event.target.value)}
+                style={{ ...inputStyle, cursor: "pointer" }}>
+                {canonicalFields.bathrooms.options.map(([value, label]) => (
+                  <option key={value} value={value}>{({"": "Oricare", "1": "1 baie", "2": "2 băi", "3": "3+ băi"})[value] || label}</option>
+                ))}
               </select>
             </div>
 
             {/* SUPRAFAȚĂ MINIMĂ */}
 
             <div>
-              <label style={labelStyle}>Suprafață minimă</label>
+              <label htmlFor="home-desktop-minSurface" style={labelStyle}>Suprafață minimă</label>
 
               <input
                 type="text"
                 inputMode="numeric"
+                id="home-desktop-minSurface"
                 value={minSurface}
                 placeholder="De la m²"
                 onChange={(event) =>
@@ -1612,11 +1473,12 @@ export default function SearchBox({
             {/* SUPRAFAȚĂ MAXIMĂ */}
 
             <div>
-              <label style={labelStyle}>Suprafață maximă</label>
+              <label htmlFor="home-desktop-maxSurface" style={labelStyle}>Suprafață maximă</label>
 
               <input
                 type="text"
                 inputMode="numeric"
+                id="home-desktop-maxSurface"
                 value={maxSurface}
                 placeholder="Până la m²"
                 onChange={(event) =>
@@ -1629,24 +1491,28 @@ export default function SearchBox({
               />
             </div>
 
+            <div>
+              <label htmlFor="home-desktop-listingType" style={labelStyle}>Tip anunț</label>
+              <select id="home-desktop-listingType" value={listingType}
+                onChange={event => setListingType(event.target.value)}
+                style={{ ...inputStyle, cursor: "pointer" }}>
+                {canonicalFields.listingType.options.map(([value, label]) => (
+                  <option key={value} value={value}>{({"": "Oricare", "entire": "Locuință întreagă", "room": "Cameră"})[value] || label}</option>
+                ))}
+              </select>
+            </div>
+
             {/* MOBILAT */}
 
             <div>
-              <label style={labelStyle}>Mobilat</label>
+              <label htmlFor="home-desktop-furnished" style={labelStyle}>Mobilat</label>
 
-              <select
-                value={furnished}
-                onChange={(event) =>
-                  setFurnished(event.target.value)
-                }
-                style={{
-                  ...inputStyle,
-                  cursor: "pointer",
-                }}
-              >
-                <option value="">Oricare</option>
-                <option value="yes">Da</option>
-                <option value="no">Nu</option>
+              <select id="home-desktop-furnished" value={furnished}
+                onChange={event => setFurnished(event.target.value)}
+                style={{ ...inputStyle, cursor: "pointer" }}>
+                {canonicalFields.furnished.options.map(([value, label]) => (
+                  <option key={value} value={value}>{({"": "Oricare", "yes": "Da", "no": "Nu"})[value] || label}</option>
+                ))}
               </select>
             </div>
 
@@ -1709,22 +1575,14 @@ export default function SearchBox({
             {/* SORTARE */}
 
             <div>
-              <label style={labelStyle}>Sortare</label>
+              <label htmlFor="home-desktop-sort" style={labelStyle}>Sortare</label>
 
-              <select
-                value={sort}
-                onChange={(event) => setSort(event.target.value)}
-                style={{
-                  ...inputStyle,
-                  cursor: "pointer",
-                }}
-              >
-                <option value="newest">Cele mai noi</option>
-                <option value="price_asc">Preț crescător</option>
-                <option value="price_desc">Preț descrescător</option>
-                <option value="surface_desc">
-                  Suprafață descrescător
-                </option>
+              <select id="home-desktop-sort" value={sort}
+                onChange={event => setSort(event.target.value)}
+                style={{ ...inputStyle, cursor: "pointer" }}>
+                {canonicalFields.sort.options.map(([value, label]) => (
+                  <option key={value} value={value}>{({"newest": "Cele mai noi", "price_asc": "Preț crescător", "price_desc": "Preț descrescător", "surface_desc": "Suprafață descrescător"})[value] || label}</option>
+                ))}
               </select>
             </div>
           </div>

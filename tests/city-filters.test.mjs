@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import * as shared from '../app/lib/rentalFilters.mjs';
+import { filterFields } from '../app/lib/rentalFilterFields.mjs';
 
 const read = name => readFileSync(new URL(`../app/chirii/[city]/${name}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 const desktop = read('CityListingsClient.js');
@@ -9,20 +11,11 @@ const mobile = read('MobileCityListingsClient.js');
 // implementation are checked against the other without maintaining a test-only oracle.
 const helper = (source, name) => source.match(new RegExp(`function ${name}\\([^]*?^}`, 'm'))[0];
 const dateHelpers = ['romanianDateToISO', 'isoDateToRomanian'].map(name => helper(desktop, name)).join('\n');
-const defaults = mobile.match(/const defaultFilters = \{[^]*?\n};/)[0];
-const mobileHelpers = ['readUrlFilters', 'filtersToSearchParams', 'filterListings', 'validateFilterValues'];
-const api = new Function(`${defaults}\n${mobileHelpers.map(name => helper(mobile, name)).join('\n')}\nreturn { defaultFilters, ${mobileHelpers.join(', ')} };`)();
-const isoDateToRomanian = new Function(`${dateHelpers}; return isoDateToRomanian;`)();
-const desktopFilterBody = desktop.match(/const filteredListings =\s*useMemo\(\(\) => \{([^]*?)\}, \[\s*listings,\s*appliedFilters,?\s*\]\)/)[1];
-const filterDesktop = new Function('listings', 'appliedFilters', `${dateHelpers}\n${desktopFilterBody}`);
-const desktopUrlBody = desktop.match(/const searchParams =\s*new URLSearchParams\(\s*window.location.search\s*\);([^]*?)\n  }, \[citySlug\]\);/)[0].split('\n  }, [citySlug]);')[0];
-const setterNames = [...new Set(desktopUrlBody.match(/\bset\w+(?=\()/g))];
-const parseDesktop = new Function('window', ...setterNames, `${dateHelpers}\n${desktopUrlBody}`);
-const desktopFilters = search => {
-  let applied;
-  parseDesktop({ location: { search } }, ...setterNames.map(name => name === 'setAppliedFilters' ? value => { applied = value; } : () => {}));
-  return applied;
-};
+const api = shared;
+const { isoDateToRomanian } = shared;
+const filterDesktop = new Function('listings', 'appliedFilters', 'filterDesktopListings',
+  `return ${desktop.match(/useMemo\(\(\) => (filterDesktopListings\(listings, appliedFilters\))/)[1]};`);
+const desktopFilters = shared.desktopUrlFilters;
 const asDesktop = filters => ({ ...filters, availableFrom: isoDateToRomanian(filters.availableFrom) });
 const ids = rows => rows.map(row => row.id);
 const listings = Array.from({ length: 96 }, (_, i) => ({
@@ -60,7 +53,7 @@ function compare(search) {
   const mobileFilters = api.readUrlFilters(search);
   const expected = desktopFilters(search);
   assert.deepEqual(asDesktop(mobileFilters), expected, `URL ${search}`);
-  assert.deepEqual(ids(api.filterListings(listings, mobileFilters)), ids(filterDesktop(listings, expected)), search);
+  assert.deepEqual(ids(api.filterListings(listings, mobileFilters)), ids(filterDesktop(listings, expected, shared.filterDesktopListings)), search);
 }
 
 test('each filter and all sort orders produce identical ordered listing sets', () => {
@@ -91,7 +84,7 @@ test('numeric count choices match desktop exact equality, including highest choi
   for (const [key, value] of [['rooms', '5'], ['bedrooms', '4'], ['bathrooms', '3']]) {
     assert.deepEqual(ids(api.filterListings(rows, { ...api.defaultFilters, [key]: value })), [Number(value)]);
   }
-  const fields = new Function(`${mobile.match(/const filterFields = \{[^]*?\n};/)[0]} return filterFields;`)();
+  const fields = filterFields;
   for (const [name, expected] of [['rooms', ['', '1', '2', '3', '4', '5']], ['bedrooms', ['', '1', '2', '3', '4']], ['bathrooms', ['', '1', '2', '3']]]) {
     assert.deepEqual(Object.values(fields).flat().find(field => field.name === name).options.map(([value]) => value), expected);
   }

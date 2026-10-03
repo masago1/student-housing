@@ -1,5 +1,8 @@
 "use client";
 
+import { defaultFilters, readUrlFilters, filtersToSearchParams, filterListings, validateFilterValues } from "../../lib/rentalFilters.mjs";
+import { filterFields } from "../../lib/rentalFilterFields.mjs";
+import UniversityFilter from "../../components/UniversityFilter";
 import ListingImageGallery from "../../components/ListingImageGallery";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
@@ -18,112 +21,17 @@ function normalizeCity(value = "") {
     .replace(/^-+|-+$/g, "");
 }
 
-const defaultFilters = {
-  minPrice: "", maxPrice: "", rooms: "",
-  minSurface: "", maxSurface: "", furnished: "",
-  bedrooms: "", bathrooms: "", propertyType: "", listingType: "",
-  availableFrom: "", sort: "newest", zone: "",
-};
 
-const filterFields = {
-  "Preț": [
-    { name: "minPrice", label: "Preț minim (€)", type: "number" },
-    { name: "maxPrice", label: "Preț maxim (€)", type: "number" },
-  ],
-  "Camere": [
-    { name: "rooms", label: "Număr de camere", options: [["", "Oricâte"], ["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"], ["5", "5+"]] },
-  ],
-  "Suprafață": [
-    { name: "minSurface", label: "Suprafață minimă (m²)", type: "number" },
-    { name: "maxSurface", label: "Suprafață maximă (m²)", type: "number" },
-  ],
-  "Mobilat": [
-    { name: "furnished", label: "Mobilat", options: [["", "Oricare"], ["yes", "Da"], ["no", "Nu"]] },
-  ],
-  "Mai multe": [
-    { name: "zone", label: "Cartier", options: [["", "Toate cartierele"]] },
-    { name: "bedrooms", label: "Dormitoare", options: [["", "Oricâte"], ["1", "1"], ["2", "2"], ["3", "3"], ["4", "4+"]] },
-    { name: "bathrooms", label: "Băi", options: [["", "Oricâte"], ["1", "1"], ["2", "2"], ["3", "3+"]] },
-    { name: "propertyType", label: "Tip proprietate", options: [["", "Toate"], ["apartment", "Apartament"], ["studio", "Garsonieră"], ["house", "Casă"], ["room", "Cameră"]] },
-    { name: "listingType", label: "Tip închiriere", options: [["", "Toate"], ["entire", "Locuință întreagă"], ["room", "Cameră"]] },
-    { name: "availableFrom", label: "Disponibilitate — disponibil până la", type: "date" },
-    { name: "sort", label: "Sortare", options: [["newest", "Cele mai noi"], ["price_asc", "Preț crescător"], ["price_desc", "Preț descrescător"], ["surface_desc", "Suprafață descrescătoare"]] },
-  ],
-};
 
-function readUrlFilters(search) {
-  const params = new URLSearchParams(search);
-  const filters = { ...defaultFilters };
-  for (const key of Object.keys(filters)) {
-    filters[key] = params.get(key === "zone" ? "zona" : key) || defaultFilters[key];
-  }
-  if (filters.listingType === "rent") filters.listingType = "entire";
-  // The native mobile date input uses ISO; desktop displays this same date as DD/MM/YYYY.
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(filters.availableFrom)) filters.availableFrom = "";
-  return filters;
-}
 
-function filtersToSearchParams(filters) {
-  const params = new URLSearchParams();
-  for (const key of Object.keys(defaultFilters)) {
-    if (filters[key]) params.set(key === "zone" ? "zona" : key, filters[key]);
-  }
-  return params;
-}
 
-function filterListings(listings, filters) {
-  // Keep comparisons and numeric coercion identical to CityListingsClient.
-  const result = listings.filter((listing) => {
-    if (filters.zone && (listing.neighborhoods?.slug || "") !== filters.zone) return false;
-    if (filters.minPrice && Number(listing.price_monthly) < Number(filters.minPrice)) return false;
-    if (filters.maxPrice && Number(listing.price_monthly) > Number(filters.maxPrice)) return false;
-    if (filters.rooms && Number(listing.rooms) !== Number(filters.rooms)) return false;
-    if (filters.bedrooms && Number(listing.bedrooms) !== Number(filters.bedrooms)) return false;
-    if (filters.bathrooms && Number(listing.bathrooms) !== Number(filters.bathrooms)) return false;
-    if (filters.minSurface && Number(listing.surface_m2) < Number(filters.minSurface)) return false;
-    if (filters.maxSurface && Number(listing.surface_m2) > Number(filters.maxSurface)) return false;
-    if (filters.propertyType && listing.property_type !== filters.propertyType) return false;
-    if (filters.listingType && listing.listing_type !== filters.listingType) return false;
-    if (filters.furnished === "yes" && listing.furnished !== true) return false;
-    if (filters.furnished === "no" && listing.furnished !== false) return false;
-    if (filters.availableFrom && (!listing.available_from || listing.available_from > filters.availableFrom)) return false;
-    return true;
-  });
 
-  return result.sort((a, b) => {
-    switch (filters.sort) {
-      case "price_asc": return Number(a.price_monthly) - Number(b.price_monthly);
-      case "price_desc": return Number(b.price_monthly) - Number(a.price_monthly);
-      case "surface_desc": return Number(b.surface_m2 || 0) - Number(a.surface_m2 || 0);
-      case "newest":
-      default: return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    }
-  });
-}
 
-function validateFilterValues(filters) {
-  for (const [min, max, label, limit] of [
-    ["minPrice", "maxPrice", "Prețul", 100000],
-    ["minSurface", "maxSurface", "Suprafața", 10000],
-  ]) {
-    if ([min, max].some((key) => filters[key] &&
-      (!/^[1-9]\d*$/.test(filters[key]) || !Number.isInteger(Number(filters[key])) || Number(filters[key]) > limit))) {
-      return `${label}: introdu numere întregi între 1 și ${limit}.`;
-    }
-    if (filters[min] && filters[max] && Number(filters[min]) > Number(filters[max])) {
-      return `${label}: valoarea minimă nu poate depăși valoarea maximă.`;
-    }
-  }
-  if (filters.availableFrom) {
-    const [year, month, day] = filters.availableFrom.split("-").map(Number);
-    const date = new Date(year, month - 1, day);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(filters.availableFrom) ||
-      date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
-      return "Data disponibilității nu este validă.";
-    }
-  }
-  return "";
-}
+
+
+
+
+
 
 export default function MobileCityListingsClient() {
   const params = useParams();
@@ -171,9 +79,14 @@ export default function MobileCityListingsClient() {
   }
 
   useEffect(() => {
+    function restoreFilters() {
     const filters = readUrlFilters(window.location.search);
     setDraftFilters(filters);
     setAppliedFilters(filters);
+    }
+    restoreFilters();
+    window.addEventListener("popstate", restoreFilters);
+    return () => window.removeEventListener("popstate", restoreFilters);
   }, [citySlug]);
 
   useEffect(() => {
@@ -415,6 +328,8 @@ export default function MobileCityListingsClient() {
             </button>
           ))}
         </div>
+
+        <UniversityFilter citySlug={citySlug} filters={draftFilters} />
 
         <div id="mobile-city-filter-panel" hidden={!openFilter}>
           {openFilter && (

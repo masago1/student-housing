@@ -7,6 +7,7 @@ export default function HomeDeviceRouter({
   desktop,
   universities = [],
   cities = [],
+  neighborhoods = [],
 }) {
   const [isMobile, setIsMobile] = useState(null);
 
@@ -43,6 +44,7 @@ export default function HomeDeviceRouter({
       <MobileHomeClient
         universities={universities}
         cities={cities}
+        neighborhoods={neighborhoods}
       />
     );
   }

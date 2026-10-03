@@ -1,5 +1,8 @@
 "use client";
 
+import { desktopUrlFilters, filtersToSearchParams, filterDesktopListings } from "../../lib/rentalFilters.mjs";
+import NeighborhoodFilter from "../../components/NeighborhoodFilter";
+import UniversityFilter from "../../components/UniversityFilter";
 import ListingImageGallery from "../../components/ListingImageGallery";
 import {
   useEffect,
@@ -1004,129 +1007,26 @@ export default function CityListingsPage() {
       return;
     }
 
-    const searchParams =
-      new URLSearchParams(
-        window.location.search
-      );
-
-    const urlMinPrice =
-      searchParams.get("minPrice") ||
-      "";
-
-    const urlMaxPrice =
-      searchParams.get("maxPrice") ||
-      "";
-
-    const urlRooms =
-      searchParams.get("rooms") || "";
-
-    const urlBedrooms =
-      searchParams.get(
-        "bedrooms"
-      ) || "";
-
-    const urlBathrooms =
-      searchParams.get(
-        "bathrooms"
-      ) || "";
-
-    const urlMinSurface =
-      searchParams.get(
-        "minSurface"
-      ) || "";
-
-    const urlMaxSurface =
-      searchParams.get(
-        "maxSurface"
-      ) || "";
-
-    const urlPropertyType =
-      searchParams.get(
-        "propertyType"
-      ) || "";
-
-    const urlFurnished =
-      searchParams.get(
-        "furnished"
-      ) || "";
-
-    const rawUrlListingType =
-      searchParams.get(
-        "listingType"
-      ) || "";
-
-    // Homepage-ul folosea anterior `rent`,
-    // iar anunțurile folosesc `entire`
-    // pentru locuință întreagă.
-    const urlListingType =
-      rawUrlListingType === "rent"
-        ? "entire"
-        : rawUrlListingType;
-
-    const urlZone =
-      searchParams.get("zona") || "";
-
-    const urlSort =
-      searchParams.get("sort") ||
-      "newest";
-
-    const urlAvailableFrom =
-      searchParams.get(
-        "availableFrom"
-      ) || "";
-
-    const formattedAvailableFrom =
-      isoDateToRomanian(
-        urlAvailableFrom
-      );
-
-    setMinPrice(urlMinPrice);
-    setMaxPrice(urlMaxPrice);
-    setRooms(urlRooms);
-    setBedrooms(urlBedrooms);
-    setBathrooms(urlBathrooms);
-    setMinSurface(urlMinSurface);
-    setMaxSurface(urlMaxSurface);
-
-    setPropertyType(
-      urlPropertyType
-    );
-
-    setFurnished(
-      urlFurnished
-    );
-
-    setListingType(
-      urlListingType
-    );
-
-    setZone(urlZone);
-
-    setAvailableFrom(
-      formattedAvailableFrom
-    );
-
-    setSort(urlSort);
-
-    setAppliedFilters({
-      minPrice: urlMinPrice,
-      maxPrice: urlMaxPrice,
-      rooms: urlRooms,
-      bedrooms: urlBedrooms,
-      bathrooms: urlBathrooms,
-      minSurface: urlMinSurface,
-      maxSurface: urlMaxSurface,
-      propertyType:
-        urlPropertyType,
-      furnished:
-        urlFurnished,
-      listingType:
-        urlListingType,
-      availableFrom:
-        formattedAvailableFrom,
-      sort: urlSort,
-      zone: urlZone,
-    });
+    function restoreFilters() {
+    const filters = desktopUrlFilters(window.location.search);
+    setMinPrice(filters.minPrice);
+    setMaxPrice(filters.maxPrice);
+    setRooms(filters.rooms);
+    setBedrooms(filters.bedrooms);
+    setBathrooms(filters.bathrooms);
+    setMinSurface(filters.minSurface);
+    setMaxSurface(filters.maxSurface);
+    setPropertyType(filters.propertyType);
+    setFurnished(filters.furnished);
+    setListingType(filters.listingType);
+    setAvailableFrom(filters.availableFrom);
+    setSort(filters.sort);
+    setZone(filters.zone);
+    setAppliedFilters(filters);
+    }
+    restoreFilters();
+    window.addEventListener("popstate", restoreFilters);
+    return () => window.removeEventListener("popstate", restoreFilters);
   }, [citySlug]);
 
   /* =========================
@@ -1490,101 +1390,11 @@ export default function CityListingsPage() {
       zone,
     });
 
-    const searchParams =
-      new URLSearchParams();
-
-    if (zone) {
-      searchParams.set(
-        "zona",
-        zone
-      );
-    }
-
-    if (minPrice) {
-      searchParams.set(
-        "minPrice",
-        minPrice
-      );
-    }
-
-    if (maxPrice) {
-      searchParams.set(
-        "maxPrice",
-        maxPrice
-      );
-    }
-
-    if (rooms) {
-      searchParams.set(
-        "rooms",
-        rooms
-      );
-    }
-
-    if (bedrooms) {
-      searchParams.set(
-        "bedrooms",
-        bedrooms
-      );
-    }
-
-    if (bathrooms) {
-      searchParams.set(
-        "bathrooms",
-        bathrooms
-      );
-    }
-
-    if (minSurface) {
-      searchParams.set(
-        "minSurface",
-        minSurface
-      );
-    }
-
-    if (maxSurface) {
-      searchParams.set(
-        "maxSurface",
-        maxSurface
-      );
-    }
-
-    if (propertyType) {
-      searchParams.set(
-        "propertyType",
-        propertyType
-      );
-    }
-
-    if (furnished) {
-      searchParams.set(
-        "furnished",
-        furnished
-      );
-    }
-
-    if (listingType) {
-      searchParams.set(
-        "listingType",
-        listingType
-      );
-    }
-
-    if (availableFrom) {
-      searchParams.set(
-        "availableFrom",
-        romanianDateToISO(
-          availableFrom
-        )
-      );
-    }
-
-    if (sort) {
-      searchParams.set(
-        "sort",
-        sort
-      );
-    }
+    const searchParams = filtersToSearchParams({
+      minPrice, maxPrice, rooms, bedrooms, bathrooms, minSurface, maxSurface,
+      propertyType, furnished, listingType, zone, sort,
+      availableFrom: romanianDateToISO(availableFrom),
+    });
 
     const query =
       searchParams.toString();
@@ -1717,218 +1527,7 @@ export default function CityListingsPage() {
      FILTRARE + SORTARE
   ========================= */
 
-  const filteredListings =
-    useMemo(() => {
-      const result = [
-        ...listings,
-      ].filter((listing) => {
-        const price = Number(
-          listing.price_monthly
-        );
-
-        const listingRooms =
-          Number(listing.rooms);
-
-        const listingBedrooms =
-          Number(listing.bedrooms);
-
-        const listingBathrooms =
-          Number(listing.bathrooms);
-
-        const surface = Number(
-          listing.surface_m2
-        );
-
-        const listingNeighborhoodSlug =
-          listing.neighborhoods?.slug || "";
-
-        if (
-          appliedFilters.zone &&
-          listingNeighborhoodSlug !==
-            appliedFilters.zone
-        ) {
-          return false;
-        }
-
-        if (
-          appliedFilters.minPrice &&
-          price <
-            Number(
-              appliedFilters.minPrice
-            )
-        ) {
-          return false;
-        }
-
-        if (
-          appliedFilters.maxPrice &&
-          price >
-            Number(
-              appliedFilters.maxPrice
-            )
-        ) {
-          return false;
-        }
-
-        if (
-          appliedFilters.rooms &&
-          listingRooms !==
-            Number(
-              appliedFilters.rooms
-            )
-        ) {
-          return false;
-        }
-
-        if (
-          appliedFilters.bedrooms &&
-          listingBedrooms !==
-            Number(
-              appliedFilters.bedrooms
-            )
-        ) {
-          return false;
-        }
-
-        if (
-          appliedFilters.bathrooms &&
-          listingBathrooms !==
-            Number(
-              appliedFilters.bathrooms
-            )
-        ) {
-          return false;
-        }
-
-        if (
-          appliedFilters.minSurface &&
-          surface <
-            Number(
-              appliedFilters.minSurface
-            )
-        ) {
-          return false;
-        }
-
-        if (
-          appliedFilters.maxSurface &&
-          surface >
-            Number(
-              appliedFilters.maxSurface
-            )
-        ) {
-          return false;
-        }
-
-        if (
-          appliedFilters.propertyType &&
-          listing.property_type !==
-            appliedFilters.propertyType
-        ) {
-          return false;
-        }
-
-        if (
-          appliedFilters.listingType &&
-          listing.listing_type !==
-            appliedFilters.listingType
-        ) {
-          return false;
-        }
-
-        if (
-          appliedFilters.furnished ===
-            "yes" &&
-          listing.furnished !== true
-        ) {
-          return false;
-        }
-
-        if (
-          appliedFilters.furnished ===
-            "no" &&
-          listing.furnished !== false
-        ) {
-          return false;
-        }
-
-        if (
-          appliedFilters.availableFrom
-        ) {
-          if (
-            !listing.available_from
-          ) {
-            return false;
-          }
-
-          const selectedISO =
-            romanianDateToISO(
-              appliedFilters.availableFrom
-            );
-
-          if (
-            listing.available_from >
-            selectedISO
-          ) {
-            return false;
-          }
-        }
-
-        return true;
-      });
-
-      result.sort((a, b) => {
-        switch (
-          appliedFilters.sort
-        ) {
-          case "price_asc":
-            return (
-              Number(
-                a.price_monthly
-              ) -
-              Number(
-                b.price_monthly
-              )
-            );
-
-          case "price_desc":
-            return (
-              Number(
-                b.price_monthly
-              ) -
-              Number(
-                a.price_monthly
-              )
-            );
-
-          case "surface_desc":
-            return (
-              Number(
-                b.surface_m2 || 0
-              ) -
-              Number(
-                a.surface_m2 || 0
-              )
-            );
-
-          case "newest":
-          default:
-            return (
-              new Date(
-                b.created_at
-              ).getTime() -
-              new Date(
-                a.created_at
-              ).getTime()
-            );
-        }
-      });
-
-      return result;
-    }, [
-      listings,
-      appliedFilters,
-    ]);
+  const filteredListings = useMemo(() => filterDesktopListings(listings, appliedFilters), [listings, appliedFilters]);
 
   /* =========================
      EXISTĂ FILTRE?
@@ -2405,6 +2004,9 @@ export default function CityListingsPage() {
             marginBottom: "12px",
           }}
         >
+          <NeighborhoodFilter citySlug={citySlug} value={zone} onChange={setZone} inputStyle={inputStyle} labelStyle={labelStyle} />
+          <UniversityFilter citySlug={citySlug} filters={{ minPrice, maxPrice, rooms, bedrooms, bathrooms, minSurface, maxSurface, propertyType, furnished, listingType, zone, sort, availableFrom: romanianDateToISO(availableFrom) }} inputStyle={inputStyle} labelStyle={labelStyle} />
+
           <div
             className="filter-grid"
             style={{

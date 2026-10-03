@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { defaultFilters, universitiesForCity, findUniversity, searchUrl, validateFilterValues } from "./lib/rentalFilters.mjs";
+import { filterFields } from "./lib/rentalFilterFields.mjs";
 import AccountButton from "./components/AccountButton";
 
 function normalizeText(value = "") {
@@ -36,8 +38,12 @@ function normalizeSlug(value = "") {
 export default function MobileHomeClient({
   universities = [],
   cities = [],
+  neighborhoods = [],
 }) {
   const router = useRouter();
+  const [filters, setFilters] = useState({ ...defaultFilters });
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
+  const [filterError, setFilterError] = useState("");
 
   const [selectedCity, setSelectedCity] = useState("");
   const [selectedUniversity, setSelectedUniversity] =
@@ -60,69 +66,15 @@ export default function MobileHomeClient({
     );
   }, [cities, selectedCity]);
 
-  const cityUniversities = useMemo(() => {
-    if (!selectedCityObject) {
-      return [];
-    }
-
-    const cityName = normalizeText(
-      selectedCityObject.name
-    );
-
-    const citySlug = normalizeSlug(
-      selectedCityObject.slug
-    );
-
-    return universities.filter((university) => {
-      const universityCity =
-        normalizeText(university.city);
-
-      const universityCitySlug =
-        normalizeSlug(university.city);
-
-      const universityCityName =
-        normalizeText(
-          university.city_name
-        );
-
-      const universityCitySlugValue =
-        normalizeSlug(
-          university.city_slug
-        );
-
-      const universityCityId =
-        String(
-          university.city_id || ""
-        ).trim();
-
-      const selectedCityId =
-        String(
-          selectedCityObject.id || ""
-        ).trim();
-
-      return (
-        universityCity === cityName ||
-        universityCitySlug === citySlug ||
-        universityCityName === cityName ||
-        universityCitySlugValue === citySlug ||
-        (
-          universityCityId &&
-          selectedCityId &&
-          universityCityId ===
-            selectedCityId
-        )
-      );
-    });
-  }, [
-    universities,
-    selectedCityObject,
-  ]);
+  const cityUniversities = useMemo(() => universitiesForCity(universities, selectedCityObject), [universities, selectedCityObject]);
+  const cityNeighborhoods = neighborhoods.filter(item => selectedCityObject && String(item.city_id) === String(selectedCityObject.id));
 
   function handleCityChange(event) {
     const value = event.target.value;
 
     setSelectedCity(value);
     setSelectedUniversity("");
+    setFilters(current => ({ ...current, zone: "" }));
   }
 
   function handleSearch() {
@@ -130,34 +82,11 @@ export default function MobileHomeClient({
       return;
     }
 
-    const city = cities.find(
-      (item) =>
-        normalizeSlug(item.slug) ===
-        normalizeSlug(selectedCity)
-    );
-
-    const citySlug =
-      city?.slug || selectedCity;
-
-    const params =
-      new URLSearchParams();
-
-    if (selectedUniversity) {
-      params.set(
-        "universitate",
-        selectedUniversity
-      );
-    }
-
-    const query = params.toString();
-
-    router.push(
-      `/chirii/${citySlug}${
-        query
-          ? `?${query}`
-          : ""
-      }`
-    );
+    const error = validateFilterValues(filters);
+    setFilterError(error);
+    if (error) return;
+    router.push(searchUrl(selectedCityObject?.slug || selectedCity,
+      findUniversity(cityUniversities, selectedUniversity), filters));
   }
 
   return (
@@ -384,6 +313,32 @@ export default function MobileHomeClient({
               )
             )}
           </select>
+
+          <button type="button" aria-expanded={showMoreFilters} onClick={() => setShowMoreFilters(current => !current)}
+            style={{ marginTop: "16px", background: "transparent", border: 0, padding: 0, color: "#172554", fontWeight: "800", cursor: "pointer" }}>
+            Mai multe filtre {showMoreFilters ? "−" : "+"}
+          </button>
+          {showMoreFilters && <div style={{ display: "grid", gap: "12px", marginTop: "16px" }}>
+            {Object.values(filterFields).flat().map(field => {
+              const options = field.name === "zone"
+                ? [["", "Toate cartierele"], ...cityNeighborhoods.map(item => [item.slug, item.name])]
+                : field.options;
+              const props = {
+                id: `home-mobile-${field.name}`, value: filters[field.name],
+                onChange: event => { setFilters(current => ({ ...current, [field.name]: event.target.value })); setFilterError(""); },
+                style: { width: "100%", boxSizing: "border-box", height: "50px", border: "1px solid #CBD5E1", borderRadius: "10px", background: "white", color: "#0F172A", padding: "0 13px", fontFamily: "inherit", fontSize: "16px" },
+              };
+              return <div key={field.name}>
+                <label htmlFor={props.id} style={{ display: "block", marginBottom: "7px", color: "#334155", fontSize: "12px", fontWeight: "800" }}>{field.label}</label>
+                {options ? <select {...props} disabled={field.name === "zone" && !selectedCity}>
+                  {options.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select> : <input {...props} type={field.type} min={field.type === "number" ? "1" : undefined} step={field.type === "number" ? "1" : undefined} />}
+              </div>;
+            })}
+            <button type="button" onClick={() => { setFilters({ ...defaultFilters }); setFilterError(""); }}
+              style={{ padding: "10px", border: "1px solid #CBD5E1", borderRadius: "10px", background: "white", color: "#172554", fontWeight: "800" }}>Resetează filtrele</button>
+          </div>}
+          {filterError && <p role="alert" style={{ color: "#B91C1C", fontSize: "13px" }}>{filterError}</p>}
 
           {/* BUTON */}
 
