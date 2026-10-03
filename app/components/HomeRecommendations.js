@@ -99,15 +99,12 @@ export default function HomeRecommendations({ cities = [] }) {
   }
 
   const selected = useMemo(() => recommendListings(listings, { intent, city: location?.name, universityIds }), [listings, intent, location, universityIds]);
-  const heading = intent ? "Chirii pentru tine" : location ? `Chirii în ${location.name}` : "Chirii din toată România";
 
   return <section className={styles.section} aria-labelledby="recommendations-title" aria-busy={loading}>
     <div className={styles.header}>
       <div>
-        <span className={styles.eyebrow}>DESCOPERĂ PE shaus</span>
-        <h2 id="recommendations-title">{heading}</h2>
-        <p>{intent ? "Pornim de la ultima ta căutare și îți arătăm și alternative." : location
-          ? "Anunțuri recente din orașul tău și alternative din țară." : "Anunțuri recente, orașe diferite. Găsește locul potrivit pentru tine."}</p>
+        <h2 id="recommendations-title">Chirii din toată România</h2>
+        <p>Anunțuri recente din mai multe orașe.</p>
       </div>
       <div className={styles.actions}>
         {(intent || location) && <button type="button" onClick={clearPreferences}>Resetează recomandările</button>}
@@ -116,7 +113,6 @@ export default function HomeRecommendations({ cities = [] }) {
         </button>}
       </div>
     </div>
-    {!intent && <p className={styles.notice}>Locația este opțională. Cu acordul tău, Mapbox identifică orașul. Nu salvăm coordonatele.</p>}
     {locationMessage && <p role="status" className={styles.notice}>{locationMessage}</p>}
     {loading ? <div className={styles.grid} aria-label="Se încarcă recomandările">
       {Array.from({ length: 6 }, (_, index) => <div key={index} className={styles.skeleton} />)}

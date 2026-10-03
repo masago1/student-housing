@@ -58,7 +58,7 @@ await click("Folosește locația mea");
 assert.equal(openPreferences, 1); assert.equal(locationCalls, 0);
 window.localStorage.setItem("shaus-recent-search", JSON.stringify({ version: 1, city: "timisoara", savedAt: Date.now(), filters: { rooms: "2" } }));
 await render();
-assert.equal(document.querySelector("h2").textContent, "Chirii pentru tine");
+assert.equal(document.querySelector("h2").textContent, "Chirii din toată România");
 assert.equal(document.querySelector(".cta").getAttribute("href"), "/proprietate/1");
 await click("Resetează recomandările");
 assert.equal(document.querySelector("h2").textContent, "Chirii din toată România");
