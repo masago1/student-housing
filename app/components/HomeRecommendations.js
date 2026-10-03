@@ -130,7 +130,7 @@ export default function HomeRecommendations({ cities = [] }) {
               {listing.rooms > 0 && <li>{listing.rooms} {Number(listing.rooms) === 1 ? "cameră" : "camere"}</li>}
               {listing.surface_m2 > 0 && <li>{listing.surface_m2} m²</li>}
             </ul>
-            <Link className={styles.cta} href={`/proprietate/${listing.id}`}>Vezi anunțul <span aria-hidden="true">↗</span></Link>
+            <Link className={styles.cta} href={`/proprietate/${listing.id}`}>Vezi anunțul <span aria-hidden="true" style={{ width: "13px" }} /></Link>
           </div>
         </article>)}</div>}
   </section>;
