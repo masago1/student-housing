@@ -100,12 +100,8 @@ export default function HomeRecommendations({ cities = [] }) {
 
   const selected = useMemo(() => recommendListings(listings, { intent, city: location?.name, universityIds }), [listings, intent, location, universityIds]);
 
-  return <section className={styles.section} aria-labelledby="recommendations-title" aria-busy={loading}>
+  return <section className={styles.section} aria-label="Recomandări de chirii" aria-busy={loading}>
     <div className={styles.header}>
-      <div>
-        <h2 id="recommendations-title">Chirii din toată România</h2>
-        <p>Anunțuri recente din mai multe orașe.</p>
-      </div>
       <div className={styles.actions}>
         {(intent || location) && <button type="button" onClick={clearPreferences}>Resetează recomandările</button>}
         {!intent && <button type="button" onClick={locate} disabled={locating}>
@@ -120,7 +116,7 @@ export default function HomeRecommendations({ cities = [] }) {
       : selected.length === 0 ? <p className={styles.empty}>Nu sunt anunțuri active momentan. Revino curând pentru chirii noi.</p>
         : <div className={styles.grid}>{selected.map(listing => <article className={styles.card} key={listing.id}>
           <div className={styles.image}>
-            {listing.image_url ? <ListingImageGallery listingId={listing.id} cover={listing.image_url} title={listing.title}>
+            {listing.image_url ? <ListingImageGallery carousel listingId={listing.id} cover={listing.image_url} title={listing.title}>
               <img src={listing.image_url} alt={listing.title || "Locuință de închiriat"} loading="lazy" />
             </ListingImageGallery> : <Link className={styles.noImage} href={`/proprietate/${listing.id}`}>Imagine indisponibilă</Link>}
             <FavoriteButton listingId={listing.id} />

@@ -86,14 +86,38 @@ export function ListingLightbox({ images, initialIndex = 0, title, onClose, load
   );
 }
 
-export default function ListingImageGallery({ images, listingId, cover, initialIndex = 0, title, children }) {
+// Keep the previous frame visible until the next image loads, then fade over it.
+function CardFrame({ src, previous, title, onReady }) {
+  const [ready, setReady] = useState(src === previous);
+  const frame = { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" };
+  return <>
+    {previous && <img src={previous} alt="" aria-hidden="true" draggable={false} style={frame} />}
+    <img src={src} alt={title || "Proprietate"} draggable={false} loading="lazy"
+      onLoad={() => { setReady(true); onReady(src); }}
+      className="shaus-card-image-fade" style={{ ...frame, opacity: ready ? 1 : 0 }} />
+  </>;
+}
+
+export default function ListingImageGallery({ images, listingId, cover, initialIndex = 0, title, children, carousel = false, onIndexChange }) {
   const [gallery, setGallery] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const open = gallery !== null;
+  const [fetchedImages, setFetchedImages] = useState(null);
+  const [cardIndex, setCardIndex] = useState(0);
+  const touch = useRef(null);
+  const suppressClickUntil = useRef(0);
+  const lastFrame = useRef(cover || images?.[initialIndex] || null);
+  const cardImages = images?.length ? images : fetchedImages || [cover].filter(Boolean);
+  const index = Math.min(onIndexChange ? initialIndex : cardIndex, Math.max(0, cardImages.length - 1));
+  const move = direction => {
+    if (cardImages.length < 2) return;
+    if (onIndexChange) onIndexChange(direction);
+    else setCardIndex(current => (current + direction + cardImages.length) % cardImages.length);
+  };
 
   useEffect(() => {
-    if (!open || images || !listingId) return;
+    if ((!open && !carousel) || images || !listingId || (carousel && fetchedImages)) return;
     let cancelled = false;
     setLoading(true);
     setError(false);
@@ -102,7 +126,11 @@ export default function ListingImageGallery({ images, listingId, cover, initialI
         const { data, error: queryError } = await supabase.from("listing_images")
           .select("image_url").eq("listing_id", listingId);
         if (queryError) throw queryError;
-        if (!cancelled) setGallery([...new Set([cover, ...(data || []).map(image => image.image_url)].filter(Boolean))]);
+        if (!cancelled) {
+          const next = [...new Set([cover, ...(data || []).map(image => image.image_url)].filter(Boolean))];
+          if (carousel) setFetchedImages(next);
+          setGallery(current => current === null ? null : next);
+        }
       } catch {
         if (!cancelled) setError(true);
       } finally {
@@ -110,18 +138,51 @@ export default function ListingImageGallery({ images, listingId, cover, initialI
       }
     })();
     return () => { cancelled = true; };
-  }, [open, images, listingId, cover]);
+  }, [open, images, listingId, cover, carousel, fetchedImages]);
 
   return <>
+    {carousel && <style>{`.shaus-card-image-fade { transition: opacity 180ms ease-out; } @media (prefers-reduced-motion: reduce) { .shaus-card-image-fade { transition: none; } }`}</style>}
     <button type="button" aria-label={`Deschide fotografiile: ${title || "Anunț"}`}
+      onTouchStart={event => {
+        touch.current = carousel && event.touches.length === 1
+          ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : null;
+      }}
+      onTouchCancel={() => { touch.current = null; }}
+      onTouchEnd={event => {
+        const start = touch.current;
+        touch.current = null;
+        if (!start || !event.changedTouches.length) return;
+        const dx = event.changedTouches[0].clientX - start.x;
+        const dy = event.changedTouches[0].clientY - start.y;
+        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) && cardImages.length > 1) {
+          suppressClickUntil.current = Date.now() + 400;
+          move(dx < 0 ? 1 : -1);
+        }
+      }}
       onClick={event => {
         event.preventDefault(); event.stopPropagation();
-        setGallery(images?.length ? images : [cover].filter(Boolean));
+        if (Date.now() < suppressClickUntil.current) return;
+        setGallery(cardImages);
       }}
-      style={{ display: "block", width: "100%", height: "100%", padding: 0, border: 0, background: "transparent", cursor: "pointer" }}>
-      {children}
+      style={{ position: carousel ? "relative" : undefined, overflow: carousel ? "hidden" : undefined, display: "block", width: "100%", height: "100%", padding: 0, border: 0, background: "transparent", cursor: "pointer", touchAction: carousel ? "pan-y pinch-zoom" : undefined }}>
+      {carousel ? <CardFrame key={cardImages[index]} src={cardImages[index]} previous={lastFrame.current} title={title}
+        onReady={src => { lastFrame.current = src; }} /> : children}
     </button>
-    {gallery?.length > 0 && <ListingLightbox images={gallery} initialIndex={initialIndex}
+    {carousel && !onIndexChange && cardImages.length > 1 && <>
+      {[-1, 1].map(direction => <button key={direction} type="button"
+        aria-label={direction < 0 ? "Imaginea precedentă" : "Imaginea următoare"}
+        onClick={event => { event.preventDefault(); event.stopPropagation(); move(direction); }}
+        style={{ position: "absolute", [direction < 0 ? "left" : "right"]: "9px", top: "50%", transform: "translateY(-50%)",
+          width: "31px", height: "31px", border: 0, borderRadius: "50%", background: "rgba(255,255,255,.92)", color: "#172554",
+          fontSize: "18px", fontWeight: 900, cursor: "pointer", zIndex: 4, boxShadow: "0 3px 10px rgba(15,23,42,.16)" }}>
+        {direction < 0 ? "‹" : "›"}
+      </button>)}
+      <span aria-live="polite" style={{ position: "absolute", left: "50%", bottom: "9px", transform: "translateX(-50%)",
+        padding: "4px 8px", borderRadius: "999px", background: "rgba(15,23,42,.72)", color: "white", fontSize: "11px", fontWeight: 800, zIndex: 4, pointerEvents: "none" }}>
+        {index + 1} / {cardImages.length}
+      </span>
+    </>}
+    {gallery?.length > 0 && <ListingLightbox images={gallery} initialIndex={carousel ? index : initialIndex}
       title={title} onClose={() => setGallery(null)} loading={loading} error={error} />}
   </>;
 }

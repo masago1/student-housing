@@ -2786,7 +2786,8 @@ export default function CityListingsPage() {
                         }}
                       >
                         {currentImage ? (
-                          <ListingImageGallery images={images} initialIndex={currentImageIndex} title={listing.title}>
+                          <ListingImageGallery carousel images={images} initialIndex={currentImageIndex} title={listing.title}
+                            onIndexChange={direction => changeListingImage(listing.id, direction, imageCount)}>
                             <img
                               src={
                                 currentImage

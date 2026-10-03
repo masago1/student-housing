@@ -473,7 +473,7 @@ export default function MobileCityListingsClient() {
                   }}
                 >
                   {listing.image_url ? (
-                    <ListingImageGallery listingId={listing.id} cover={listing.image_url} title={listing.title}>
+                    <ListingImageGallery carousel listingId={listing.id} cover={listing.image_url} title={listing.title}>
                     <img
                       src={
                         listing.image_url

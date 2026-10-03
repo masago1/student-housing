@@ -51,8 +51,7 @@ const dialog = () => document.querySelector('[role="dialog"]');
 const src = () => dialog()?.querySelector('img').getAttribute('src');
 async function click(el) { await act(async () => el.click()); }
 async function key(value) { await act(async () => window.dispatchEvent(new window.KeyboardEvent('keydown', { key: value, bubbles: true }))); }
-async function swipe(x1, y1, x2, y2) {
-  const target = dialog().querySelector('img');
+async function swipe(x1, y1, x2, y2, target = dialog().querySelector('img')) {
   await act(async () => {
     const start = new window.Event('touchstart', { bubbles: true });
     Object.defineProperty(start, 'touches', { value: [{ clientX: x1, clientY: y1 }] });
@@ -112,11 +111,52 @@ await click(button('Deschide fotografiile: Lazy'));
 await click(button('Închide galeria'));
 await act(async () => resolveImages({ data: [{ image_url: 'stale.jpg' }] }));
 assert.equal(dialog(), null); // A pending fetch cannot reopen a closed gallery.
+
+await act(async () => root.render(h(Gallery, { key: 'carousel', carousel: true, images: ['a.jpg', 'b.jpg', 'c.jpg'], title: 'Card' }, image('a.jpg'))));
+const frame = () => document.querySelector('.shaus-card-image-fade');
+await click(button('Imaginea următoare'));
+assert.equal(dialog(), null, 'Card arrows must not open the viewer');
+assert.equal(frame().getAttribute('src'), 'b.jpg');
+assert.equal(frame().style.opacity, '0', 'Wait for the incoming image to load');
+assert.equal(document.querySelector('img[aria-hidden]').getAttribute('src'), 'a.jpg');
+await act(async () => frame().dispatchEvent(new window.Event('load')));
+assert.equal(frame().style.opacity, '1');
+assert.equal(frame().style.objectFit, 'cover');
+assert(document.querySelector('style').textContent.includes('180ms'));
+assert(document.querySelector('style').textContent.includes('prefers-reduced-motion'));
+assert(document.body.textContent.includes('2 / 3'));
+await click(button('Deschide fotografiile: Card'));
+assert.equal(src(), 'b.jpg', 'Viewer starts on selected card image');
+await key('Escape');
+await click(button('Imaginea precedentă'));
+assert(document.body.textContent.includes('1 / 3'));
+await swipe(250, 100, 80, 105, button('Deschide fotografiile: Card'));
+assert(document.body.textContent.includes('2 / 3'));
+await click(button('Deschide fotografiile: Card'));
+assert.equal(dialog(), null, 'Synthetic click after swipe is suppressed');
+await swipe(100, 100, 105, 250, button('Deschide fotografiile: Card'));
+assert(document.body.textContent.includes('2 / 3'), 'Vertical scroll must not change image');
+await act(async () => root.render(h(Gallery, { key: 'single-card', carousel: true, images: ['a.jpg'], title: 'Single' }, image('a.jpg'))));
+assert.equal(button('Imaginea următoare'), undefined);
+let controlledDirection;
+await act(async () => root.render(h(Gallery, { key: 'controlled-card', carousel: true, images: ['a.jpg', 'b.jpg'], initialIndex: 1,
+  onIndexChange: direction => { controlledDirection = direction; }, title: 'Controlled' }, image('b.jpg'))));
+assert.equal(button('Imaginea următoare'), undefined, 'Desktop retains its existing external arrows/counter');
+await swipe(250, 100, 80, 105, button('Deschide fotografiile: Controlled'));
+assert.equal(controlledDirection, 1);
+await act(async () => root.render(h(Gallery, { key: 'fetched-card', carousel: true, listingId: 'card-images', cover: 'cover.jpg', title: 'Fetched' }, image('cover.jpg'))));
+assert.equal(requests.at(-1), 'card-images', 'Mobile/home fetch images for card navigation before opening');
+await act(async () => resolveImages({ data: [{ image_url: 'cover.jpg' }, { image_url: 'extra.jpg' }] }));
+assert(document.body.textContent.includes('1 / 2'));
+await click(button('Imaginea următoare'));
+await click(button('Deschide fotografiile: Fetched'));
+assert.equal(src(), 'extra.jpg');
+await key('Escape');
 await act(async () => root.unmount());
 
 const desktop = readFileSync(new URL('../app/chirii/[city]/CityListingsClient.js', import.meta.url), 'utf8');
 assert(desktop.includes('images={images} initialIndex={currentImageIndex}'));
-assert.equal((desktop.match(/changeListingImage\(\s*listing\.id/g) || []).length, 2);
+assert.equal((desktop.match(/changeListingImage\(\s*listing\.id/g) || []).length, 3);
 for (const path of ['../app/chirii/[city]/CityListingsClient.js', '../app/chirii/[city]/MobileCityListingsClient.js']) {
   const source = readFileSync(new URL(path, import.meta.url), 'utf8');
   assert(source.includes('Vezi anunțul'));
