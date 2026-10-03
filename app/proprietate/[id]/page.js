@@ -464,7 +464,7 @@ export default async function PropertyPage({ params }) {
                                         color: "#111827",
                                     }}
                                 >
-                                    Despre proprietate
+                                    Descriere
                                 </h2>
 
                                 <p
@@ -498,7 +498,7 @@ export default async function PropertyPage({ params }) {
                                     color: "#111827",
                                 }}
                             >
-                                Detalii proprietate
+                                Detalii
                             </h2>
 
                             <div
