@@ -2,6 +2,7 @@
 
 import { defaultFilters, readUrlFilters, filtersToSearchParams, filterListings, validateFilterValues } from "../../lib/rentalFilters.mjs";
 import { filterFields } from "../../lib/rentalFilterFields.mjs";
+import { universityListingIds } from "../../lib/universityListings.mjs";
 import UniversityFilter from "../../components/UniversityFilter";
 import ListingImageGallery from "../../components/ListingImageGallery";
 import { useEffect, useMemo, useState } from "react";
@@ -40,7 +41,11 @@ export default function MobileCityListingsClient() {
     ? params.city[0]
     : params?.city || "";
 
+  const universitySlug = Array.isArray(params?.university) ? params.university[0] : params?.university || "";
+  const resultsPath = `/chirii/${citySlug}${universitySlug ? `/${universitySlug}` : ""}`;
+
   const [listings, setListings] = useState([]);
+  const [loadError, setLoadError] = useState("");
   const [loading, setLoading] = useState(true);
   const [openFilter, setOpenFilter] = useState(null);
   const [draftFilters, setDraftFilters] = useState(defaultFilters);
@@ -56,7 +61,7 @@ export default function MobileCityListingsClient() {
 
   function updateFiltersUrl(filters) {
     const query = filters ? filtersToSearchParams(filters).toString() : "";
-    window.history.pushState({}, "", `/chirii/${citySlug}${query ? `?${query}` : ""}`);
+    window.history.pushState({}, "", `${resultsPath}${query ? `?${query}` : ""}`);
   }
 
   function applyFilters() {
@@ -87,7 +92,7 @@ export default function MobileCityListingsClient() {
     restoreFilters();
     window.addEventListener("popstate", restoreFilters);
     return () => window.removeEventListener("popstate", restoreFilters);
-  }, [citySlug]);
+  }, [citySlug, universitySlug]);
 
   useEffect(() => {
     let cancelled = false;
@@ -125,10 +130,19 @@ export default function MobileCityListingsClient() {
   }, [citySlug]);
 
   useEffect(() => {
+    let cancelled = false;
     async function loadListings() {
       setLoading(true);
 
-      const { data, error } = await supabase
+      setLoadError("");
+      try {
+      const universityIds = await universityListingIds(supabase, citySlug, universitySlug);
+      if (cancelled) return;
+      if (universityIds && universityIds.length === 0) {
+        setListings([]);
+        return;
+      }
+      let query = supabase
         .from("public_listings")
         .select(`
           id,
@@ -156,7 +170,11 @@ export default function MobileCityListingsClient() {
           ascending: false,
         });
 
-      if (!error) {
+      if (universityIds) query = query.in("id", universityIds);
+      const { data, error } = await query;
+      if (error) throw error;
+      if (cancelled) return;
+      {
         const normalizedCity = normalizeCity(citySlug);
 
         const filtered = (data || []).filter(
@@ -170,11 +188,19 @@ export default function MobileCityListingsClient() {
         setListings(filtered);
       }
 
-      setLoading(false);
+      } catch {
+        if (!cancelled) {
+          setListings([]);
+          setLoadError("Nu am putut încărca anunțurile.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
 
     loadListings();
-  }, [citySlug]);
+    return () => { cancelled = true; };
+  }, [citySlug, universitySlug]);
 
   const cityName = decodeURIComponent(
     citySlug
@@ -329,7 +355,8 @@ export default function MobileCityListingsClient() {
           ))}
         </div>
 
-        <UniversityFilter citySlug={citySlug} filters={draftFilters} />
+        {loadError && <p role="alert" style={{ color: "#B91C1C" }}>{loadError}</p>}
+        <UniversityFilter citySlug={citySlug} selected={universitySlug} filters={draftFilters} />
 
         <div id="mobile-city-filter-panel" hidden={!openFilter}>
           {openFilter && (

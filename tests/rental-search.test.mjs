@@ -59,7 +59,7 @@ test('legacy rent maps to entire, dates and all sort orders retain city semantic
 });
 
 test('all result views use the shared predicate and university query includes neighborhood data', () => {
-  for (const file of ['CityListingsClient.js', '[university]/page.js']) {
+  for (const file of ['CityListingsClient.js']) {
     const source = readFileSync(new URL(`../app/chirii/[city]/${file}`, import.meta.url), 'utf8');
     assert(source.includes('filterDesktopListings(listings, appliedFilters)'));
     assert(source.includes('desktopUrlFilters(window.location.search)'));
@@ -69,4 +69,13 @@ test('all result views use the shared predicate and university query includes ne
   const source = readFileSync(new URL('../app/chirii/[city]/MobileCityListingsClient.js', import.meta.url), 'utf8');
   assert(source.includes('filterListings(listings, appliedFilters)'));
   assert(source.includes('readUrlFilters(window.location.search)'));
+});
+
+
+test('university route renders the canonical device router without a separate UI', () => {
+  const source = readFileSync(new URL('../app/chirii/[city]/[university]/page.js', import.meta.url), 'utf8');
+  assert(source.includes('import DeviceRouter from "../DeviceRouter"'));
+  assert(source.includes('<DeviceRouter />'));
+  assert(!source.includes('Student'));
+  assert(!source.includes('<header'));
 });

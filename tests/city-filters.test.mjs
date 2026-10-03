@@ -108,8 +108,8 @@ test('mobile input validation accepts and rejects the same ranges and dates as d
 test('apply/reset serialize all filters and neighborhood loading never replaces the selected zone', () => {
   const update = mobile.match(/  function updateFiltersUrl\(filters\) \{[^]*?\n  }/)[0];
   let url;
-  const write = new Function('window', 'citySlug', 'filtersToSearchParams', `${update}; return updateFiltersUrl;`)(
-    { history: { pushState: (_state, _title, value) => { url = value; } } }, 'timisoara', api.filtersToSearchParams);
+  const write = new Function('window', 'resultsPath', 'filtersToSearchParams', `${update}; return updateFiltersUrl;`)(
+    { history: { pushState: (_state, _title, value) => { url = value; } } }, '/chirii/timisoara', api.filtersToSearchParams);
   const filters = api.readUrlFilters('rooms=2&listingType=room&zona=centru&sort=price_asc&availableFrom=2026-06-01');
   write(filters);
   assert.deepEqual(api.readUrlFilters(new URL(url, 'https://shaus.ro').search), filters);

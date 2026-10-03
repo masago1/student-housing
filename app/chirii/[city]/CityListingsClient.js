@@ -2,6 +2,7 @@
 
 import { desktopUrlFilters, filtersToSearchParams, filterDesktopListings } from "../../lib/rentalFilters.mjs";
 import NeighborhoodFilter from "../../components/NeighborhoodFilter";
+import { universityListingIds } from "../../lib/universityListings.mjs";
 import UniversityFilter from "../../components/UniversityFilter";
 import ListingImageGallery from "../../components/ListingImageGallery";
 import {
@@ -732,6 +733,9 @@ export default function CityListingsPage() {
       ? params.city[0]
       : params?.city || "";
 
+  const universitySlug = Array.isArray(params?.university) ? params.university[0] : params?.university || "";
+  const resultsPath = `/chirii/${citySlug}${universitySlug ? `/${universitySlug}` : ""}`;
+
   const normalizedRequestedCity =
     normalizeCity(citySlug);
 
@@ -1027,7 +1031,7 @@ export default function CityListingsPage() {
     restoreFilters();
     window.addEventListener("popstate", restoreFilters);
     return () => window.removeEventListener("popstate", restoreFilters);
-  }, [citySlug]);
+  }, [citySlug, universitySlug]);
 
   /* =========================
      ÎNCĂRCARE ANUNȚURI + POZE
@@ -1041,10 +1045,14 @@ export default function CityListingsPage() {
       setLoadError("");
 
       try {
-        const {
-          data,
-          error,
-        } = await supabase
+        const universityIds = await universityListingIds(supabase, citySlug, universitySlug);
+        if (cancelled) return;
+        if (universityIds && universityIds.length === 0) {
+          setListings([]);
+          setImageIndexes({});
+          return;
+        }
+        let query = supabase
           .from("public_listings")
           .select(`
             id,
@@ -1078,6 +1086,10 @@ export default function CityListingsPage() {
               ascending: false,
             }
           );
+
+        if (universityIds) query = query.in("id", universityIds);
+        const { data, error } = await query;
+        if (cancelled) return;
 
         if (error) {
           throw error;
@@ -1237,6 +1249,8 @@ export default function CityListingsPage() {
     };
   }, [
     normalizedRequestedCity,
+    citySlug,
+    universitySlug,
   ]);
 
   /* =========================
@@ -1400,7 +1414,7 @@ export default function CityListingsPage() {
       searchParams.toString();
 
     const newUrl =
-      `/chirii/${citySlug}` +
+      resultsPath +
       (query
         ? `?${query}`
         : "");
@@ -1464,7 +1478,7 @@ export default function CityListingsPage() {
     window.history.pushState(
       {},
       "",
-      `/chirii/${citySlug}`
+      resultsPath
     );
 
     window.scrollTo({
@@ -2005,7 +2019,7 @@ export default function CityListingsPage() {
           }}
         >
           <NeighborhoodFilter citySlug={citySlug} value={zone} onChange={setZone} inputStyle={inputStyle} labelStyle={labelStyle} />
-          <UniversityFilter citySlug={citySlug} filters={{ minPrice, maxPrice, rooms, bedrooms, bathrooms, minSurface, maxSurface, propertyType, furnished, listingType, zone, sort, availableFrom: romanianDateToISO(availableFrom) }} inputStyle={inputStyle} labelStyle={labelStyle} />
+          <UniversityFilter citySlug={citySlug} selected={universitySlug} filters={{ minPrice, maxPrice, rooms, bedrooms, bathrooms, minSurface, maxSurface, propertyType, furnished, listingType, zone, sort, availableFrom: romanianDateToISO(availableFrom) }} inputStyle={inputStyle} labelStyle={labelStyle} />
 
           <div
             className="filter-grid"

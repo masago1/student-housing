@@ -15,6 +15,7 @@ globalThis.localStorage = window.localStorage;
 globalThis.requestAnimationFrame = callback => callback();
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 window.scrollTo = () => {};
+window.matchMedia = () => ({ matches: Boolean(globalThis.testMobile), addEventListener() {}, removeEventListener() {} });
 const React = require('react');
 const { act } = React;
 const { createRoot } = require('react-dom/client');
@@ -31,7 +32,7 @@ const tables = { cities, universities, neighborhoods,
   public_listings: [{ ...base, id: 'a', title: 'Listing Alpha' }, { ...base, id: 'b', title: 'Listing Beta', rooms: 6 },
     { ...base, id: 'c', title: 'Listing Gamma', neighborhoods: { slug: 'other' } },
     { ...base, id: 'd', title: 'Wrong City Listing', city: 'București' },
-    { ...base, id: 'e', title: 'Inactive Listing', active: false }],
+    { ...base, id: 'e', title: 'Inactive Listing', active: false }, { ...base, id: 'f', title: 'Unlinked Listing' }],
   listing_universities: ['a','b','c','d','e'].map(listing_id => ({ listing_id, university_id: 'u1' })), listing_images: [] };
 globalThis.searchTestDatabase = { from(table) {
   let rows = [...(tables[table] || [])]; let single = false;
@@ -148,10 +149,34 @@ await click(button('București'));
 await click(button('Vezi chirii'));
 assert.equal(calls.at(-1), '/chirii/bucuresti');
 
-for (const Component of [DesktopCity, MobileCity, University]) {
+const cityLayouts = new Map();
+for (const [Component, mobile] of [[DesktopCity, false], [MobileCity, true], [University, false], [University, true]]) {
+  globalThis.testMobile = mobile;
+  globalThis.searchTestParams = { city: 'cluj-napoca', university: Component === University ? 'u-test' : '' };
   window.history.replaceState({}, '', `/chirii/cluj-napoca${Component === University ? '/u-test' : ''}?listingType=rent&rooms=5&zona=centru`);
   await render(Component);
   assert(document.body.textContent.includes('Listing Alpha'));
+  assert(document.querySelector('header').textContent.includes('shaus'));
+  assert(!document.querySelector('header').textContent.includes('Housing'));
+  const layout = {
+    header: document.querySelector('header').outerHTML,
+    titleStyle: document.querySelector('h1').getAttribute('style'),
+    formStyle: document.querySelector('form')?.getAttribute('style'),
+    formClass: document.querySelector('form')?.className,
+    mainStyle: document.querySelector('main').getAttribute('style'),
+  };
+  if (Component === University) assert.deepEqual(layout, cityLayouts.get(mobile));
+  else cityLayouts.set(mobile, layout);
+  if (Component === University) {
+    assert(!document.body.textContent.includes('Unlinked Listing'));
+    assert.equal(document.querySelector('select[aria-label="Universitate"]').value, 'u-test');
+    await click(button('Aplică filtrele'));
+    assert.equal(window.location.pathname, '/chirii/cluj-napoca/u-test');
+    await click(button('Resetează'));
+    assert.equal(window.location.pathname, '/chirii/cluj-napoca/u-test');
+    assert.equal(window.location.search, '');
+    assert(!document.body.textContent.includes('Unlinked Listing'));
+  } else assert(document.body.textContent.includes('Unlinked Listing'));
   // A shared homepage URL restores every filter on a fresh results mount.
   window.history.replaceState({}, '', mobileUrl);
   await render(Component);
@@ -162,6 +187,7 @@ for (const Component of [DesktopCity, MobileCity, University]) {
   assert(document.body.textContent.includes('Listing Beta'));
   assert(!document.body.textContent.includes('Listing Alpha'));
 }
+globalThis.searchTestParams = { city: 'cluj-napoca' };
 window.history.replaceState({}, '', '/chirii/cluj-napoca?universitate=u1&rooms=5&zona=centru');
 await render(MobileCity);
 assert.equal(new URL(calls.at(-1), window.location.origin).pathname, '/chirii/cluj-napoca/u-test');
