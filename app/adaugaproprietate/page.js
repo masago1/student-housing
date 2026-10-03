@@ -840,7 +840,7 @@ export default function AdaugaProprietatePage() {
             remainingSlots <= 0
         ) {
             setError(
-                "Poți adăuga maximum 10 fotografii."
+                "Poți adăuga maximum 10 imagini."
             );
 
             event.target.value = "";
@@ -853,7 +853,7 @@ export default function AdaugaProprietatePage() {
             remainingSlots
         ) {
             setError(
-                `Poți adăuga maximum 10 fotografii. Mai poți selecta ${remainingSlots}.`
+                `Poți adăuga maximum 10 imagini. Mai poți selecta ${remainingSlots}.`
             );
 
             event.target.value = "";
@@ -885,7 +885,7 @@ export default function AdaugaProprietatePage() {
                 10 * 1024 * 1024
             ) {
                 setError(
-                    "Fiecare fotografie trebuie să aibă maximum 10 MB."
+                    "Fiecare imagine trebuie să aibă maximum 10 MB."
                 );
 
                 event.target.value = "";
@@ -1452,7 +1452,7 @@ export default function AdaugaProprietatePage() {
                 images.length === 0
             ) {
                 setError(
-                    "Adaugă cel puțin o fotografie a proprietății."
+                    "Adaugă cel puțin o imagine a proprietății."
                 );
 
                 return;
@@ -1462,7 +1462,7 @@ export default function AdaugaProprietatePage() {
                 images.length > 10
             ) {
                 setError(
-                    "Poți adăuga maximum 10 fotografii."
+                    "Poți adăuga maximum 10 imagini."
                 );
 
                 return;
@@ -1850,7 +1850,7 @@ export default function AdaugaProprietatePage() {
                         uploadError
                     ) {
                         throw new Error(
-                            `Fotografia ${index + 1} nu a putut fi încărcată: ${uploadError.message}`
+                            `Imaginea ${index + 1} nu a putut fi încărcată: ${uploadError.message}`
                         );
                     }
 
@@ -1900,7 +1900,7 @@ export default function AdaugaProprietatePage() {
                     imagesDatabaseError
                 ) {
                     throw new Error(
-                        `Fotografiile nu au putut fi asociate anunțului: ${imagesDatabaseError.message}`
+                        `Imaginile nu au putut fi asociate anunțului: ${imagesDatabaseError.message}`
                     );
                 }
 
@@ -2290,36 +2290,6 @@ export default function AdaugaProprietatePage() {
                             "35px",
                     }}
                 >
-                    <div
-                        style={{
-                            display:
-                                "inline-block",
-
-                            background:
-                                "#e8f1ff",
-
-                            color:
-                                "#2563eb",
-
-                            padding:
-                                "7px 12px",
-
-                            borderRadius:
-                                "100px",
-
-                            fontSize:
-                                "13px",
-
-                            fontWeight:
-                                "700",
-
-                            marginBottom:
-                                "16px",
-                        }}
-                    >
-                        Publică o proprietate
-                    </div>
-
                     <h1
                         style={{
                             margin:
@@ -2338,7 +2308,7 @@ export default function AdaugaProprietatePage() {
                                 "800",
                         }}
                     >
-                        Adaugă proprietatea
+                        Adaugă anunțul
                     </h1>
 
                     <p
@@ -2368,7 +2338,7 @@ export default function AdaugaProprietatePage() {
                         handleSubmit
                     }
                 >
-                    {/* FOTOGRAFII */}
+                    {/* IMAGINI */}
 
                     <div
                         style={{
@@ -2403,7 +2373,7 @@ export default function AdaugaProprietatePage() {
                                     "800",
                             }}
                         >
-                            Fotografii
+                            Imagini
                         </h2>
 
                         <p
@@ -2421,7 +2391,7 @@ export default function AdaugaProprietatePage() {
                                     "8px 0 22px",
                             }}
                         >
-                            Adaugă între 1 și 10 fotografii. Prima fotografie va fi coperta anunțului.
+                            Adaugă între 1 și 10 imagini. Prima imagine va fi coperta anunțului.
                         </p>
 
                         <label
@@ -2482,8 +2452,8 @@ export default function AdaugaProprietatePage() {
                             >
                                 {images.length >=
                                 10
-                                    ? "Ai adăugat numărul maxim de fotografii"
-                                    : "Selectează fotografii"}
+                                    ? "Ai adăugat numărul maxim de imagini"
+                                    : "Selectează imagini"}
                             </div>
 
                             <div
@@ -2498,7 +2468,7 @@ export default function AdaugaProprietatePage() {
                                         "7px",
                                 }}
                             >
-                                {images.length}/10 fotografii selectate
+                                {images.length}/10 imagini selectate
                             </div>
                         </label>
 
@@ -2547,7 +2517,7 @@ export default function AdaugaProprietatePage() {
                                                 src={
                                                     image.preview
                                                 }
-                                                alt={`Fotografie ${index + 1}`}
+                                                alt={`Imagine ${index + 1}`}
                                                 style={{
                                                     width:
                                                         "100%",
@@ -2679,7 +2649,7 @@ export default function AdaugaProprietatePage() {
                                 fontWeight: "800",
                             }}
                         >
-                            Detalii proprietate
+                            Detalii anunț
                         </h2>
 
                         <div style={fieldStyle}>
@@ -2850,11 +2820,7 @@ export default function AdaugaProprietatePage() {
                                         disabled={
                                             !form.city
                                         }
-                                        placeholder={
-                                            form.city
-                                                ? "Începe să scrii strada și numărul"
-                                                : "Alege mai întâi orașul"
-                                        }
+                                        placeholder="Strada și numărul"
                                         style={{
                                             ...inputStyle,
 
@@ -4233,7 +4199,7 @@ export default function AdaugaProprietatePage() {
                                     marginTop: "5px",
                                 }}
                             >
-                                Verifică informațiile și fotografiile înainte
+                                Verifică informațiile și imaginile înainte
                                 de publicare. Asocierea cu universități este
                                 opțională.
                             </div>
