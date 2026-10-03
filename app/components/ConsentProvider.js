@@ -66,8 +66,8 @@ export default function ConsentProvider({ children }) {
         <section ref={bannerRef} className={styles.banner} aria-labelledby="consent-banner-title">
           <div className={styles.inner}>
             <div className={styles.copy}>
-              <h2 id="consent-banner-title">Folosim cookie-uri pentru a îmbunătăți experiența pe ShaUS.</h2>
-              <p>Serviciile opționale pentru hărți (Mapbox) se activează doar cu acordul tău.</p>
+              <h2 id="consent-banner-title">Preferințe de confidențialitate</h2>
+              <p>Folosim tehnologii necesare pentru funcționarea shaus și, cu acordul tău, servicii externe precum Mapbox pentru afișarea hărților interactive.</p>
             </div>
             <div className={styles.actions}>
               <button type="button" onClick={() => saveChoice(true)}>Acceptă</button>
