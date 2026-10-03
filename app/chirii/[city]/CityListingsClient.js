@@ -3329,6 +3329,16 @@ export default function CityListingsPage() {
       </section>
 
       <style jsx global>{`
+        @media (min-width: 769px) {
+          .listings-list {
+            max-width: 920px;
+          }
+
+          .listings-grid {
+            max-width: 1000px;
+          }
+        }
+
         .mobile-filter-bar {
           display: none;
         }
