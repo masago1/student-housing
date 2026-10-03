@@ -3290,6 +3290,9 @@ export default function CityListingsPage() {
                             }
                           }}
                           style={{
+                            width: "fit-content",
+                            alignSelf: "flex-start",
+                            padding: "0 20px",
                             marginTop:
                               "12px",
                             height:
@@ -3307,7 +3310,7 @@ export default function CityListingsPage() {
                             fontWeight:
                               "800",
                             display:
-                              "flex",
+                              "inline-flex",
                             alignItems:
                               "center",
                             justifyContent:

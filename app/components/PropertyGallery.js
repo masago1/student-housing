@@ -65,7 +65,7 @@ export default function PropertyGallery({ images = [], title = "Proprietate" }) 
         style={{ display: "block", width: "100%", height: "100%", padding: 0,
           border: 0, background: "transparent", cursor: "pointer", touchAction: "pan-y pinch-zoom" }}>
         <img src={images[index]} alt={`${title} — fotografia ${index + 1}`} draggable={false}
-          style={{ display: "block", width: "100%", height: "100%", objectFit: "contain", userSelect: "none" }} />
+          style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", userSelect: "none" }} />
       </button>
       {images.length > 1 && <>
         <button type="button" aria-label="Fotografia anterioară" onClick={() => move(-1)}

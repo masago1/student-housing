@@ -18,6 +18,17 @@ export default function ConsentProvider({ children }) {
   const [draftExternal, setDraftExternal] = useState(false);
   const [storageError, setStorageError] = useState("");
   const dialogRef = useRef(null);
+  const bannerRef = useRef(null);
+  const [bannerHeight, setBannerHeight] = useState(0);
+
+  useEffect(() => {
+    if (!ready || choice || !bannerRef.current) return;
+    const measure = () => setBannerHeight(bannerRef.current?.getBoundingClientRect().height || 0);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(bannerRef.current);
+    return () => observer.disconnect();
+  }, [ready, choice]);
 
   useEffect(() => {
     try { setChoice(parseConsent(localStorage.getItem(CONSENT_KEY))); } catch {}
@@ -52,14 +63,14 @@ export default function ConsentProvider({ children }) {
   return (
     <ConsentContext.Provider value={{ externalServices: ready && choice?.externalServices === true, saveChoice, openPreferences, storageError }}>
       {ready && !choice && (
-        <section className={styles.banner} aria-labelledby="consent-banner-title">
+        <section ref={bannerRef} className={styles.banner} aria-labelledby="consent-banner-title">
           <div className={styles.inner}>
             <div className={styles.copy}>
-              <h2 id="consent-banner-title">Preferințe de confidențialitate</h2>
-              <p>Folosim tehnologii necesare pentru funcționarea shaus și, cu acordul tău, servicii externe precum Mapbox pentru afișarea hărților interactive.</p>
+              <h2 id="consent-banner-title">Folosim cookie-uri pentru a îmbunătăți experiența pe ShaUS.</h2>
+              <p>Serviciile opționale pentru hărți (Mapbox) se activează doar cu acordul tău.</p>
             </div>
             <div className={styles.actions}>
-              <button type="button" onClick={() => saveChoice(true)}>Acceptă toate</button>
+              <button type="button" onClick={() => saveChoice(true)}>Acceptă</button>
               <button type="button" onClick={() => saveChoice(false)}>Doar necesare</button>
               <button type="button" onClick={openPreferences}>Preferințe</button>
             </div>
@@ -67,6 +78,7 @@ export default function ConsentProvider({ children }) {
         </section>
       )}
       {children}
+      {ready && !choice && <div aria-hidden="true" style={{ height: bannerHeight }} />}
       <dialog ref={dialogRef} className={styles.dialog} aria-labelledby="consent-dialog-title">
         <h2 id="consent-dialog-title">Preferințe de confidențialitate</h2>
         <label className={styles.category}>

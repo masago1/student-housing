@@ -51,7 +51,8 @@ await act(async () => root.render(React.createElement(Gallery, { images: ['a.jpg
 assert.equal(region().querySelectorAll('img').length, 1);
 assert.equal(src(region()), 'a.jpg');
 assert.equal(region().style.width, '100%');
-assert.equal(region().querySelector('img').style.objectFit, 'contain');
+assert.equal(region().querySelector('img').style.objectFit, 'cover');
+assert.equal(region().querySelector('img').style.objectPosition, 'center');
 await click(button(region(), 'Fotografia anterioară'));
 assert.equal(src(region()), 'c.jpg');
 assert.equal(dialog(), null);
@@ -72,6 +73,7 @@ const trigger = region().querySelector('button');
 trigger.focus();
 await click(trigger);
 assert.equal(src(dialog()), 'b.jpg');
+assert.equal(dialog().querySelector('img').style.objectFit, 'contain');
 assert(dialog().textContent.includes('2 / 3'));
 assert.equal(document.body.style.overflow, 'hidden');
 await click(button(dialog(), 'Fotografia următoare'));

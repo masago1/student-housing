@@ -185,7 +185,7 @@ export default async function Home() {
           maxWidth: "1180px",
           margin: "0 auto",
           padding:
-            "105px 30px 100px",
+            "81px 30px 100px",
           textAlign: "center",
         }}
       >
