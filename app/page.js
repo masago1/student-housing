@@ -2,6 +2,7 @@ import { supabase } from "./lib/supabase";
 import SearchBox from "./components/SearchBox";
 import AccountButton from "./components/AccountButton";
 import HomeDeviceRouter from "./HomeDeviceRouter";
+import HomeRecommendations from "./components/HomeRecommendations";
 
 export const dynamic = "force-dynamic";
 
@@ -267,6 +268,7 @@ export default async function Home() {
           </p>
         )}
       </section>
+      <HomeRecommendations cities={cities || []} />
     </main>
   );
 
@@ -276,6 +278,7 @@ export default async function Home() {
       universities={universities || []}
       cities={cities || []}
       desktop={desktopHome}
+      recommendations={<HomeRecommendations cities={cities || []} />}
     />
   );
 }

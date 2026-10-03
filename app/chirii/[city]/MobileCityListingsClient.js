@@ -10,6 +10,7 @@ import { useParams } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import FavoriteButton from "../../components/FavoriteButton";
 import AccountButton from "../../components/AccountButton";
+import { rememberSearch } from "../../lib/recommendations.mjs";
 
 // Match desktop city normalization for both the route slug and stored city name.
 function normalizeCity(value = "") {
@@ -62,6 +63,7 @@ export default function MobileCityListingsClient() {
   function updateFiltersUrl(filters) {
     const query = filters ? filtersToSearchParams(filters).toString() : "";
     window.history.pushState({}, "", `${resultsPath}${query ? `?${query}` : ""}`);
+    rememberSearch();
   }
 
   function applyFilters() {
@@ -85,6 +87,7 @@ export default function MobileCityListingsClient() {
 
   useEffect(() => {
     function restoreFilters() {
+    rememberSearch();
     const filters = readUrlFilters(window.location.search);
     setDraftFilters(filters);
     setAppliedFilters(filters);

@@ -39,6 +39,7 @@ export default function MobileHomeClient({
   universities = [],
   cities = [],
   neighborhoods = [],
+  recommendations,
 }) {
   const router = useRouter();
   const [filters, setFilters] = useState({ ...defaultFilters });
@@ -369,6 +370,7 @@ export default function MobileHomeClient({
           </button>
         </div>
       </section>
+      {recommendations}
     </main>
   );
 }

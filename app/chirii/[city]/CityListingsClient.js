@@ -1,4 +1,5 @@
 "use client";
+import { rememberSearch } from "../../lib/recommendations.mjs";
 
 import { desktopUrlFilters, filtersToSearchParams, filterDesktopListings } from "../../lib/rentalFilters.mjs";
 import NeighborhoodFilter from "../../components/NeighborhoodFilter";
@@ -1012,6 +1013,7 @@ export default function CityListingsPage() {
     }
 
     function restoreFilters() {
+    rememberSearch();
     const filters = desktopUrlFilters(window.location.search);
     setMinPrice(filters.minPrice);
     setMaxPrice(filters.maxPrice);
@@ -1424,6 +1426,7 @@ export default function CityListingsPage() {
       "",
       newUrl
     );
+    rememberSearch();
 
     setCalendarOpen(false);
 
@@ -1480,6 +1483,7 @@ export default function CityListingsPage() {
       "",
       resultsPath
     );
+    rememberSearch();
 
     window.scrollTo({
       top: 0,

@@ -5,6 +5,7 @@ import MobileHomeClient from "./MobileHomeClient";
 
 export default function HomeDeviceRouter({
   desktop,
+  recommendations,
   universities = [],
   cities = [],
   neighborhoods = [],
@@ -45,6 +46,7 @@ export default function HomeDeviceRouter({
         universities={universities}
         cities={cities}
         neighborhoods={neighborhoods}
+        recommendations={recommendations}
       />
     );
   }
